@@ -302,19 +302,4 @@ $highlight-color: #ffc107;
       margin-top: 0 !important;
     }
   }
-
-  // Shrink the week-summary column so the 7-day grid fits the narrow
-  // viewport without horizontal scrolling.
-  .week-row {
-    grid-template-columns: 78px repeat(7, 1fr);
-    min-width: 0;
-  }
-
-  .week-summary-col {
-    .week-total-label { display: none; }
-    .week-range { font-size: 0.78rem; white-space: normal; line-height: 1.25; }
-    .week-total-miles { font-size: 0.9rem; }
-  }
-
-  .day-header { font-size: 0.6rem; }
 }
