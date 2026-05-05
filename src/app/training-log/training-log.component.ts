@@ -4,6 +4,18 @@ import { StravaService } from '../strava.service';
 import { Activity } from '../types/Activity';
 import moment from 'moment';
 
+interface NavMonth {
+  month: number;
+  monthName: string;
+  weekKey: string;
+}
+
+interface NavYear {
+  year: number;
+  expanded: boolean;
+  months: NavMonth[];
+}
+
 interface Summary {
   label: string;
   distance: number;
@@ -19,6 +31,7 @@ interface DayData {
 }
 
 interface WeekData {
+  weekKey: string;
   weekLabel: string;
   totalMiles: number;
   days: DayData[];
@@ -39,6 +52,8 @@ export class TrainingLogComponent implements OnInit {
   maxActivityMiles = 1;
 
   selectedActivity: Activity | null = null;
+  yearMonthNav: NavYear[] = [];
+  activeNavKey = '';
 
   summaries: Summary[] = [];
 
@@ -66,6 +81,7 @@ export class TrainingLogComponent implements OnInit {
     this.activities = (await this.stravaService.getActivities()) as Activity[];
     this.buildWeekGroups();
     this.buildSummaries();
+    this.buildYearMonthNav();
     this.loading = false;
     this.loaded = true;
   }
@@ -104,7 +120,7 @@ export class TrainingLogComponent implements OnInit {
       }
 
       const totalMiles = weekActivities.reduce((sum, a) => sum + this.distanceToMiles(a.distance), 0);
-      return { weekLabel: this.formatWeekLabel(weekStart, weekEnd), totalMiles, days };
+      return { weekKey, weekLabel: this.formatWeekLabel(weekStart, weekEnd), totalMiles, days };
     });
   }
 
@@ -137,6 +153,48 @@ export class TrainingLogComponent implements OnInit {
         otherCount: filtered.filter((a) => this.isOtherActivity(a)).length
       };
     });
+  }
+
+  private buildYearMonthNav() {
+    // year -> month -> weekKey of the first (newest) week that starts in that month
+    const yearMap = new Map<number, Map<number, string>>();
+    for (const week of this.weekGroups) {
+      const m = moment(week.weekKey);
+      const year = m.year();
+      const month = m.month();
+      if (!yearMap.has(year)) { yearMap.set(year, new Map()); }
+      if (!yearMap.get(year)!.has(month)) {
+        yearMap.get(year)!.set(month, week.weekKey);
+      }
+    }
+
+    const currentYear = moment().year();
+    const years = Array.from(yearMap.keys()).sort().reverse();
+    this.yearMonthNav = years.map(year => {
+      const monthMap = yearMap.get(year)!;
+      const months = Array.from(monthMap.keys()).sort().reverse().map(month => ({
+        month,
+        monthName: moment().month(month).format('MMM'),
+        weekKey: monthMap.get(month)!
+      }));
+      return { year, expanded: year === currentYear, months };
+    });
+
+    // set the initially active key to the most recent month
+    if (this.yearMonthNav.length > 0 && this.yearMonthNav[0].months.length > 0) {
+      this.activeNavKey = this.yearMonthNav[0].months[0].weekKey;
+    }
+  }
+
+  toggleNavYear(year: number) {
+    const nav = this.yearMonthNav.find(y => y.year === year);
+    if (nav) { nav.expanded = !nav.expanded; }
+  }
+
+  scrollToMonth(weekKey: string) {
+    this.activeNavKey = weekKey;
+    const el = document.getElementById('week-' + weekKey);
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   }
 
   circleSize(activity: Activity): number {
