@@ -1,0 +1,101 @@
+<div>
+  @if (loaded) {
+    <nav
+      class="navbar navbar-dark bg-dark pb-0">
+      <span class="navbar-brand mb-0 mr-1 h1 text-warning">
+        Strava Heat Map
+      </span>
+      <span class="navbar-text home mr-auto mt-1">
+        @if (isRun(lastVisibleActivity)) {
+          <i class="fas fa-running fa-lg ml-1 mr-1"
+          ></i>
+        }
+        @if (isRide(lastVisibleActivity)) {
+          <i class="fas fa-biking fa-lg ml-1 mr-1"
+          ></i>
+        }
+        @if (isOtherActivity(lastVisibleActivity)) {
+          <i class="fas fa-heartbeat fa-lg ml-1 mr-1"
+          ></i>
+        }
+        <span>&nbsp;{{getTimeSince(lastVisibleActivity.start_date)}}&nbsp;</span>
+        |&nbsp;<a href="https://www.strava.com/activities/{{lastVisibleActivity.id}}"
+        target="_blank"
+        title="Strava">
+        <i class="fab fa-strava fa-lg ml-1 mr-1"></i>
+      </a>
+      |&nbsp;<a routerLink="/log" title="Training Log">
+        <i class="fas fa-calendar-alt fa-lg ml-1 mr-1"></i>
+      </a>
+      </span>
+      @if (loaded) {
+        <span class="navbar-text small summary pt-0 pb-0 mb-2 mt-n1"
+          >
+          {{distanceToMiles(totalDistance) | number:'1.0-0'}} Miles<span class="text-warning"> | </span>
+          {{secondsToHours(totalSeconds) | number:'1.0-0'}} Hours<span class="text-warning"> | </span>
+          {{runCount}} Runs<span class="text-warning"></span><span class="text-warning"> | </span>
+          {{rideCount}} Rides<span class="text-warning"></span><span class="text-warning"> | </span>
+          {{otherActivityCount}} Others<span class="text-warning"></span>
+        </span>
+      }
+    </nav>
+  }
+
+  @if (loading) {
+    <div class="d-flex justify-content-center mt-5"
+      >
+      <div class="spinner-border text-warning"
+        role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+    </div>
+  }
+
+  @if (loading) {
+    <div class="d-flex justify-content-center mt-5 text-warning"
+      >
+      @if (loading) {
+        <h2>Loading...</h2>
+      }
+    </div>
+  }
+
+  @if (loaded) {
+    <div class="controls"
+      >
+      <ul class="list-group list-group-horizontal">
+        <li class="list-group-item flex-fill text-white bg-secondary"
+          [ngClass]="{'bg-warning text-dark': currentView == view.Day}"
+          (click)="filterChanged(view.Day)">
+          Day
+        </li>
+        <li class="list-group-item flex-fill text-white bg-secondary"
+          [ngClass]="{'bg-warning text-dark': currentView == view.Week}"
+          (click)="filterChanged(view.Week)">
+          Week
+        </li>
+        <li class="list-group-item flex-fill text-white bg-secondary"
+          [ngClass]="{'bg-warning text-dark': currentView == view.Month}"
+          (click)="filterChanged(view.Month)">
+          Month
+        </li>
+        <li class="list-group-item flex-fill text-white bg-secondary"
+          [ngClass]="{'bg-warning text-dark': currentView == view.Year}"
+          (click)="filterChanged(view.Year)">
+          Year
+        </li>
+        <li class="list-group-item flex-fill text-white bg-secondary"
+          [ngClass]="{'bg-warning text-dark': currentView == view.All}"
+          (click)="filterChanged(view.All)">
+          All
+        </li>
+      </ul>
+    </div>
+  }
+
+  <div class="map-container">
+    <div class="map-frame">
+      <div id="map"></div>
+    </div>
+  </div>
+</div>
