@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { StravaService } from '../strava.service';
 import { Activity } from '../types/Activity';
@@ -43,7 +43,7 @@ interface WeekData {
   styleUrls: ['./training-log.component.scss'],
   standalone: false
 })
-export class TrainingLogComponent implements OnInit {
+export class TrainingLogComponent implements OnInit, OnDestroy {
   loading = false;
   loaded = false;
 
@@ -57,6 +57,10 @@ export class TrainingLogComponent implements OnInit {
 
   summaries: Summary[] = [];
 
+  private scrollObserver: IntersectionObserver | null = null;
+  private weekToNavKey = new Map<string, string>();
+  private visibleWeeks = new Set<string>();
+
   readonly DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   private readonly METERS_PER_MILE = 1609;
@@ -69,11 +73,16 @@ export class TrainingLogComponent implements OnInit {
   constructor(
     private stravaService: StravaService,
     private decimalPipe: DecimalPipe,
-    private datePipe: DatePipe
+    private datePipe: DatePipe,
+    private zone: NgZone
   ) {}
 
   ngOnInit(): void {
     this.load();
+  }
+
+  ngOnDestroy(): void {
+    this.scrollObserver?.disconnect();
   }
 
   private async load() {
@@ -84,6 +93,8 @@ export class TrainingLogComponent implements OnInit {
     this.buildYearMonthNav();
     this.loading = false;
     this.loaded = true;
+    // Set up scroll observer after Angular renders the week rows
+    setTimeout(() => { this.setupScrollObserver(); }, 100);
   }
 
   private buildWeekGroups() {
@@ -156,16 +167,30 @@ export class TrainingLogComponent implements OnInit {
   }
 
   private buildYearMonthNav() {
-    // year -> month -> weekKey of the first (newest) week that starts in that month
-    const yearMap = new Map<number, Map<number, string>>();
-    for (const week of this.weekGroups) {
-      const m = moment(week.weekKey);
-      const year = m.year();
-      const month = m.month();
-      if (!yearMap.has(year)) { yearMap.set(year, new Map()); }
-      if (!yearMap.get(year)!.has(month)) {
-        yearMap.get(year)!.set(month, week.weekKey);
+    // Use actual activity dates (not week-start dates) so months like Nov/Dec
+    // are never missed when their activities fall in a week that starts in an earlier month.
+    // For each year+month, record the weekKey of the most-recent week that contains
+    // an activity in that month (most-recent = highest weekKey string = top of the list).
+    const monthBestWeek = new Map<string, string>(); // "YYYY-M" -> weekKey
+
+    for (const activity of this.activities) {
+      const d = moment(activity.start_date);
+      const mapKey = `${d.year()}-${d.month()}`; // month is 0-indexed
+      const weekKey = d.clone().startOf('isoWeek').format('YYYY-MM-DD');
+      const current = monthBestWeek.get(mapKey);
+      if (!current || weekKey > current) {
+        monthBestWeek.set(mapKey, weekKey);
       }
+    }
+
+    // Group into years
+    const yearMap = new Map<number, Map<number, string>>();
+    for (const [mapKey, weekKey] of monthBestWeek) {
+      const dashIdx = mapKey.indexOf('-');
+      const year = parseInt(mapKey.substring(0, dashIdx), 10);
+      const month = parseInt(mapKey.substring(dashIdx + 1), 10);
+      if (!yearMap.has(year)) { yearMap.set(year, new Map()); }
+      yearMap.get(year)!.set(month, weekKey);
     }
 
     const currentYear = moment().year();
@@ -180,21 +205,100 @@ export class TrainingLogComponent implements OnInit {
       return { year, expanded: year === currentYear, months };
     });
 
-    // set the initially active key to the most recent month
     if (this.yearMonthNav.length > 0 && this.yearMonthNav[0].months.length > 0) {
       this.activeNavKey = this.yearMonthNav[0].months[0].weekKey;
     }
+
+    // Build weekKey -> navMonth.weekKey lookup for scroll-spy
+    this.weekToNavKey.clear();
+    for (const week of this.weekGroups) {
+      const d = moment(week.weekKey);
+      let navKey = this.findNavKey(d.year(), d.month());
+      if (!navKey) {
+        // Week spans two months; try the end date's month
+        const endD = d.clone().add(6, 'days');
+        navKey = this.findNavKey(endD.year(), endD.month());
+      }
+      if (navKey) { this.weekToNavKey.set(week.weekKey, navKey); }
+    }
+  }
+
+  private findNavKey(year: number, month: number): string | null {
+    const navYear = this.yearMonthNav.find(y => y.year === year);
+    if (!navYear) { return null; }
+    const navMonth = navYear.months.find(m => m.month === month);
+    return navMonth ? navMonth.weekKey : null;
+  }
+
+  private setActiveNav(navKey: string) {
+    if (this.activeNavKey === navKey) { return; }
+    this.activeNavKey = navKey;
+    // Auto-expand the year that owns this key
+    for (const navYear of this.yearMonthNav) {
+      if (navYear.months.some(m => m.weekKey === navKey)) {
+        if (!navYear.expanded) { navYear.expanded = true; }
+        break;
+      }
+    }
+    this.scrollNavToActive();
+  }
+
+  private scrollNavToActive() {
+    setTimeout(() => {
+      const activeBtn = document.querySelector('.nav-month-active') as HTMLElement | null;
+      if (activeBtn) { activeBtn.scrollIntoView({ block: 'nearest' }); }
+    }, 0);
+  }
+
+  private setupScrollObserver() {
+    this.scrollObserver?.disconnect();
+    this.visibleWeeks.clear();
+
+    this.scrollObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        const weekKey = (entry.target as HTMLElement).id.replace('week-', '');
+        if (entry.isIntersecting) {
+          this.visibleWeeks.add(weekKey);
+        } else {
+          this.visibleWeeks.delete(weekKey);
+        }
+      }
+      // weekGroups is newest-first (= top of page first); pick the topmost visible week
+      const topmostVisible = this.weekGroups.find(w => this.visibleWeeks.has(w.weekKey));
+      if (topmostVisible) {
+        const navKey = this.weekToNavKey.get(topmostVisible.weekKey);
+        if (navKey) {
+          this.zone.run(() => { this.setActiveNav(navKey); });
+        }
+      }
+    }, { threshold: 0 });
+
+    const weekRows = document.querySelectorAll('[id^="week-"]');
+    weekRows.forEach(el => this.scrollObserver!.observe(el));
   }
 
   toggleNavYear(year: number) {
     const nav = this.yearMonthNav.find(y => y.year === year);
-    if (nav) { nav.expanded = !nav.expanded; }
+    if (!nav) { return; }
+    nav.expanded = !nav.expanded;
+    if (nav.expanded && nav.months.length > 0) {
+      // Scroll to the newest (topmost) month of this year after Angular renders months
+      setTimeout(() => { this.scrollToMonth(nav.months[0].weekKey); }, 0);
+    }
   }
 
   scrollToMonth(weekKey: string) {
     this.activeNavKey = weekKey;
+    // Ensure the year containing this weekKey is expanded
+    for (const navYear of this.yearMonthNav) {
+      if (navYear.months.some(m => m.weekKey === weekKey)) {
+        if (!navYear.expanded) { navYear.expanded = true; }
+        break;
+      }
+    }
     const el = document.getElementById('week-' + weekKey);
     if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    this.scrollNavToActive();
   }
 
   circleSize(activity: Activity): number {
