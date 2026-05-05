@@ -60,6 +60,8 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
   private scrollObserver: IntersectionObserver | null = null;
   private weekToNavKey = new Map<string, string>();
   private visibleWeeks = new Set<string>();
+  private isProgrammaticScroll = false;
+  private programmaticScrollTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -83,6 +85,9 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.scrollObserver?.disconnect();
+    if (this.programmaticScrollTimer !== null) {
+      clearTimeout(this.programmaticScrollTimer);
+    }
   }
 
   private async load() {
@@ -263,6 +268,8 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
           this.visibleWeeks.delete(weekKey);
         }
       }
+      // Ignore scroll-spy updates while we are programmatically scrolling to a month
+      if (this.isProgrammaticScroll) { return; }
       // weekGroups is newest-first (= top of page first); pick the topmost visible week
       const topmostVisible = this.weekGroups.find(w => this.visibleWeeks.has(w.weekKey));
       if (topmostVisible) {
@@ -296,9 +303,19 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
         break;
       }
     }
+    // Suppress scroll-spy while the smooth scroll animation runs
+    if (this.programmaticScrollTimer !== null) {
+      clearTimeout(this.programmaticScrollTimer);
+    }
+    this.isProgrammaticScroll = true;
     const el = document.getElementById('week-' + weekKey);
     if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     this.scrollNavToActive();
+    // Re-enable scroll-spy after the smooth scroll animation completes (~800 ms)
+    this.programmaticScrollTimer = setTimeout(() => {
+      this.isProgrammaticScroll = false;
+      this.programmaticScrollTimer = null;
+    }, 800);
   }
 
   circleSize(activity: Activity): number {
