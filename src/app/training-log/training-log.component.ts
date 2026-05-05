@@ -197,7 +197,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     const years = Array.from(yearMap.keys()).sort().reverse();
     this.yearMonthNav = years.map(year => {
       const monthMap = yearMap.get(year)!;
-      const months = Array.from(monthMap.keys()).sort().reverse().map(month => ({
+      const months = Array.from(monthMap.keys()).sort((a, b) => a - b).reverse().map(month => ({
         month,
         monthName: moment().month(month).format('MMM'),
         weekKey: monthMap.get(month)!
