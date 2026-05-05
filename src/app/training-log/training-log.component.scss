@@ -38,84 +38,108 @@ $highlight-color: #ffc107;
 .ride-dot { background: $ride-color; }
 .other-dot { background: $other-color; }
 
-/* FullCalendar dark theme overrides */
-:host ::ng-deep {
-  .fc {
+/* Weekly bubble grid */
+.week-grid-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.week-row {
+  display: grid;
+  grid-template-columns: 130px repeat(7, 1fr);
+  min-width: 560px;
+  border-bottom: 1px solid #2e2e2e;
+  padding: 16px 0;
+  align-items: start;
+}
+
+.week-header-row {
+  padding: 6px 0 8px;
+  border-bottom: 1px solid #444;
+  position: sticky;
+  top: 0;
+  background: #212529;
+  z-index: 10;
+}
+
+.day-header {
+  text-align: center;
+  font-size: 0.7rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.week-summary-col {
+  padding-right: 12px;
+
+  .week-range {
+    font-size: 0.9rem;
+    font-weight: 700;
     color: #e0e0e0;
-    --fc-border-color: #444;
-    --fc-today-bg-color: rgba(255, 193, 7, 0.12);
-    --fc-page-bg-color: #1e1e1e;
-    --fc-neutral-bg-color: #2a2a2a;
-    --fc-list-event-hover-bg-color: #333;
-    --fc-button-bg-color: #495057;
-    --fc-button-border-color: #6c757d;
-    --fc-button-hover-bg-color: #ffc107;
-    --fc-button-hover-border-color: #ffc107;
-    --fc-button-active-bg-color: #ffc107;
-    --fc-button-active-border-color: #ffc107;
-    --fc-button-text-color: #fff;
-    --fc-event-text-color: #fff;
+    white-space: nowrap;
   }
 
-  .fc .fc-button-primary:not(:disabled).fc-button-active,
-  .fc .fc-button-primary:not(:disabled):active {
-    color: #212529;
+  .week-total-label {
+    font-size: 0.65rem;
+    color: #777;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
-  .fc .fc-button-primary:not(:disabled).fc-button-active,
-  .fc .fc-button-primary:hover {
-    color: #212529;
+  .week-total-miles {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
   }
+}
 
-  .fc-theme-standard .fc-scrollgrid,
-  .fc-theme-standard td,
-  .fc-theme-standard th {
-    border-color: #444;
-  }
+.day-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
 
-  .fc .fc-col-header-cell-cushion,
-  .fc .fc-daygrid-day-number {
-    color: #ccc;
-    text-decoration: none;
-  }
+.bubble-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
 
-  .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
-    color: $highlight-color;
-    font-weight: bold;
+  &:hover .activity-bubble {
+    filter: brightness(1.25);
   }
+}
 
-  .fc .fc-daygrid-day-frame {
-    background: #2a2a2a;
-  }
+.activity-bubble {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter 0.15s ease;
+  flex-shrink: 0;
+}
 
-  .fc .fc-daygrid-day-events {
-    min-height: 1.5em;
-  }
+.bubble-label {
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.72rem;
+  text-align: center;
+  line-height: 1;
+  pointer-events: none;
+}
 
-  .fc .fc-event {
-    font-size: 0.75rem;
-    cursor: pointer;
-  }
-
-  /* Force event titles/links to white so they are readable on coloured backgrounds */
-  .fc .fc-event .fc-event-title,
-  .fc .fc-daygrid-event .fc-event-title,
-  .fc .fc-event-title-container,
-  .fc a.fc-event,
-  .fc a.fc-event:hover,
-  .fc .fc-daygrid-event-harness a {
-    color: #fff !important;
-    text-decoration: none;
-  }
-
-  .fc-toolbar-title {
-    color: $highlight-color;
-  }
-
-  .fc .fc-toolbar.fc-header-toolbar {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
+.activity-name {
+  font-size: 0.6rem;
+  color: #888;
+  text-align: center;
+  max-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 3px;
 }
 
 /* Activity detail modal */

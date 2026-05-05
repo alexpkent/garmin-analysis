@@ -53,9 +53,45 @@
       <span class="legend-dot other-dot"></span><small>Other</small>
     </div>
 
-    <!-- Calendar -->
-    <div class="px-3 pb-3">
-      <full-calendar [options]="calendarOptions"></full-calendar>
+    <!-- Weekly bubble grid -->
+    <div class="week-grid-scroll px-3 pb-4">
+      <!-- Day-of-week header -->
+      <div class="week-row week-header-row">
+        <div class="week-summary-col"></div>
+        @for (day of DAY_LABELS; track day) {
+          <div class="day-header">{{ day }}</div>
+        }
+      </div>
+
+      <!-- One row per week -->
+      @for (week of weekGroups; track week.weekLabel) {
+        <div class="week-row">
+          <div class="week-summary-col">
+            <div class="week-range">{{ week.weekLabel }}</div>
+            <div class="week-total-label">Total Distance</div>
+            <div class="week-total-miles">{{ week.totalMiles | number:'1.2-2' }} mi</div>
+          </div>
+          @for (day of week.days; track day.date.valueOf()) {
+            <div class="day-col">
+              @for (activity of day.activities; track activity.id) {
+                <div class="bubble-wrapper" (click)="onBubbleClick(activity)">
+                  <div class="activity-bubble"
+                       [style.width.px]="circleSize(activity)"
+                       [style.height.px]="circleSize(activity)"
+                       [style.background-color]="activityColor(activity)">
+                    @if (circleSize(activity) >= 34) {
+                      <span class="bubble-label">
+                        {{ distanceToMiles(activity.distance) | number:'1.1-1' }}
+                      </span>
+                    }
+                  </div>
+                  <div class="activity-name">{{ activity.name }}</div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
     </div>
 
     <!-- Activity Detail Modal -->
