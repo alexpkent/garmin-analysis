@@ -8,6 +8,23 @@ $highlight-color: #ffc107;
 .ride-badge { color: $ride-color; font-weight: bold; }
 .other-badge { color: $other-color; font-weight: bold; }
 
+/* Summary cards */
+.summary-card {
+  background: #1a1d21;
+  border: 1px solid #555;
+  border-radius: 6px;
+}
+
+.summary-distance {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.summary-hours {
+  color: #d0d0d0;
+}
+
 /* Legend dots */
 .legend-dot {
   display: inline-block;
@@ -37,6 +54,7 @@ $highlight-color: #ffc107;
     --fc-button-active-bg-color: #ffc107;
     --fc-button-active-border-color: #ffc107;
     --fc-button-text-color: #fff;
+    --fc-event-text-color: #fff;
   }
 
   .fc .fc-button-primary:not(:disabled).fc-button-active,
@@ -77,6 +95,17 @@ $highlight-color: #ffc107;
   .fc .fc-event {
     font-size: 0.75rem;
     cursor: pointer;
+  }
+
+  /* Force event titles/links to white so they are readable on coloured backgrounds */
+  .fc .fc-event .fc-event-title,
+  .fc .fc-daygrid-event .fc-event-title,
+  .fc .fc-event-title-container,
+  .fc a.fc-event,
+  .fc a.fc-event:hover,
+  .fc .fc-daygrid-event-harness a {
+    color: #fff !important;
+    text-decoration: none;
   }
 
   .fc-toolbar-title {

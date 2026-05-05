@@ -26,21 +26,19 @@
       <div class="row g-2">
         @for (summary of summaries; track summary.label) {
           <div class="col-6 col-md-3">
-            <div class="card bg-secondary text-white h-100">
-              <div class="card-body p-2">
-                <h6 class="card-title text-warning mb-1">{{ summary.label }}</h6>
-                <div class="small">
-                  <span class="font-weight-bold">
-                    {{ distanceToMiles(summary.distance) | number:'1.0-1' }} mi
-                  </span>
-                  <span class="text-warning mx-1">|</span>
-                  {{ secondsToHours(summary.seconds) | number:'1.0-1' }} hrs
-                </div>
-                <div class="small mt-1">
-                  <span class="run-badge mr-1">{{ summary.runCount }} Runs</span>
-                  <span class="ride-badge mr-1">{{ summary.rideCount }} Rides</span>
-                  <span class="other-badge">{{ summary.otherCount }} Others</span>
-                </div>
+            <div class="summary-card h-100 p-2">
+              <h6 class="text-warning mb-1">{{ summary.label }}</h6>
+              <div class="small">
+                <span class="summary-distance">
+                  {{ distanceToMiles(summary.distance) | number:'1.0-1' }} mi
+                </span>
+                <span class="text-warning mx-1">|</span>
+                <span class="summary-hours">{{ secondsToHours(summary.seconds) | number:'1.0-1' }} hrs</span>
+              </div>
+              <div class="small mt-1">
+                <span class="run-badge mr-1">{{ summary.runCount }} Runs</span>
+                <span class="ride-badge mr-1">{{ summary.rideCount }} Rides</span>
+                <span class="other-badge">{{ summary.otherCount }} Others</span>
               </div>
             </div>
           </div>

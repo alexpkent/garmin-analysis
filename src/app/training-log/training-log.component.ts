@@ -40,6 +40,7 @@ export class TrainingLogComponent implements OnInit {
       dayGridYear: { type: 'dayGrid', duration: { years: 1 }, buttonText: 'Year' }
     },
     events: [],
+    displayEventTime: false,
     eventClick: this.onEventClick.bind(this),
     height: 'auto'
   };
