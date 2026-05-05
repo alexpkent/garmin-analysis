@@ -1,20 +1,26 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
+import { HeatmapComponent } from './heatmap/heatmap.component';
+import { TrainingLogComponent } from './training-log/training-log.component';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { registerLocaleData } from '@angular/common';
 import { LOCALE_ID } from '@angular/core';
 import localeEnGb from '@angular/common/locales/en-GB';
 import { FormsModule } from '@angular/forms';
+import { FullCalendarModule } from '@fullcalendar/angular';
 
 registerLocaleData(localeEnGb, 'en-GB');
 
-@NgModule({ declarations: [AppComponent],
+@NgModule({ declarations: [AppComponent, HeatmapComponent, TrainingLogComponent],
     bootstrap: [AppComponent], imports: [BrowserModule,
+        CommonModule,
         BrowserAnimationsModule,
         FormsModule,
-        AppRoutingModule], providers: [DatePipe, { provide: LOCALE_ID, useValue: 'en-GB' }, DecimalPipe, provideHttpClient(withInterceptorsFromDi())] })
+        AppRoutingModule,
+        FullCalendarModule], providers: [DatePipe, { provide: LOCALE_ID, useValue: 'en-GB' }, DecimalPipe, provideHttpClient(withInterceptorsFromDi())] })
 export class AppModule {}

@@ -1,0 +1,110 @@
+<div class="bg-dark min-vh-100 text-white">
+  <!-- Navbar -->
+  <nav class="navbar navbar-dark bg-dark pb-0 border-bottom border-secondary">
+    <span class="navbar-brand mb-0 h1 text-warning">
+      Training Log
+    </span>
+    <a routerLink="/" class="btn btn-outline-warning btn-sm ml-auto">
+      <i class="fas fa-map mr-1"></i> Heatmap
+    </a>
+  </nav>
+
+  @if (loading) {
+    <div class="d-flex justify-content-center mt-5">
+      <div class="spinner-border text-warning" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+    </div>
+    <div class="d-flex justify-content-center mt-3 text-warning">
+      <h2>Loading...</h2>
+    </div>
+  }
+
+  @if (loaded) {
+    <!-- Summaries -->
+    <div class="container-fluid px-3 pt-3 pb-2">
+      <div class="row g-2">
+        @for (summary of summaries; track summary.label) {
+          <div class="col-6 col-md-3">
+            <div class="card bg-secondary text-white h-100">
+              <div class="card-body p-2">
+                <h6 class="card-title text-warning mb-1">{{ summary.label }}</h6>
+                <div class="small">
+                  <span class="font-weight-bold">
+                    {{ distanceToMiles(summary.distance) | number:'1.0-1' }} mi
+                  </span>
+                  <span class="text-warning mx-1">|</span>
+                  {{ secondsToHours(summary.seconds) | number:'1.0-1' }} hrs
+                </div>
+                <div class="small mt-1">
+                  <span class="run-badge mr-1">{{ summary.runCount }} Runs</span>
+                  <span class="ride-badge mr-1">{{ summary.rideCount }} Rides</span>
+                  <span class="other-badge">{{ summary.otherCount }} Others</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="px-3 pb-2">
+      <span class="legend-dot run-dot"></span><small class="mr-3">Run</small>
+      <span class="legend-dot ride-dot"></span><small class="mr-3">Ride</small>
+      <span class="legend-dot other-dot"></span><small>Other</small>
+    </div>
+
+    <!-- Calendar -->
+    <div class="px-3 pb-3">
+      <full-calendar [options]="calendarOptions"></full-calendar>
+    </div>
+
+    <!-- Activity Detail Modal -->
+    @if (selectedActivity) {
+      <div class="modal-backdrop-custom" (click)="closeModal()"></div>
+      <div class="activity-modal">
+        <div class="activity-modal-header">
+          <span class="text-warning font-weight-bold">{{ selectedActivity.name }}</span>
+          <button class="close-btn" (click)="closeModal()" aria-label="Close">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="activity-modal-body">
+          <div class="detail-row">
+            <span class="detail-label">Type</span>
+            <span>
+              @if (isRun(selectedActivity)) { <i class="fas fa-running mr-1"></i> }
+              @if (isRide(selectedActivity)) { <i class="fas fa-biking mr-1"></i> }
+              @if (isOtherActivity(selectedActivity)) { <i class="fas fa-heartbeat mr-1"></i> }
+              {{ selectedActivity.type }}
+            </span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Date</span>
+            <span>{{ selectedActivity.start_date | date:'mediumDate' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Distance</span>
+            <span>{{ distanceToMiles(selectedActivity.distance) | number:'1.1-1' }} miles</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Time</span>
+            <span>{{ getDuration(selectedActivity.moving_time) }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">When</span>
+            <span>{{ getTimeSince(selectedActivity.start_date) }}</span>
+          </div>
+          <div class="mt-3 text-center">
+            <a href="https://www.strava.com/activities/{{ selectedActivity.id }}"
+               target="_blank"
+               class="btn btn-warning btn-sm">
+              <i class="fab fa-strava mr-1"></i> View on Strava
+            </a>
+          </div>
+        </div>
+      </div>
+    }
+  }
+</div>
