@@ -24,6 +24,9 @@
         title="Strava">
         <i class="fab fa-strava fa-lg ml-1 mr-1"></i>
       </a>
+      |&nbsp;<a routerLink="/log" title="Training Log">
+        <i class="fas fa-calendar-alt fa-lg ml-1 mr-1"></i>
+      </a>
       </span>
       @if (loaded) {
         <span class="navbar-text small summary pt-0 pb-0 mb-2 mt-n1"
@@ -35,9 +38,6 @@
           {{otherActivityCount}} Others<span class="text-warning"></span>
         </span>
       }
-      <a routerLink="/log" class="btn btn-outline-warning btn-sm ml-2 mb-1">
-        <i class="fas fa-calendar-alt"></i><span class="d-none d-sm-inline ml-1">Training Log</span>
-      </a>
     </nav>
   }
 
