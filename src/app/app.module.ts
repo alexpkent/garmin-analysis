@@ -12,7 +12,6 @@ import { registerLocaleData } from '@angular/common';
 import { LOCALE_ID } from '@angular/core';
 import localeEnGb from '@angular/common/locales/en-GB';
 import { FormsModule } from '@angular/forms';
-import { FullCalendarModule } from '@fullcalendar/angular';
 
 registerLocaleData(localeEnGb, 'en-GB');
 
@@ -21,6 +20,5 @@ registerLocaleData(localeEnGb, 'en-GB');
         CommonModule,
         BrowserAnimationsModule,
         FormsModule,
-        AppRoutingModule,
-        FullCalendarModule], providers: [DatePipe, { provide: LOCALE_ID, useValue: 'en-GB' }, DecimalPipe, provideHttpClient(withInterceptorsFromDi())] })
+        AppRoutingModule], providers: [DatePipe, { provide: LOCALE_ID, useValue: 'en-GB' }, DecimalPipe, provideHttpClient(withInterceptorsFromDi())] })
 export class AppModule {}
