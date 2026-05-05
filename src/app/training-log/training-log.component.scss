@@ -280,3 +280,41 @@ $highlight-color: #ffc107;
 
   &:hover { color: #fff; }
 }
+
+/* ── Mobile / iPhone improvements ─────────────────────────────── */
+@media (max-width: 575px) {
+  // Summary cards: lay content out horizontally so a full-width card
+  // shows label + stats on one compact row instead of wrapping columns.
+  .summary-card {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    column-gap: 8px;
+    row-gap: 0;
+    padding: 5px 8px !important;
+
+    h6 {
+      margin-bottom: 0 !important;
+      min-width: 70px;
+    }
+
+    > .small {
+      margin-top: 0 !important;
+    }
+  }
+
+  // Shrink the week-summary column so the 7-day grid fits the narrow
+  // viewport without horizontal scrolling.
+  .week-row {
+    grid-template-columns: 78px repeat(7, 1fr);
+    min-width: 0;
+  }
+
+  .week-summary-col {
+    .week-total-label { display: none; }
+    .week-range { font-size: 0.78rem; white-space: normal; line-height: 1.25; }
+    .week-total-miles { font-size: 0.9rem; }
+  }
+
+  .day-header { font-size: 0.6rem; }
+}
