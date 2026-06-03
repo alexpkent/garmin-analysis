@@ -80,7 +80,7 @@ In the Static Web App configuration (Application settings) set the following env
 On each page load the Azure Function (`GET /api/activities`) is called:
 
 1. Loads saved Garmin OAuth tokens from `garmin/tokens.json` in blob storage (or performs a fresh login if none exist).
-2. Fetches new Garmin activities since the last sync and retrieves GPS route data for each.
+2. Fetches new Garmin activities since the last sync and retrieves GPS route data for each, using [python-garminconnect](https://github.com/cyberjunky/python-garminconnect).
 3. Backfills route data for up to 20 previously stored activities that are missing a route.
 4. Reads all activities (Garmin + any migrated Strava history) from `garmin/activities.json`, merges new ones, and returns them sorted newest-first.
 5. If Garmin Connect is unreachable the response still returns cached activities, with an `X-Sync-Error: true` header so the UI can show an error banner.
