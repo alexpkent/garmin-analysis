@@ -52,6 +52,7 @@ class ActivityService:
                 if a.get("encoded_route") is None
                 and a["id"] not in new_ids
                 and a.get("source") == "garmin"
+                and a.get("route_status") != "unavailable"
             ][:_BACKFILL_LIMIT]
 
             for act in backfill:
@@ -60,7 +61,10 @@ class ActivityService:
                 )
                 if polyline is not None:
                     act["encoded_route"] = polyline
-                    changed = True
+                    act["route_status"] = "present"
+                else:
+                    act["route_status"] = "unavailable"
+                changed = True
 
             # Only persist when something actually changed.
             if changed:
