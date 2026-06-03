@@ -9,4 +9,11 @@ export interface Activity {
   encoded_route: string | null;
   start_latitude: number | null;
   start_longitude: number | null;
+  duration?: number;
+  averageHR?: number;
+  maxHR?: number;
+  trainingEffect?: number;
+  anaerobicTrainingEffect?: number;
+  trainingEffectLabel?: string;
+  activityTrainingLoad?: number;
 }

@@ -4,6 +4,8 @@ import { CommonModule } from '@angular/common';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
+import { AnalysisComponent } from './analysis/analysis.component';
+import { CalendarHeatmapComponent } from './analysis/calendar-heatmap/calendar-heatmap.component';
 import { HeatmapComponent } from './heatmap/heatmap.component';
 import { NavComponent } from './nav/nav.component';
 import { TrainingLogComponent } from './training-log/training-log.component';
@@ -22,6 +24,8 @@ registerLocaleData(localeEnGb, 'en-GB');
 @NgModule({
   declarations: [
     AppComponent,
+    AnalysisComponent,
+    CalendarHeatmapComponent,
     HeatmapComponent,
     NavComponent,
     TrainingLogComponent

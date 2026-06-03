@@ -1,0 +1,131 @@
+:host {
+  --cell-empty: #2a2d31;
+  --cell-size: 14px;
+  --cell-gap: 3px;
+  --dow-width: 34px;
+}
+
+.heatmap-card {
+  background: #1a1d21;
+  border: 1px solid #343a40;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.heatmap-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.heatmap-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.heatmap-period {
+  font-size: 0.78rem;
+  color: #adb5bd;
+}
+
+/* Scroll wrapper so the grid can overflow on narrow screens */
+.heatmap-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+}
+
+.heatmap-grid {
+  display: flex;
+  gap: var(--cell-gap);
+  width: max-content;
+}
+
+/* Day-of-week label column */
+.dow-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cell-gap);
+  flex-shrink: 0;
+  width: var(--dow-width);
+}
+
+.month-label-spacer {
+  height: 18px;
+}
+
+.dow-label {
+  height: var(--cell-size);
+  line-height: var(--cell-size);
+  font-size: 0.65rem;
+  color: #adb5bd;
+  text-align: right;
+  padding-right: 6px;
+}
+
+/* Each week column */
+.week-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cell-gap);
+}
+
+.month-label {
+  height: 18px;
+  font-size: 0.65rem;
+  color: #adb5bd;
+  white-space: nowrap;
+  line-height: 18px;
+}
+
+/* Individual day cell */
+.day-cell {
+  width: var(--cell-size);
+  height: var(--cell-size);
+  border-radius: 2px;
+  cursor: default;
+  transition: opacity 0.1s;
+
+  &--clickable {
+    cursor: pointer;
+
+    &:hover {
+      opacity: 0.7;
+      outline: 1px solid rgba(255, 255, 255, 0.4);
+    }
+  }
+
+  &--empty {
+    background: transparent !important;
+  }
+}
+
+/* Legend */
+.heatmap-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  color: #adb5bd;
+}
+
+.legend-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+
+
