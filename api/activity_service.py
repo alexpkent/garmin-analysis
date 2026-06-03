@@ -63,7 +63,7 @@ class ActivityService:
                     act["encoded_route"] = polyline
                     act["route_status"] = "present"
                     changed = True
-                elif act.get("route_status") != "unavailable":
+                else:
                     act["route_status"] = "unavailable"
                     changed = True
 
