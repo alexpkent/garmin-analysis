@@ -60,6 +60,8 @@ class Normalizer:
         raw_distance = raw["distance"] or 0
         distance_meters = min(float(raw_distance), 1_000_000)
 
+        encoded_route = raw.get("encoded_route")
+
         return {
             "id": str(raw["activityId"]),
             "source": "garmin",
@@ -69,7 +71,8 @@ class Normalizer:
             "distance_meters": distance_meters,
             "duration": raw.get("duration"),
             "moving_time_seconds": moving_time,
-            "encoded_route": raw.get("encoded_route"),
+            "encoded_route": encoded_route,
+            "route_status": "present" if encoded_route else "unknown",
             "start_latitude": lat,
             "start_longitude": lon,
             "averageHR": raw.get("averageHR"),
