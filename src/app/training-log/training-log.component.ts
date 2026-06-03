@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { DecimalPipe, DatePipe } from '@angular/common';
-import { StravaService } from '../strava.service';
+import { ActivityService } from '../activity.service';
 import { Activity } from '../types/Activity';
 import moment from 'moment';
 
@@ -46,6 +46,7 @@ interface WeekData {
 export class TrainingLogComponent implements OnInit, OnDestroy {
   loading = false;
   loaded = false;
+  syncError = false;
 
   activities: Activity[] = [];
   weekGroups: WeekData[] = [];
@@ -73,7 +74,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
   readonly otherColor = '#b316de';
 
   constructor(
-    private stravaService: StravaService,
+    private activityService: ActivityService,
     private decimalPipe: DecimalPipe,
     private datePipe: DatePipe,
     private zone: NgZone
@@ -92,14 +93,19 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
 
   private async load() {
     this.loading = true;
-    this.activities = (await this.stravaService.getActivities()) as Activity[];
+    const { activities, syncError } =
+      await this.activityService.getActivities();
+    this.activities = activities;
+    this.syncError = syncError;
     this.buildWeekGroups();
     this.buildSummaries();
     this.buildYearMonthNav();
     this.loading = false;
     this.loaded = true;
     // Set up scroll observer after Angular renders the week rows
-    setTimeout(() => { this.setupScrollObserver(); }, 100);
+    setTimeout(() => {
+      this.setupScrollObserver();
+    }, 100);
   }
 
   private buildWeekGroups() {
@@ -109,19 +115,24 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     }
 
     this.maxActivityMiles = Math.max(
-      ...this.activities.map(a => this.distanceToMiles(a.distance)), 1
+      ...this.activities.map((a) => this.distanceToMiles(a.distance_meters)),
+      1
     );
 
     const weekMap = new Map<string, Activity[]>();
     for (const activity of this.activities) {
-      const weekKey = moment(activity.start_date).startOf('isoWeek').format('YYYY-MM-DD');
-      if (!weekMap.has(weekKey)) { weekMap.set(weekKey, []); }
+      const weekKey = moment(activity.start_date)
+        .startOf('isoWeek')
+        .format('YYYY-MM-DD');
+      if (!weekMap.has(weekKey)) {
+        weekMap.set(weekKey, []);
+      }
       weekMap.get(weekKey)!.push(activity);
     }
 
     const weekKeys = Array.from(weekMap.keys()).sort().reverse();
 
-    this.weekGroups = weekKeys.map(weekKey => {
+    this.weekGroups = weekKeys.map((weekKey) => {
       const weekStart = moment(weekKey);
       const weekEnd = weekStart.clone().endOf('isoWeek');
       const weekActivities = weekMap.get(weekKey)!;
@@ -130,13 +141,24 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
       for (let i = 0; i < 7; i++) {
         const dayDate = weekStart.clone().add(i, 'days');
         const dayActivities = weekActivities
-          .filter(a => moment(a.start_date).isSame(dayDate, 'day'))
-          .sort((a, b) => moment(a.start_date).valueOf() - moment(b.start_date).valueOf());
+          .filter((a) => moment(a.start_date).isSame(dayDate, 'day'))
+          .sort(
+            (a, b) =>
+              moment(b.start_date).valueOf() - moment(a.start_date).valueOf()
+          );
         days.push({ date: dayDate, activities: dayActivities });
       }
 
-      const totalMiles = weekActivities.reduce((sum, a) => sum + this.distanceToMiles(a.distance), 0);
-      return { weekKey, weekLabel: this.formatWeekLabel(weekStart, weekEnd), totalMiles, days };
+      const totalMiles = weekActivities.reduce(
+        (sum, a) => sum + this.distanceToMiles(a.distance_meters),
+        0
+      );
+      return {
+        weekKey,
+        weekLabel: this.formatWeekLabel(weekStart, weekEnd),
+        totalMiles,
+        days
+      };
     });
   }
 
@@ -157,13 +179,15 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     ];
 
     this.summaries = ranges.map(({ label, from }) => {
-      const filtered = this.activities.filter((a) =>
-        moment(a.start_date).isSameOrAfter(from) && moment(a.start_date).isSameOrBefore(now)
+      const filtered = this.activities.filter(
+        (a) =>
+          moment(a.start_date).isSameOrAfter(from) &&
+          moment(a.start_date).isSameOrBefore(now)
       );
       return {
         label,
-        distance: filtered.reduce((sum, a) => sum + a.distance, 0),
-        seconds: filtered.reduce((sum, a) => sum + a.moving_time, 0),
+        distance: filtered.reduce((sum, a) => sum + a.distance_meters, 0),
+        seconds: filtered.reduce((sum, a) => sum + a.moving_time_seconds, 0),
         runCount: filtered.filter((a) => this.isRun(a)).length,
         rideCount: filtered.filter((a) => this.isRide(a)).length,
         otherCount: filtered.filter((a) => this.isOtherActivity(a)).length
@@ -194,23 +218,31 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
       const dashIdx = mapKey.indexOf('-');
       const year = parseInt(mapKey.substring(0, dashIdx), 10);
       const month = parseInt(mapKey.substring(dashIdx + 1), 10);
-      if (!yearMap.has(year)) { yearMap.set(year, new Map()); }
+      if (!yearMap.has(year)) {
+        yearMap.set(year, new Map());
+      }
       yearMap.get(year)!.set(month, weekKey);
     }
 
     const currentYear = moment().year();
     const years = Array.from(yearMap.keys()).sort().reverse();
-    this.yearMonthNav = years.map(year => {
+    this.yearMonthNav = years.map((year) => {
       const monthMap = yearMap.get(year)!;
-      const months = Array.from(monthMap.keys()).sort((a, b) => a - b).reverse().map(month => ({
-        month,
-        monthName: moment().month(month).format('MMM'),
-        weekKey: monthMap.get(month)!
-      }));
+      const months = Array.from(monthMap.keys())
+        .sort((a, b) => a - b)
+        .reverse()
+        .map((month) => ({
+          month,
+          monthName: moment().month(month).format('MMM'),
+          weekKey: monthMap.get(month)!
+        }));
       return { year, expanded: year === currentYear, months };
     });
 
-    if (this.yearMonthNav.length > 0 && this.yearMonthNav[0].months.length > 0) {
+    if (
+      this.yearMonthNav.length > 0 &&
+      this.yearMonthNav[0].months.length > 0
+    ) {
       this.activeNavKey = this.yearMonthNav[0].months[0].weekKey;
     }
 
@@ -224,24 +256,32 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
         const endD = d.clone().add(6, 'days');
         navKey = this.findNavKey(endD.year(), endD.month());
       }
-      if (navKey) { this.weekToNavKey.set(week.weekKey, navKey); }
+      if (navKey) {
+        this.weekToNavKey.set(week.weekKey, navKey);
+      }
     }
   }
 
   private findNavKey(year: number, month: number): string | null {
-    const navYear = this.yearMonthNav.find(y => y.year === year);
-    if (!navYear) { return null; }
-    const navMonth = navYear.months.find(m => m.month === month);
+    const navYear = this.yearMonthNav.find((y) => y.year === year);
+    if (!navYear) {
+      return null;
+    }
+    const navMonth = navYear.months.find((m) => m.month === month);
     return navMonth ? navMonth.weekKey : null;
   }
 
   private setActiveNav(navKey: string) {
-    if (this.activeNavKey === navKey) { return; }
+    if (this.activeNavKey === navKey) {
+      return;
+    }
     this.activeNavKey = navKey;
     // Auto-expand the year that owns this key
     for (const navYear of this.yearMonthNav) {
-      if (navYear.months.some(m => m.weekKey === navKey)) {
-        if (!navYear.expanded) { navYear.expanded = true; }
+      if (navYear.months.some((m) => m.weekKey === navKey)) {
+        if (!navYear.expanded) {
+          navYear.expanded = true;
+        }
         break;
       }
     }
@@ -250,8 +290,12 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
 
   private scrollNavToActive() {
     setTimeout(() => {
-      const activeBtn = document.querySelector('.nav-month-active') as HTMLElement | null;
-      if (activeBtn) { activeBtn.scrollIntoView({ block: 'nearest' }); }
+      const activeBtn = document.querySelector(
+        '.nav-month-active'
+      ) as HTMLElement | null;
+      if (activeBtn) {
+        activeBtn.scrollIntoView({ block: 'nearest' });
+      }
     }, 0);
   }
 
@@ -259,38 +303,51 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     this.scrollObserver?.disconnect();
     this.visibleWeeks.clear();
 
-    this.scrollObserver = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        const weekKey = (entry.target as HTMLElement).id.replace('week-', '');
-        if (entry.isIntersecting) {
-          this.visibleWeeks.add(weekKey);
-        } else {
-          this.visibleWeeks.delete(weekKey);
+    this.scrollObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const weekKey = (entry.target as HTMLElement).id.replace('week-', '');
+          if (entry.isIntersecting) {
+            this.visibleWeeks.add(weekKey);
+          } else {
+            this.visibleWeeks.delete(weekKey);
+          }
         }
-      }
-      // Ignore scroll-spy updates while we are programmatically scrolling to a month
-      if (this.isProgrammaticScroll) { return; }
-      // weekGroups is newest-first (= top of page first); pick the topmost visible week
-      const topmostVisible = this.weekGroups.find(w => this.visibleWeeks.has(w.weekKey));
-      if (topmostVisible) {
-        const navKey = this.weekToNavKey.get(topmostVisible.weekKey);
-        if (navKey) {
-          this.zone.run(() => { this.setActiveNav(navKey); });
+        // Ignore scroll-spy updates while we are programmatically scrolling to a month
+        if (this.isProgrammaticScroll) {
+          return;
         }
-      }
-    }, { threshold: 0 });
+        // weekGroups is newest-first (= top of page first); pick the topmost visible week
+        const topmostVisible = this.weekGroups.find((w) =>
+          this.visibleWeeks.has(w.weekKey)
+        );
+        if (topmostVisible) {
+          const navKey = this.weekToNavKey.get(topmostVisible.weekKey);
+          if (navKey) {
+            this.zone.run(() => {
+              this.setActiveNav(navKey);
+            });
+          }
+        }
+      },
+      { threshold: 0 }
+    );
 
     const weekRows = document.querySelectorAll('[id^="week-"]');
-    weekRows.forEach(el => this.scrollObserver!.observe(el));
+    weekRows.forEach((el) => this.scrollObserver!.observe(el));
   }
 
   toggleNavYear(year: number) {
-    const nav = this.yearMonthNav.find(y => y.year === year);
-    if (!nav) { return; }
+    const nav = this.yearMonthNav.find((y) => y.year === year);
+    if (!nav) {
+      return;
+    }
     nav.expanded = !nav.expanded;
     if (nav.expanded && nav.months.length > 0) {
       // Scroll to the newest (topmost) month of this year after Angular renders months
-      setTimeout(() => { this.scrollToMonth(nav.months[0].weekKey); }, 0);
+      setTimeout(() => {
+        this.scrollToMonth(nav.months[0].weekKey);
+      }, 0);
     }
   }
 
@@ -298,8 +355,10 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     this.activeNavKey = weekKey;
     // Ensure the year containing this weekKey is expanded
     for (const navYear of this.yearMonthNav) {
-      if (navYear.months.some(m => m.weekKey === weekKey)) {
-        if (!navYear.expanded) { navYear.expanded = true; }
+      if (navYear.months.some((m) => m.weekKey === weekKey)) {
+        if (!navYear.expanded) {
+          navYear.expanded = true;
+        }
         break;
       }
     }
@@ -309,7 +368,9 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     }
     this.isProgrammaticScroll = true;
     const el = document.getElementById('week-' + weekKey);
-    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
     this.scrollNavToActive();
     // Re-enable scroll-spy after the smooth scroll animation completes (~800 ms)
     this.programmaticScrollTimer = setTimeout(() => {
@@ -319,8 +380,10 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
   }
 
   circleSize(activity: Activity): number {
-    const miles = this.distanceToMiles(activity.distance);
-    if (miles <= 0) { return 20; }
+    const miles = this.distanceToMiles(activity.distance_meters);
+    if (miles <= 0) {
+      return 20;
+    }
     return Math.round(18 + 70 * Math.sqrt(miles / this.maxActivityMiles));
   }
 
@@ -333,23 +396,52 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
   }
 
   activityColor(activity: Activity): string {
-    if (this.isRun(activity)) { return this.runColor; }
-    if (this.isRide(activity)) { return this.rideColor; }
+    if (this.isRun(activity)) {
+      return this.runColor;
+    }
+    if (this.isRide(activity)) {
+      return this.rideColor;
+    }
     return this.otherColor;
   }
 
   activityIcon(activity: Activity): string {
-    if (this.isRun(activity)) { return '🏃'; }
-    if (this.isRide(activity)) { return '🚴'; }
+    if (this.isRun(activity)) {
+      return '🏃';
+    }
+    if (this.isRide(activity)) {
+      return '🚴';
+    }
     return '🏋️';
   }
 
-  isRun(activity: Activity) { return activity.type === 'Run'; }
-  isRide(activity: Activity) { return activity.type === 'Ride'; }
-  isOtherActivity(activity: Activity) { return !this.isRun(activity) && !this.isRide(activity); }
+  isRun(activity: Activity) {
+    return activity.activity_type === 'run';
+  }
+  isRide(activity: Activity) {
+    return activity.activity_type === 'ride';
+  }
+  isOtherActivity(activity: Activity) {
+    return !this.isRun(activity) && !this.isRide(activity);
+  }
 
-  distanceToMiles(meters: number) { return meters / this.METERS_PER_MILE; }
-  secondsToHours(seconds: number) { return seconds / this.SECONDS_PER_HOUR; }
+  formatActivityType(type: string): string {
+    const labels: Record<string, string> = {
+      run: 'Run',
+      ride: 'Ride',
+      swim: 'Swim',
+      walk: 'Walk',
+      other: 'Other'
+    };
+    return labels[type] ?? type.charAt(0).toUpperCase() + type.slice(1);
+  }
+
+  distanceToMiles(meters: number) {
+    return meters / this.METERS_PER_MILE;
+  }
+  secondsToHours(seconds: number) {
+    return seconds / this.SECONDS_PER_HOUR;
+  }
 
   getDuration(durationInSeconds: number): string {
     try {
@@ -357,8 +449,13 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
       const minutes = Math.floor(durationInSeconds / 60) - hours * 60;
       const secs = durationInSeconds % 60;
       let formatted = '';
-      if (hours > 0) { formatted += hours + ':'; }
-      formatted += minutes.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
+      if (hours > 0) {
+        formatted += hours + ':';
+      }
+      formatted +=
+        minutes.toString().padStart(2, '0') +
+        ':' +
+        secs.toString().padStart(2, '0');
       return formatted;
     } catch {
       return '';

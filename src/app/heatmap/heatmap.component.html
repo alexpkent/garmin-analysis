@@ -1,5 +1,11 @@
 <div>
-  @if (loaded) {
+  @if (syncError) {
+    <div class="alert alert-warning text-center mb-0" role="alert">
+      Could not connect to Garmin — showing cached activities
+    </div>
+  }
+
+  @if (loaded && lastVisibleActivity) {
     <nav
       class="navbar navbar-dark bg-dark pb-0">
       <span class="navbar-brand mb-0 mr-1 h1 text-warning">
@@ -19,12 +25,7 @@
           ></i>
         }
         <span>&nbsp;{{getTimeSince(lastVisibleActivity.start_date)}}&nbsp;</span>
-        |&nbsp;<a href="https://www.strava.com/activities/{{lastVisibleActivity.id}}"
-        target="_blank"
-        title="Strava">
-        <i class="fab fa-strava fa-lg ml-1 mr-1"></i>
-      </a>
-      |&nbsp;<a routerLink="/log" title="Training Log">
+        |&nbsp;<a routerLink="/log" title="Training Log">
         <i class="fas fa-calendar-alt fa-lg ml-1 mr-1"></i>
       </a>
       </span>

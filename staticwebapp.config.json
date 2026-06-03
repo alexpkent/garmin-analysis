@@ -1,7 +1,13 @@
 {
+    "platform": {
+        "apiRuntime": "python:3.11"
+    },
     "navigationFallback": {
         "rewrite": "/index.html",
-        "exclude": ["/api/*", "/*.{css,scss,js,png,gif,ico,jpg,svg,map,json,woff,woff2,ttf,eot}"]
+        "exclude": [
+            "/api/*",
+            "/*.{css,scss,js,png,gif,ico,jpg,svg,map,json,woff,woff2,ttf,eot}"
+        ]
     },
     "globalHeaders": {
         "X-Frame-Options": "SAMEORIGIN",

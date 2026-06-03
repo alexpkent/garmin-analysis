@@ -92,3 +92,5 @@ bin
 obj
 appsettings.json
 local.settings.json
+corporate-ca.pem
+ca-bundle.pem

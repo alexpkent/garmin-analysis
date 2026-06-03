@@ -1,0 +1,6 @@
+azure-functions
+azure-storage-blob
+garminconnect~=0.3.4
+curl_cffi
+polyline~=2.0
+lxml
