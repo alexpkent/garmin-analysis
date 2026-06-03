@@ -1,0 +1,15 @@
+<nav class="app-nav">
+  <ul class="nav-items">
+    @for (item of navItems; track item.route) {
+      <li class="nav-item">
+        <a [routerLink]="item.route"
+           routerLinkActive="active"
+           [routerLinkActiveOptions]="{ exact: item.route === '/' }"
+           class="nav-link">
+          <i [class]="item.icon + ' nav-icon'"></i>
+          <span class="nav-label">{{ item.label }}</span>
+        </a>
+      </li>
+    }
+  </ul>
+</nav>

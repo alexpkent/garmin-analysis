@@ -1,0 +1,117 @@
+$bg: #212529;
+$accent: #ffc107;
+$text-muted: #adb5bd;
+$sidebar-width: 200px;
+$bottom-bar-height: 56px;
+
+.app-nav {
+  background: $bg;
+  z-index: 1000;
+
+  .nav-items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nav-link {
+    display: flex;
+    align-items: center;
+    color: $text-muted;
+    text-decoration: none;
+    transition: color 0.15s, background 0.15s;
+
+    &:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    &.active {
+      color: $accent;
+    }
+
+    .nav-icon {
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+  }
+}
+
+/* ── Desktop: left sidebar ─────────────────────────────── */
+@media (min-width: 768px) {
+  .app-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: $sidebar-width;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #343a40;
+
+    .nav-items {
+      flex: 1;
+      padding-top: 8px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .nav-link {
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin: 2px 8px;
+
+      .nav-label {
+        font-size: 0.9rem;
+      }
+    }
+  }
+}
+
+/* ── Mobile: bottom tab bar ────────────────────────────── */
+@media (max-width: 767px) {
+  .app-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: $bottom-bar-height;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    border-top: 1px solid #343a40;
+
+    .nav-brand {
+      display: none;
+    }
+
+    .nav-items {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+    }
+
+    .nav-item {
+      flex: 1;
+    }
+
+    .nav-link {
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 3px;
+      height: 100%;
+      padding: 6px 4px;
+
+      .nav-icon {
+        font-size: 1.15rem;
+      }
+
+      .nav-label {
+        font-size: 0.65rem;
+        line-height: 1;
+      }
+    }
+  }
+}

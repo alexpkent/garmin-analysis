@@ -9,7 +9,7 @@
     <nav
       class="navbar navbar-dark bg-dark pb-0">
       <span class="navbar-brand mb-0 mr-1 h1 text-warning">
-        Strava Heat Map
+        Heatmap
       </span>
       <span class="navbar-text home mr-auto mt-1">
         @if (isRun(lastVisibleActivity)) {
@@ -25,9 +25,6 @@
           ></i>
         }
         <span>&nbsp;{{getTimeSince(lastVisibleActivity.start_date)}}&nbsp;</span>
-        |&nbsp;<a routerLink="/log" title="Training Log">
-        <i class="fas fa-calendar-alt fa-lg ml-1 mr-1"></i>
-      </a>
       </span>
       @if (loaded) {
         <span class="navbar-text small summary pt-0 pb-0 mb-2 mt-n1"
