@@ -6,16 +6,24 @@ import { Activity } from './types/Activity';
   providedIn: 'root'
 })
 export class ActivityService {
+  private cache: Promise<{ activities: Activity[]; syncError: boolean }> | null = null;
+
   constructor(private http: HttpClient) {}
 
-  async getActivities(): Promise<{
-    activities: Activity[];
-    syncError: boolean;
-  }> {
-    const response = await this.http
-      .get<Activity[]>('/api/activities', { observe: 'response' })
-      .toPromise();
-    const syncError = response?.headers.get('X-Sync-Error') === 'true';
-    return { activities: (response?.body ?? []) as Activity[], syncError };
+  getActivities(): Promise<{ activities: Activity[]; syncError: boolean }> {
+    if (!this.cache) {
+      this.cache = this.http
+        .get<Activity[]>('/api/activities', { observe: 'response' })
+        .toPromise()
+        .then(response => ({
+          activities: (response?.body ?? []) as Activity[],
+          syncError: response?.headers.get('X-Sync-Error') === 'true',
+        }))
+        .catch(err => {
+          this.cache = null;
+          throw err;
+        });
+    }
+    return this.cache;
   }
 }

@@ -9,7 +9,7 @@ from garminconnect import Garmin, GarminConnectConnectionError  # noqa: F401 (re
 
 _TOKEN_BLOB = "garmin/tokens.json"
 _BATCH_SIZE = 100
-_MAX_ACTIVITIES = 200
+_MAX_ACTIVITIES = 2000
 
 
 class GarminClient:
@@ -58,15 +58,17 @@ class GarminClient:
         return all_activities
 
     def get_activity_polyline(self, activity_id: int) -> str | None:
+        """Return encoded_polyline from the activity details endpoint."""
         details = self._client.get_activity_details(activity_id, maxpoly=4000)
-        result = self._extract_polyline_from_details(details)
-        if result:
-            return result
+        polyline = self._extract_polyline_from_details(details)
 
-        gpx_data = self._client.download_activity(
-            activity_id, dl_fmt=self._client.ActivityDownloadFormat.GPX
-        )
-        return self._extract_polyline_from_gpx(gpx_data)
+        if not polyline:
+            gpx_data = self._client.download_activity(
+                activity_id, dl_fmt=self._client.ActivityDownloadFormat.GPX
+            )
+            polyline = self._extract_polyline_from_gpx(gpx_data)
+
+        return polyline
 
     def save_tokens(self, blob_store: Any) -> None:
         tokens = json.loads(self._client.client.dumps())

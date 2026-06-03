@@ -16,10 +16,26 @@ from activity_service import ActivityService  # noqa: E402
 # ---------------------------------------------------------------------------
 
 _GARMIN_BLOB = "garmin/activities.json"
-_STRAVA_BLOB = "strava/activities.json"
 
 
-def _garmin_activity(activity_id: int, date_str: str, encoded_route=None) -> dict:
+def _stored_activity(activity_id: int, date_str: str, encoded_route=None, source="garmin") -> dict:
+    """Normalised activity as stored in garmin/activities.json (post-migration format)."""
+    return {
+        "id": str(activity_id),
+        "source": source,
+        "name": f"Activity {activity_id}",
+        "activity_type": "run",
+        "start_date": f"{date_str}T08:00:00Z",
+        "distance_meters": 5000.0,
+        "moving_time_seconds": 1800.0,
+        "encoded_route": encoded_route,
+        "start_latitude": 51.5,
+        "start_longitude": -0.1,
+    }
+
+
+def _garmin_raw_activity(activity_id: int, date_str: str) -> dict:
+    """Raw activity as returned by the Garmin API (garmin_client.get_activities)."""
     return {
         "activityId": activity_id,
         "activityName": f"Activity {activity_id}",
@@ -27,32 +43,15 @@ def _garmin_activity(activity_id: int, date_str: str, encoded_route=None) -> dic
         "activityType": {"typeKey": "running"},
         "distance": 5000.0,
         "movingDuration": 1800.0,
-        "encoded_route": encoded_route,
     }
 
 
-def _strava_activity(activity_id: int, date_str: str) -> dict:
-    return {
-        "id": activity_id,
-        "name": f"Strava Activity {activity_id}",
-        "start_date": f"{date_str}T08:00:00Z",
-        "type": "Run",
-        "distance": 5000.0,
-        "moving_time": 1800,
-        "map": {"summary_polyline": "abc123"},
-        "start_latlng": [51.5, -0.1],
-    }
-
-
-def _make_service(garmin_blob=None, strava_blob=None):
+def _make_service(garmin_blob=None):
     mock_blob = MagicMock()
     mock_garmin = MagicMock()
 
-    blobs = {
-        _GARMIN_BLOB: garmin_blob,
-        _STRAVA_BLOB: strava_blob,
-    }
-    mock_blob.read_json.side_effect = lambda name: blobs.get(name)
+    mock_blob.read_json.side_effect = lambda name: garmin_blob if name == _GARMIN_BLOB else None
+    mock_garmin.get_activity_polyline.return_value = None
 
     service = ActivityService(mock_blob, mock_garmin)
     return service, mock_blob, mock_garmin
@@ -65,8 +64,8 @@ def _make_service(garmin_blob=None, strava_blob=None):
 
 def test_first_sync_fetches_all_activities():
     """No prior garmin blob → get_activities called with date(2000,1,1); activities stored."""
-    new_act = _garmin_activity(1001, "2024-02-01")
-    service, mock_blob, mock_garmin = _make_service(garmin_blob=None, strava_blob=None)
+    new_act = _garmin_raw_activity(1001, "2024-02-01")
+    service, mock_blob, mock_garmin = _make_service(garmin_blob=None)
     mock_garmin.get_activities.return_value = [new_act]
     mock_garmin.get_activity_polyline.return_value = "polyline1"
 
@@ -82,8 +81,8 @@ def test_first_sync_fetches_all_activities():
 def test_incremental_sync_uses_last_date():
     """Prior garmin blob with latest date 2024-01-10 → get_activities called with that date."""
     garmin_blob = [
-        _garmin_activity(1001, "2024-01-10", encoded_route="p1"),
-        _garmin_activity(1002, "2024-01-05", encoded_route="p2"),
+        _stored_activity(1001, "2024-01-10", encoded_route="p1"),
+        _stored_activity(1002, "2024-01-05", encoded_route="p2"),
     ]
     service, mock_blob, mock_garmin = _make_service(garmin_blob=garmin_blob)
     mock_garmin.get_activities.return_value = []
@@ -95,11 +94,11 @@ def test_incremental_sync_uses_last_date():
 
 def test_no_duplicates_on_incremental_sync():
     """Activity already in the blob and also returned by Garmin appears only once."""
-    existing = _garmin_activity(1001, "2024-01-10", encoded_route="p1")
+    existing = _stored_activity(1001, "2024-01-10", encoded_route="p1")
     garmin_blob = [existing]
     service, mock_blob, mock_garmin = _make_service(garmin_blob=garmin_blob)
     # Garmin returns the same activity again
-    mock_garmin.get_activities.return_value = [_garmin_activity(1001, "2024-01-10")]
+    mock_garmin.get_activities.return_value = [_garmin_raw_activity(1001, "2024-01-10")]
     mock_garmin.get_activity_polyline.return_value = "p1"
 
     activities, _ = service.get_activities()
@@ -111,7 +110,7 @@ def test_no_duplicates_on_incremental_sync():
 
 def test_polyline_fetched_for_new_activities():
     """get_activity_polyline called for each new activity; encoded_route stored."""
-    new_act = _garmin_activity(1001, "2024-02-01")
+    new_act = _garmin_raw_activity(1001, "2024-02-01")
     service, mock_blob, mock_garmin = _make_service()
     mock_garmin.get_activities.return_value = [new_act]
     mock_garmin.get_activity_polyline.return_value = "encoded_polyline_123"
@@ -124,8 +123,8 @@ def test_polyline_fetched_for_new_activities():
 
 
 def test_backfill_up_to_20_activities_without_route():
-    """25 existing activities with encoded_route=None → polyline fetched for exactly 20."""
-    garmin_blob = [_garmin_activity(i, f"2024-01-{i:02d}") for i in range(1, 26)]
+    """25 existing garmin activities with encoded_route=None → polyline fetched for exactly 20."""
+    garmin_blob = [_stored_activity(i, f"2024-01-{i:02d}") for i in range(1, 26)]
     service, mock_blob, mock_garmin = _make_service(garmin_blob=garmin_blob)
     mock_garmin.get_activities.return_value = []  # no new activities
     mock_garmin.get_activity_polyline.return_value = "polyline"
@@ -137,7 +136,7 @@ def test_backfill_up_to_20_activities_without_route():
 
 def test_garmin_unreachable_serves_cached_data():
     """GarminConnectConnectionError raised → sync_failed=True; cached data still returned."""
-    garmin_blob = [_garmin_activity(1001, "2024-01-10", encoded_route="p1")]
+    garmin_blob = [_stored_activity(1001, "2024-01-10", encoded_route="p1")]
     service, mock_blob, mock_garmin = _make_service(garmin_blob=garmin_blob)
     mock_garmin.get_activities.side_effect = GarminConnectConnectionError("unreachable")
 
@@ -148,13 +147,13 @@ def test_garmin_unreachable_serves_cached_data():
     mock_blob.write_json.assert_not_called()
 
 
-def test_strava_activities_included_in_result():
-    """Strava blob activities appear in the unified result alongside garmin activities."""
-    garmin_blob = [_garmin_activity(1001, "2024-01-10", encoded_route="p1")]
-    strava_blob = [_strava_activity(9001, "2024-01-09")]
-    service, mock_blob, mock_garmin = _make_service(
-        garmin_blob=garmin_blob, strava_blob=strava_blob
-    )
+def test_strava_source_activities_preserved_in_stored_blob():
+    """Activities with source='strava' in the blob (migrated from Strava) are returned as-is."""
+    garmin_blob = [
+        _stored_activity(1001, "2024-01-10", encoded_route="p1", source="garmin"),
+        _stored_activity(9001, "2024-01-09", encoded_route="abc", source="strava"),
+    ]
+    service, mock_blob, mock_garmin = _make_service(garmin_blob=garmin_blob)
     mock_garmin.get_activities.return_value = []
 
     activities, _ = service.get_activities()
@@ -169,13 +168,11 @@ def test_strava_activities_included_in_result():
 def test_result_sorted_descending_by_date():
     """Unified result is sorted newest-first by start_date."""
     garmin_blob = [
-        _garmin_activity(1001, "2024-01-05", encoded_route="p1"),
-        _garmin_activity(1002, "2024-01-15", encoded_route="p2"),
+        _stored_activity(1001, "2024-01-05", encoded_route="p1"),
+        _stored_activity(1002, "2024-01-15", encoded_route="p2"),
+        _stored_activity(9001, "2024-01-10", encoded_route="abc", source="strava"),
     ]
-    strava_blob = [_strava_activity(9001, "2024-01-10")]
-    service, mock_blob, mock_garmin = _make_service(
-        garmin_blob=garmin_blob, strava_blob=strava_blob
-    )
+    service, mock_blob, mock_garmin = _make_service(garmin_blob=garmin_blob)
     mock_garmin.get_activities.return_value = []
 
     activities, _ = service.get_activities()
@@ -185,11 +182,10 @@ def test_result_sorted_descending_by_date():
 
 
 def test_incremental_sync_retains_existing_and_adds_new():
-    """AC2: existing activity in blob is retained when a different new activity is added."""
-    existing = _garmin_activity(100, "2024-01-10", encoded_route="p1")
-    garmin_blob = [existing]
+    """Existing activity in blob is retained when a different new activity is added."""
+    garmin_blob = [_stored_activity(100, "2024-01-10", encoded_route="p1")]
     service, mock_blob, mock_garmin = _make_service(garmin_blob=garmin_blob)
-    mock_garmin.get_activities.return_value = [_garmin_activity(200, "2024-01-15")]
+    mock_garmin.get_activities.return_value = [_garmin_raw_activity(200, "2024-01-15")]
     mock_garmin.get_activity_polyline.return_value = "polyline_new"
 
     activities, sync_failed = service.get_activities()
@@ -203,7 +199,7 @@ def test_incremental_sync_retains_existing_and_adds_new():
 
 def test_garmin_unreachable_no_prior_data_returns_empty_with_error():
     """AC3: Garmin unreachable with no prior data → empty list and sync_failed=True."""
-    service, mock_blob, mock_garmin = _make_service(garmin_blob=None, strava_blob=None)
+    service, mock_blob, mock_garmin = _make_service(garmin_blob=None)
     mock_garmin.get_activities.side_effect = GarminConnectConnectionError("unreachable")
 
     activities, sync_failed = service.get_activities()

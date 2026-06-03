@@ -114,10 +114,18 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.maxActivityMiles = Math.max(
-      ...this.activities.map((a) => this.distanceToMiles(a.distance_meters)),
-      1
-    );
+    const sortedMiles = this.activities
+      .map((a) => this.distanceToMiles(a.distance_meters))
+      .filter((m) => m > 0)
+      .sort((a, b) => a - b);
+    const p95idx = Math.floor(sortedMiles.length * 0.95);
+    this.maxActivityMiles =
+      sortedMiles.length > 0
+        ? Math.max(
+            sortedMiles[p95idx] ?? sortedMiles[sortedMiles.length - 1],
+            1
+          )
+        : 1;
 
     const weekMap = new Map<string, Activity[]>();
     for (const activity of this.activities) {

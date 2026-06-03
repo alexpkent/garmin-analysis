@@ -5,7 +5,6 @@ from garminconnect import GarminConnectConnectionError
 from normalizer import Normalizer
 
 _GARMIN_BLOB = "garmin/activities.json"
-_STRAVA_BLOB = "strava/activities.json"
 _BACKFILL_LIMIT = 20
 
 
@@ -17,69 +16,56 @@ class ActivityService:
     def get_activities(self) -> tuple[list, bool]:
         sync_failed = False
 
-        # Read existing garmin activities from blob storage
-        garmin_raw: list = self._blob_store.read_json(_GARMIN_BLOB) or []
+        # garmin/activities.json stores pre-normalised activities (post-migration)
+        stored: list = self._blob_store.read_json(_GARMIN_BLOB) or []
 
-        # Determine incremental sync start date
-        if garmin_raw:
+        # Determine incremental sync start date from normalised start_date field
+        if stored:
             after_date = max(
-                datetime.strptime(a["startTimeGMT"][:10], "%Y-%m-%d").date()
-                for a in garmin_raw
+                datetime.strptime(a["start_date"][:10], "%Y-%m-%d").date()
+                for a in stored
             )
         else:
             after_date = date(2000, 1, 1)
 
         try:
-            # Fetch new activities from Garmin since last known date
-            new_activities: list = self._garmin_client.get_activities(after_date)
+            # Fetch new raw activities from Garmin since last known date
+            new_raw: list = self._garmin_client.get_activities(after_date)
 
-            # Fetch polylines for all new activities
-            for act in new_activities:
+            # Fetch polylines for new activities
+            for act in new_raw:
                 act["encoded_route"] = self._garmin_client.get_activity_polyline(
                     act["activityId"]
                 )
 
-            # Backfill: fetch polylines for up to 20 existing activities that lack one
-            new_ids = {a["activityId"] for a in new_activities}
+            # Normalise new activities before merging
+            new_normalised = [Normalizer.normalize_garmin(a) for a in new_raw]
+            new_ids = {a["id"] for a in new_normalised}
+
+            # Backfill: fetch polylines for up to 20 stored Garmin activities
+            # that lack a polyline.
             backfill = [
                 a
-                for a in garmin_raw
-                if a.get("encoded_route") is None and a["activityId"] not in new_ids
+                for a in stored
+                if a.get("encoded_route") is None
+                and a["id"] not in new_ids
+                and a.get("source") == "garmin"
             ][:_BACKFILL_LIMIT]
 
             for act in backfill:
-                act["encoded_route"] = self._garmin_client.get_activity_polyline(
-                    act["activityId"]
+                polyline = self._garmin_client.get_activity_polyline(
+                    int(act["id"])
                 )
+                if polyline is not None:
+                    act["encoded_route"] = polyline
 
             # Merge: new activities supersede existing ones with the same ID
-            updated_garmin = new_activities + [
-                a for a in garmin_raw if a["activityId"] not in new_ids
-            ]
-            self._blob_store.write_json(_GARMIN_BLOB, updated_garmin)
-            garmin_raw = updated_garmin
+            updated = new_normalised + [a for a in stored if a["id"] not in new_ids]
+            updated.sort(key=lambda a: a["start_date"], reverse=True)
+            self._blob_store.write_json(_GARMIN_BLOB, updated)
+            stored = updated
 
         except GarminConnectConnectionError:
             sync_failed = True
 
-        # Read strava activities (read-only — never written)
-        strava_raw: list = self._blob_store.read_json(_STRAVA_BLOB) or []
-
-        # Normalize and merge all activities
-        normalized = [Normalizer.normalize_strava(a) for a in strava_raw] + [
-            Normalizer.normalize_garmin(a) for a in garmin_raw
-        ]
-
-        # Deduplicate by (source, id)
-        seen: set = set()
-        unique: list = []
-        for act in normalized:
-            key = (act["source"], act["id"])
-            if key not in seen:
-                seen.add(key)
-                unique.append(act)
-
-        # Sort descending by start_date (ISO 8601 strings sort lexicographically)
-        unique.sort(key=lambda a: a["start_date"], reverse=True)
-
-        return unique, sync_failed
+        return stored, sync_failed

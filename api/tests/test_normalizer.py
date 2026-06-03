@@ -96,10 +96,17 @@ def _garmin_run_raw():
         "activityType": {"typeKey": "running"},
         "startTimeGMT": "2024-01-15 08:30:00",
         "distance": 5000.0,
+        "duration": 2000.0,
         "movingDuration": 1800.0,
         "encoded_route": "abc123encodedpolyline",
         "startLatitude": 51.5,
         "startLongitude": -0.1,
+        "averageHR": 145.0,
+        "maxHR": 172.0,
+        "aerobicTrainingEffect": 3.5,
+        "anaerobicTrainingEffect": 1.2,
+        "trainingEffectLabel": "IMPROVING",
+        "activityTrainingLoad": 87.4,
     }
 
 
@@ -113,10 +120,17 @@ def test_normalize_garmin_run():
     assert result["activity_type"] == "run"
     assert result["start_date"] == "2024-01-15T08:30:00Z"
     assert result["distance_meters"] == 5000.0
+    assert result["duration"] == 2000.0
     assert result["moving_time_seconds"] == 1800.0
     assert result["encoded_route"] == "abc123encodedpolyline"
     assert result["start_latitude"] == 51.5
     assert result["start_longitude"] == -0.1
+    assert result["averageHR"] == 145.0
+    assert result["maxHR"] == 172.0
+    assert result["trainingEffect"] == 3.5
+    assert result["anaerobicTrainingEffect"] == 1.2
+    assert result["trainingEffectLabel"] == "IMPROVING"
+    assert result["activityTrainingLoad"] == 87.4
 
 
 def test_normalize_garmin_type_mapping():
@@ -191,3 +205,18 @@ def test_normalize_garmin_absent_encoded_route():
     del raw["encoded_route"]
     result = Normalizer.normalize_garmin(raw)
     assert result["encoded_route"] is None
+
+
+def test_normalize_garmin_missing_hr_and_training_fields():
+    """HR and training fields absent on raw dict → all None."""
+    raw = _garmin_run_raw()
+    for field in ("averageHR", "maxHR", "aerobicTrainingEffect",
+                  "anaerobicTrainingEffect", "trainingEffectLabel", "activityTrainingLoad"):
+        raw.pop(field, None)
+    result = Normalizer.normalize_garmin(raw)
+    assert result["averageHR"] is None
+    assert result["maxHR"] is None
+    assert result["trainingEffect"] is None
+    assert result["anaerobicTrainingEffect"] is None
+    assert result["trainingEffectLabel"] is None
+    assert result["activityTrainingLoad"] is None

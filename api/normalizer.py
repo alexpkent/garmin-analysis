@@ -56,15 +56,26 @@ class Normalizer:
         lat = raw.get("startLatitude") if "startLatitude" in raw else raw.get("startLat")
         lon = raw.get("startLongitude") if "startLongitude" in raw else raw.get("startLon")
 
+        # Cap distance at 1000 km to guard against bad GPS recordings
+        raw_distance = raw["distance"] or 0
+        distance_meters = min(float(raw_distance), 1_000_000)
+
         return {
             "id": str(raw["activityId"]),
             "source": "garmin",
             "name": raw["activityName"],
             "activity_type": _map_type(type_key, _GARMIN_TYPE_MAP),
             "start_date": start_time,
-            "distance_meters": raw["distance"],
+            "distance_meters": distance_meters,
+            "duration": raw.get("duration"),
             "moving_time_seconds": moving_time,
             "encoded_route": raw.get("encoded_route"),
             "start_latitude": lat,
             "start_longitude": lon,
+            "averageHR": raw.get("averageHR"),
+            "maxHR": raw.get("maxHR"),
+            "trainingEffect": raw.get("aerobicTrainingEffect"),
+            "anaerobicTrainingEffect": raw.get("anaerobicTrainingEffect"),
+            "trainingEffectLabel": raw.get("trainingEffectLabel"),
+            "activityTrainingLoad": raw.get("activityTrainingLoad"),
         }

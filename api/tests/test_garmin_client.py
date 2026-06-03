@@ -55,9 +55,11 @@ def test_get_activities_no_tokens_authenticates_fresh(mock_garmin_cls):
 @patch("garmin_client.Garmin")
 def test_get_activities_with_tokens_restores_session(mock_garmin_cls):
     """Token blob present: login called with saved token dict, no fresh login."""
+    import json
     mock_garmin = MagicMock()
     mock_garmin_cls.return_value = mock_garmin
     mock_garmin.get_activities.return_value = []
+    mock_garmin.client.dumps.return_value = json.dumps({"di_token": "tok", "di_refresh_token": "ref", "di_client_id": "cid"})
 
     token_dict = {"access_token": "saved_token", "refresh_token": "refresh"}
     mock_blob_store = MagicMock()
@@ -108,6 +110,7 @@ def test_get_activities_with_expired_tokens_saves_refreshed_tokens(mock_garmin_c
 @patch("garmin_client.Garmin")
 def test_get_activities_filters_by_after_date(mock_garmin_cls):
     """Activities on or before after_date are excluded; those after are included."""
+    import json
     mock_garmin = MagicMock()
     mock_garmin_cls.return_value = mock_garmin
     mock_garmin.get_activities.return_value = [
@@ -116,6 +119,7 @@ def test_get_activities_filters_by_after_date(mock_garmin_cls):
         _activity(3, "2024-01-01"),  # on     → excluded (stops here)
         _activity(4, "2023-12-25"),  # before → excluded
     ]
+    mock_garmin.client.dumps.return_value = json.dumps({"di_token": "tok", "di_refresh_token": "ref", "di_client_id": "cid"})
 
     mock_blob_store = MagicMock()
     mock_blob_store.read_json.return_value = {"access_token": "tok"}
