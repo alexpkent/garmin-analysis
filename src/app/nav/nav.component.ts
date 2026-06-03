@@ -9,7 +9,7 @@ import { Component } from '@angular/core';
 export class NavComponent {
   navItems = [
     { label: 'Heatmap', icon: 'fas fa-fire', route: '/' },
-    { label: 'Training Log', icon: 'fas fa-calendar-alt', route: '/log' },
-    { label: 'Analysis', icon: 'fas fa-chart-line', route: '/analysis' }
+    { label: 'Analysis', icon: 'fas fa-chart-line', route: '/analysis' },
+    { label: 'Training Log', icon: 'fas fa-calendar-alt', route: '/log' }
   ];
 }

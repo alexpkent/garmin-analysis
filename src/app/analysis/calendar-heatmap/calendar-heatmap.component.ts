@@ -15,6 +15,7 @@ export interface DaySelection {
   valueKey: keyof Activity;
   valueLabel: string;
   bands: HeatmapBand[];
+  activityClassifier?: (a: Activity) => HeatmapBand | null;
 }
 
 export interface HeatmapBand {
@@ -49,6 +50,10 @@ export class CalendarHeatmapComponent implements OnChanges {
   @Input() valueKey: keyof Activity = 'activityTrainingLoad';
   @Input() valueLabel = 'Value';
   @Input() bands: HeatmapBand[] = [];
+  @Input() activityClassifier: ((a: Activity) => HeatmapBand | null) | null =
+    null;
+  @Input() startDate: moment.Moment | null = null;
+  @Input() endDate: moment.Moment | null = null;
 
   @Output() daySelected = new EventEmitter<DaySelection>();
 
@@ -62,21 +67,42 @@ export class CalendarHeatmapComponent implements OnChanges {
   }
 
   private build(): void {
-    const today = moment().startOf('day');
-    const start = today.clone().subtract(364, 'days'); // 365 days inclusive
+    const today = this.endDate
+      ? this.endDate.clone().startOf('day')
+      : moment().startOf('day');
+    const start = this.startDate
+      ? this.startDate.clone().startOf('day')
+      : today.clone().subtract(364, 'days');
 
     this.periodLabel = `${start.format('MMM YYYY')} – ${today.format('MMM YYYY')}`;
 
-    // Build lookup: dateKey -> { total, activities }
-    const dayMap = new Map<string, { total: number; acts: Activity[] }>();
-    for (const a of this.activities) {
-      const raw = a[this.valueKey];
-      if (raw == null || typeof raw !== 'number') continue;
-      const key = moment(a.start_date).format('YYYY-MM-DD');
-      const entry = dayMap.get(key) ?? { total: 0, acts: [] };
-      entry.total += raw;
-      entry.acts.push(a);
-      dayMap.set(key, entry);
+    // Build lookup: dateKey -> { total, maxBandIdx, acts }
+    const dayMap = new Map<
+      string,
+      { total: number; maxBandIdx: number; acts: Activity[] }
+    >();
+
+    if (this.activityClassifier) {
+      for (const a of this.activities) {
+        const band = this.activityClassifier(a);
+        if (!band) continue;
+        const key = moment(a.start_date).format('YYYY-MM-DD');
+        const entry = dayMap.get(key) ?? { total: 0, maxBandIdx: -1, acts: [] };
+        entry.acts.push(a);
+        const idx = this.bands.indexOf(band);
+        if (idx > entry.maxBandIdx) entry.maxBandIdx = idx;
+        dayMap.set(key, entry);
+      }
+    } else {
+      for (const a of this.activities) {
+        const raw = a[this.valueKey];
+        if (raw == null || typeof raw !== 'number') continue;
+        const key = moment(a.start_date).format('YYYY-MM-DD');
+        const entry = dayMap.get(key) ?? { total: 0, maxBandIdx: -1, acts: [] };
+        entry.total += raw;
+        entry.acts.push(a);
+        dayMap.set(key, entry);
+      }
     }
 
     // Walk from Monday on/before start to today
@@ -96,12 +122,25 @@ export class CalendarHeatmapComponent implements OnChanges {
         } else {
           const key = day.format('YYYY-MM-DD');
           const entry = dayMap.get(key) ?? null;
-          const value = entry?.total ?? null;
+          let value: number | null;
+          let band: HeatmapBand | null;
+          if (this.activityClassifier) {
+            band =
+              entry && entry.maxBandIdx >= 0
+                ? (this.bands[entry.maxBandIdx] ?? null)
+                : null;
+            value = band ? 1 : null;
+          } else {
+            value = entry?.total ?? null;
+            band = value != null ? this.getBand(value) : null;
+          }
           col.days.push({
             date: day,
             value,
-            band: value != null ? this.getBand(value) : null,
-            tooltip: this.makeTooltip(day, value),
+            band,
+            tooltip: this.activityClassifier
+              ? this.makeClassifierTooltip(day, band)
+              : this.makeTooltip(day, value),
             activities: entry?.acts ?? []
           });
         }
@@ -133,6 +172,14 @@ export class CalendarHeatmapComponent implements OnChanges {
     return `${dateStr}: ${Math.round(value)}${band ? ' – ' + band.label : ''}`;
   }
 
+  private makeClassifierTooltip(
+    day: moment.Moment,
+    band: HeatmapBand | null
+  ): string {
+    const dateStr = day.format('ddd D MMM YYYY');
+    return band ? `${dateStr}: ${band.label}` : `${dateStr}: no activity`;
+  }
+
   cellColor(cell: DayCell | null): string {
     if (!cell || cell.value == null) return 'var(--cell-empty)';
     return cell.band?.color ?? 'var(--cell-empty)';
@@ -145,7 +192,8 @@ export class CalendarHeatmapComponent implements OnChanges {
       activities: cell.activities,
       valueKey: this.valueKey,
       valueLabel: this.valueLabel,
-      bands: this.bands
+      bands: this.bands,
+      activityClassifier: this.activityClassifier ?? undefined
     });
   }
 }
