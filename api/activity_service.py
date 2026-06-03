@@ -62,10 +62,9 @@ class ActivityService:
                 if polyline is not None:
                     act["encoded_route"] = polyline
                     act["route_status"] = "present"
-                    changed = True
                 else:
                     act["route_status"] = "unavailable"
-                    changed = True
+                changed = True
 
             # Only persist when something actually changed.
             if changed:
