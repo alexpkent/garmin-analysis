@@ -29,11 +29,9 @@ activities/
   garmin/
     activities.json   ← created automatically on first sync (can pre-create as [])
     tokens.json       ← created automatically on first Garmin login
-  strava/
-    activities.json   ← optional; upload a Strava activity export here (read-only)
 ```
 
-The `strava/activities.json` file is never written by the app — it is a one-time import for historical Strava data. `garmin/activities.json` and `garmin/tokens.json` are managed automatically.
+`garmin/activities.json` stores all activities in a unified normalised schema. It is managed automatically.
 
 ## Static Web App
 
@@ -84,16 +82,15 @@ On each page load the Azure Function (`GET /api/activities`) is called:
 1. Loads saved Garmin OAuth tokens from `garmin/tokens.json` in blob storage (or performs a fresh login if none exist).
 2. Fetches new Garmin activities since the last sync and retrieves GPS route data for each.
 3. Backfills route data for up to 20 previously stored activities that are missing a route.
-4. Reads historical Strava activities from `strava/activities.json` (read-only).
-5. Normalises all activities to a unified schema, merges and deduplicates by source + id, and returns them sorted newest-first.
-6. If Garmin Connect is unreachable the response still returns cached activities, with an `X-Sync-Error: true` header so the UI can show an error banner.
+4. Reads all activities (Garmin + any migrated Strava history) from `garmin/activities.json`, merges new ones, and returns them sorted newest-first.
+5. If Garmin Connect is unreachable the response still returns cached activities, with an `X-Sync-Error: true` header so the UI can show an error banner.
 
 # Local Development
 
 ## Prerequisites
 
 - [Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local) (`func` CLI)
-- Python 3.11
+- Python 3.11+
 - Node.js / npm
 - SWA CLI: `npm install -g @azure/static-web-apps-cli`
 
@@ -128,7 +125,7 @@ pip install -r requirements.txt
 
 ```bash
 cd api
-func start
+func start --python
 ```
 
 The function runs at `http://localhost:7071/api/activities`.

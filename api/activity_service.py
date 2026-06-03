@@ -42,6 +42,8 @@ class ActivityService:
             new_normalised = [Normalizer.normalize_garmin(a) for a in new_raw]
             new_ids = {a["id"] for a in new_normalised}
 
+            changed = bool(new_raw)
+
             # Backfill: fetch polylines for up to 20 stored Garmin activities
             # that lack a polyline.
             backfill = [
@@ -58,14 +60,16 @@ class ActivityService:
                 )
                 if polyline is not None:
                     act["encoded_route"] = polyline
+                    changed = True
 
-            # Merge: new activities supersede existing ones with the same ID
-            updated = new_normalised + [a for a in stored if a["id"] not in new_ids]
-            updated.sort(key=lambda a: a["start_date"], reverse=True)
-            self._blob_store.write_json(_GARMIN_BLOB, updated)
-            stored = updated
+            # Only persist when something actually changed.
+            if changed:
+                updated = new_normalised + [a for a in stored if a["id"] not in new_ids]
+                self._blob_store.write_json(_GARMIN_BLOB, updated)
+                stored = updated
 
         except GarminConnectConnectionError:
             sync_failed = True
 
+        stored.sort(key=lambda a: a["start_date"], reverse=True)
         return stored, sync_failed

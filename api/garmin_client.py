@@ -34,11 +34,16 @@ class GarminClient:
 
     def get_activities(self, after_date: date) -> list:
         tokens = self._blob_store.read_json(_TOKEN_BLOB)
-        if tokens is not None:
-            self._client.login(json.dumps(tokens))
+        tokens_raw = json.dumps(tokens) if tokens is not None else None
+        if tokens_raw is not None:
+            self._client.login(tokens_raw)
         else:
             self._client.login()
-        self.save_tokens(self._blob_store)
+
+        # Only persist tokens when they have actually changed (e.g. after a refresh)
+        new_tokens_raw = self._client.client.dumps()
+        if new_tokens_raw != tokens_raw:
+            self._blob_store.write_json(_TOKEN_BLOB, json.loads(new_tokens_raw))
 
         all_activities: list = []
         start = 0

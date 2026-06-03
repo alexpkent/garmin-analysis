@@ -54,14 +54,16 @@ def test_get_activities_no_tokens_authenticates_fresh(mock_garmin_cls):
 
 @patch("garmin_client.Garmin")
 def test_get_activities_with_tokens_restores_session(mock_garmin_cls):
-    """Token blob present: login called with saved token dict, no fresh login."""
+    """Token blob present and tokens unchanged: login called with saved tokens, no write."""
     import json
     mock_garmin = MagicMock()
     mock_garmin_cls.return_value = mock_garmin
     mock_garmin.get_activities.return_value = []
-    mock_garmin.client.dumps.return_value = json.dumps({"di_token": "tok", "di_refresh_token": "ref", "di_client_id": "cid"})
 
-    token_dict = {"access_token": "saved_token", "refresh_token": "refresh"}
+    token_dict = {"di_token": "tok", "di_refresh_token": "ref", "di_client_id": "cid"}
+    # dumps() returns the same tokens → no write should occur
+    mock_garmin.client.dumps.return_value = json.dumps(token_dict)
+
     mock_blob_store = MagicMock()
     mock_blob_store.read_json.return_value = token_dict
 
@@ -71,8 +73,8 @@ def test_get_activities_with_tokens_restores_session(mock_garmin_cls):
         client = GarminClient(mock_blob_store)
         client.get_activities(date(2024, 1, 1))
 
-    import json
     mock_garmin.login.assert_called_once_with(json.dumps(token_dict))
+    mock_blob_store.write_json.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

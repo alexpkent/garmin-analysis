@@ -90,6 +90,7 @@ def test_incremental_sync_uses_last_date():
     service.get_activities()
 
     mock_garmin.get_activities.assert_called_once_with(date(2024, 1, 10))
+    mock_blob.write_json.assert_not_called()
 
 
 def test_no_duplicates_on_incremental_sync():

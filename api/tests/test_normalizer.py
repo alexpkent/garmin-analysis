@@ -199,14 +199,6 @@ def test_normalize_garmin_no_latlng():
     assert result["start_longitude"] is None
 
 
-def test_normalize_garmin_absent_encoded_route():
-    """encoded_route absent on raw dict → None."""
-    raw = _garmin_run_raw()
-    del raw["encoded_route"]
-    result = Normalizer.normalize_garmin(raw)
-    assert result["encoded_route"] is None
-
-
 def test_normalize_garmin_missing_hr_and_training_fields():
     """HR and training fields absent on raw dict → all None."""
     raw = _garmin_run_raw()
@@ -220,3 +212,14 @@ def test_normalize_garmin_missing_hr_and_training_fields():
     assert result["anaerobicTrainingEffect"] is None
     assert result["trainingEffectLabel"] is None
     assert result["activityTrainingLoad"] is None
+
+
+def test_normalize_garmin_absent_encoded_route():
+    """encoded_route absent on raw dict → None."""
+    raw = _garmin_run_raw()
+    del raw["encoded_route"]
+    result = Normalizer.normalize_garmin(raw)
+    assert result["encoded_route"] is None
+
+
+
