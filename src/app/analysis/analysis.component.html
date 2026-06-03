@@ -1,0 +1,147 @@
+<div class="bg-dark min-vh-100 text-white">
+  <nav class="navbar navbar-dark bg-dark pb-0 border-bottom border-secondary">
+    <span class="navbar-brand mb-0 h1 text-warning">Analysis</span>
+  </nav>
+
+  <div class="period-selector">
+    <button class="period-btn" (click)="goBack()" [disabled]="!canGoBack" aria-label="Previous year">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    <span class="period-label">{{ periodLabel }}</span>
+    <button class="period-btn" (click)="goForward()" [disabled]="!canGoForward" aria-label="Next year">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+
+  @if (syncError) {
+    <div class="alert alert-warning mx-3 mt-2" role="alert">
+      Could not connect to Garmin — showing cached activities.
+    </div>
+  }
+
+  @if (loading) {
+    <div class="d-flex justify-content-center mt-5">
+      <div class="spinner-border text-warning" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+    </div>
+    <div class="d-flex justify-content-center mt-3 text-warning">
+      <h2>Loading...</h2>
+    </div>
+  }
+
+  @if (loaded) {
+    <div class="analysis-content">
+      <app-calendar-heatmap
+        title="Activity Training Load"
+        valueKey="activityTrainingLoad"
+        valueLabel="Training Load"
+        [activities]="activities"
+        [bands]="trainingLoadBands"
+        [startDate]="periodStart"
+        [endDate]="periodEnd"
+        (daySelected)="selectedDay = $event">
+      </app-calendar-heatmap>
+      <app-calendar-heatmap
+        title="Training Effect"
+        valueKey="trainingEffect"
+        valueLabel="Training Effect"
+        [activities]="activities"
+        [bands]="trainingEffectBands"
+        [activityClassifier]="trainingEffectClassifier"
+        [startDate]="periodStart"
+        [endDate]="periodEnd"
+        (daySelected)="selectedDay = $event">
+      </app-calendar-heatmap>
+      <app-calendar-heatmap
+        title="Average Heart Rate"
+        valueKey="averageHR"
+        valueLabel="Avg HR"
+        [activities]="activities"
+        [bands]="maxHrBands"
+        [activityClassifier]="avgHrClassifier"
+        [startDate]="periodStart"
+        [endDate]="periodEnd"
+        (daySelected)="selectedDay = $event">
+      </app-calendar-heatmap>
+      <app-calendar-heatmap
+        title="Max Heart Rate"
+        valueKey="maxHR"
+        valueLabel="Max HR"
+        [activities]="activities"
+        [bands]="maxHrBands"
+        [activityClassifier]="maxHrClassifier"
+        [startDate]="periodStart"
+        [endDate]="periodEnd"
+        (daySelected)="selectedDay = $event">
+      </app-calendar-heatmap>
+      <app-calendar-heatmap
+        title="Distance (miles)"
+        valueKey="distance_meters"
+        valueLabel="Distance"
+        [activities]="activities"
+        [bands]="distanceBands"
+        [activityClassifier]="distanceClassifier"
+        [startDate]="periodStart"
+        [endDate]="periodEnd"
+        (daySelected)="selectedDay = $event">
+      </app-calendar-heatmap>
+      <app-calendar-heatmap
+        title="Duration"
+        valueKey="moving_time_seconds"
+        valueLabel="Duration"
+        [activities]="activities"
+        [bands]="durationBands"
+        [activityClassifier]="durationClassifier"
+        [startDate]="periodStart"
+        [endDate]="periodEnd"
+        (daySelected)="selectedDay = $event">
+      </app-calendar-heatmap>
+    </div>
+  }
+</div>
+
+<!-- Day detail popup — rendered at analysis level to avoid stacking context issues -->
+@if (selectedDay) {
+  <div class="day-backdrop" (click)="closePopup()"></div>
+  <div class="day-popup">
+    <div class="day-popup-header">
+      <span class="day-popup-date">{{ selectedDay.dateLabel }}</span>
+      <button class="day-popup-close" (click)="closePopup()" aria-label="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="day-popup-body">
+      @for (activity of selectedDay.activities; track activity.id) {
+        <div class="day-activity-row">
+          <div class="day-activity-main">
+            <i [class]="activityIcon(activity) + ' day-activity-icon'"></i>
+            <span class="day-activity-name">{{ activity.name }}</span>
+          </div>
+          <div class="day-activity-meta">
+            @if (activityValue(activity) != null) {
+              <span class="day-activity-value"
+                    [style.color]="activityBand(activity)?.color ?? '#adb5bd'">
+                {{ selectedDay.valueLabel }}: {{ activityValue(activity) | number:'1.0-0' }}
+                @if (activityBand(activity)) {
+                  <span class="day-activity-band">&nbsp;({{ activityBand(activity)!.label }})</span>
+                }
+              </span>
+            } @else if (activityBand(activity)) {
+              <span class="day-activity-value"
+                    [style.color]="activityBand(activity)!.color">
+                {{ selectedDay.valueLabel }}: {{ activityBand(activity)!.label }}
+              </span>
+            }
+            <a [href]="garminUrl(activity)"
+               target="_blank"
+               rel="noopener noreferrer"
+               class="day-garmin-link">
+              <i class="fas fa-external-link-alt"></i> Garmin Connect
+            </a>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}

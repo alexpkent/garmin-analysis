@@ -1,37 +1,12 @@
-$highlight-color: #ffc107;
-$runs-color: #e63419;
-$rides-color: #2b54d4;
-$mapSwitch-color: #ff0783;
+$sidebar-width: 200px;
+$bottom-bar-height: 56px;
 
-.summary {
-  white-space: nowrap;
-}
+.app-content {
+  @media (min-width: 768px) {
+    margin-left: $sidebar-width;
+  }
 
-.navbar-text.home {
-  font-size: 65%;
-  padding: 0px;
-}
-
-.map-container {
-  height: calc(100vh - 105px);
-}
-
-.leaflet-tile {
-  visibility: visible !important;
-  background: red !important;
-}
-
-.map-frame {
-  height: 100%;
-}
-
-#map {
-  height: 100%;
-}
-
-.list-group .list-group-item {
-  text-align: center;
-  padding: 2px;
-  cursor: pointer;
-  border-radius: 0px;
+  @media (max-width: 767px) {
+    padding-bottom: $bottom-bar-height;
+  }
 }

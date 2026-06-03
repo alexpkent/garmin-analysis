@@ -1,0 +1,51 @@
+<div class="heatmap-card">
+  <div class="heatmap-header">
+    <span class="heatmap-title">{{ title }}</span>
+    <span class="heatmap-period">{{ periodLabel }}</span>
+  </div>
+
+  <div class="heatmap-scroll">
+    <div class="heatmap-grid">
+      <!-- Day-of-week labels -->
+      <div class="dow-col">
+        <div class="month-label-spacer"></div>
+        @for (day of DAY_LABELS; track day) {
+          <div class="dow-label">{{ day }}</div>
+        }
+      </div>
+
+      <!-- Week columns -->
+      @for (week of weeks; track $index) {
+        <div class="week-col">
+          <div class="month-label">{{ week.monthLabel ?? '' }}</div>
+          @for (cell of week.days; track $index) {
+            @if (cell) {
+              <div class="day-cell"
+                   [class.day-cell--clickable]="cell.activities.length > 0"
+                   [style.background-color]="cellColor(cell)"
+                   [title]="cell.tooltip"
+                   (click)="openCell(cell)">
+              </div>
+            } @else {
+              <div class="day-cell day-cell--empty"></div>
+            }
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="heatmap-legend">
+    <span class="legend-item">
+      <span class="legend-swatch" style="background: var(--cell-empty)"></span>
+      No activity
+    </span>
+    @for (band of bands; track band.label) {
+      <span class="legend-item">
+        <span class="legend-swatch" [style.background]="band.color"></span>
+        {{ band.label }}
+      </span>
+    }
+  </div>
+</div>

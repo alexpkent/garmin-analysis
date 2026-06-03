@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { DecimalPipe, DatePipe } from '@angular/common';
-import { StravaService } from '../strava.service';
+import { ActivityService } from '../activity.service';
 import moment from 'moment';
 import { View } from '../types/View';
 import { Activity } from '../types/Activity';
@@ -16,7 +16,8 @@ declare var L: any;
 export class HeatmapComponent implements OnInit {
   private mapCenter = [50.883269, -0.135436];
   private mapDefaultZoom = 11;
-  activities: Activity[];
+  activities: Activity[] = [];
+  syncError = false;
   runCount = 0;
   rideCount = 0;
   otherActivityCount = 0;
@@ -40,7 +41,7 @@ export class HeatmapComponent implements OnInit {
   currentView = View.All;
 
   constructor(
-    private stravaService: StravaService,
+    private activityService: ActivityService,
     private decimalPipe: DecimalPipe,
     private datePipe: DatePipe
   ) {}
@@ -52,11 +53,16 @@ export class HeatmapComponent implements OnInit {
   private async load() {
     this.loading = true;
 
-    this.activities = (await this.stravaService.getActivities()) as Activity[];
+    const { activities, syncError } =
+      await this.activityService.getActivities();
+    this.activities = activities;
+    this.syncError = syncError;
 
     this.loadHeatmap();
-    this.lastVisibleActivity =
-      this.polylines[this.polylines.length - 1].activity;
+    if (this.polylines.length > 0) {
+      this.lastVisibleActivity =
+        this.polylines[this.polylines.length - 1].activity;
+    }
 
     this.loading = false;
     this.loaded = true;
@@ -115,6 +121,45 @@ export class HeatmapComponent implements OnInit {
         this.hidePolyline(polyline);
       }
     });
+
+    this.activities
+      .filter((a) => !a.encoded_route)
+      .forEach((activity: Activity) => {
+        let include = false;
+        switch (this.currentView) {
+          case View.All: {
+            include = true;
+            break;
+          }
+          case View.Year: {
+            include = moment(activity.start_date).isAfter(lastYear);
+            break;
+          }
+          case View.Month: {
+            include = moment(activity.start_date).isAfter(lastMonth);
+            break;
+          }
+          case View.Week: {
+            include = moment(activity.start_date).isAfter(lastWeek);
+            break;
+          }
+          case View.Day: {
+            include = moment(activity.start_date).isAfter(startOfToday);
+            break;
+          }
+        }
+        if (include) {
+          this.totalDistance += activity.distance_meters;
+          this.totalSeconds += activity.moving_time_seconds;
+          if (this.isRun(activity)) {
+            this.runCount++;
+          } else if (this.isRide(activity)) {
+            this.rideCount++;
+          } else {
+            this.otherActivityCount++;
+          }
+        }
+      });
   }
 
   private showPolyline(polyline: Polyline) {
@@ -136,8 +181,8 @@ export class HeatmapComponent implements OnInit {
       polyline.visible = true;
     }
 
-    this.totalDistance += polyline.activity.distance;
-    this.totalSeconds += polyline.activity.moving_time;
+    this.totalDistance += polyline.activity.distance_meters;
+    this.totalSeconds += polyline.activity.moving_time_seconds;
 
     if (isRun) {
       this.runCount += 1;
@@ -275,12 +320,12 @@ export class HeatmapComponent implements OnInit {
     });
 
     activityStreams.forEach((stream) => {
-      if (!stream.map.summary_polyline) {
+      if (!stream.encoded_route) {
         return;
       }
 
       const coordinates = L.Polyline.fromEncoded(
-        stream.map.summary_polyline
+        stream.encoded_route!
       ).getLatLngs();
 
       let color = this.otherActivityColor;
@@ -299,20 +344,24 @@ export class HeatmapComponent implements OnInit {
       polyline.activity = stream;
       polyline.bindPopup(this.createPolylinePopup(stream));
 
-      var marker = L.marker(stream.start_latlng, { title: stream.name });
-      marker.bindPopup(this.createPolylinePopup(stream));
-      this.markers.addLayer(marker);
+      if (stream.start_latitude != null && stream.start_longitude != null) {
+        var marker = L.marker([stream.start_latitude, stream.start_longitude], {
+          title: stream.name
+        });
+        marker.bindPopup(this.createPolylinePopup(stream));
+        this.markers.addLayer(marker);
+      }
 
       this.polylines.push(polyline);
     });
   }
 
   isRun(activity: Activity) {
-    return activity.type === 'Run';
+    return activity.activity_type === 'run';
   }
 
   isRide(activity: Activity) {
-    return activity.type === 'Ride';
+    return activity.activity_type === 'ride';
   }
 
   isOtherActivity(activity: Activity) {
@@ -329,14 +378,14 @@ export class HeatmapComponent implements OnInit {
 
     return (
       `<b>${image} | ${activity.name}</b><br>` +
-      `<b><a href="https://www.strava.com/activities/${activity.id}" target="_blank">Strava</a></b><br>` +
       `${this.getTimeSince(activity.start_date)}<br>` +
       `Date: ${this.datePipe.transform(activity.start_date, 'shortDate')}<br>` +
       `Distance: ${this.decimalPipe.transform(
-        this.distanceToMiles(activity.distance),
+        this.distanceToMiles(activity.distance_meters),
         '1.0-1'
       )} Miles<br>` +
-      `Time: ${this.getDuration(activity.moving_time)}`
+      `Time: ${this.getDuration(activity.moving_time_seconds)}<br>` +
+      `<a href="https://connect.garmin.com/app/activity/${activity.id}" target="_blank" rel="noopener noreferrer">View on Garmin Connect</a>`
     );
   }
 
@@ -383,5 +432,4 @@ export class HeatmapComponent implements OnInit {
       return '';
     }
   }
-
 }

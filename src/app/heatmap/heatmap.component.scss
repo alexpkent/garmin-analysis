@@ -14,6 +14,10 @@ $mapSwitch-color: #ff0783;
 
 .map-container {
   height: calc(100vh - 105px);
+
+  @media (max-width: 767px) {
+    height: calc(100vh - 105px - 56px);
+  }
 }
 
 .leaflet-tile {

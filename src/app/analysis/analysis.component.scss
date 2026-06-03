@@ -1,0 +1,156 @@
+.analysis-content {
+  padding: 20px 16px;
+  max-width: 1200px;
+}
+
+/* ── Period selector ───────────────────────────────────── */
+.period-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #212529;
+  border-bottom: 1px solid #343a40;
+}
+
+.period-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffc107;
+  min-width: 160px;
+  text-align: center;
+}
+
+.period-btn {
+  background: none;
+  border: 1px solid #495057;
+  border-radius: 4px;
+  color: #adb5bd;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+
+  &:hover:not(:disabled) {
+    color: #fff;
+    border-color: #ffc107;
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+}
+
+/* ── Day detail popup ──────────────────────────────────── */
+.day-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.day-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1101;
+  background: #1a1d21;
+  border: 1px solid #495057;
+  border-radius: 8px;
+  min-width: 300px;
+  max-width: 480px;
+  width: 90vw;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+.day-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #212529;
+  border-bottom: 1px solid #343a40;
+}
+
+.day-popup-date {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #ffc107;
+}
+
+.day-popup-close {
+  background: none;
+  border: none;
+  color: #adb5bd;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0 2px;
+
+  &:hover { color: #fff; }
+}
+
+.day-popup-body {
+  padding: 8px 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.day-activity-row {
+  padding: 10px 14px;
+  border-bottom: 1px solid #2c2f33;
+
+  &:last-child { border-bottom: none; }
+}
+
+.day-activity-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.day-activity-icon {
+  color: #adb5bd;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.day-activity-name {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #fff;
+}
+
+.day-activity-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 22px;
+}
+
+.day-activity-value {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.day-activity-band {
+  font-weight: 400;
+  color: #adb5bd;
+}
+
+.day-garmin-link {
+  font-size: 0.75rem;
+  color: #adb5bd;
+  text-decoration: none;
+
+  &:hover { color: #ffc107; }
+
+  i { margin-right: 3px; }
+}
+

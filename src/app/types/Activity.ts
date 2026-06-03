@@ -1,14 +1,19 @@
-import { Map } from './Map';
-export class Activity {
-  id: number;
+export interface Activity {
+  id: string;
+  source: string;
   name: string;
-  map: Map;
-  type: string;
-  // tslint:disable-next-line:variable-name
+  activity_type: string;
   start_date: string;
-  distance: number;
-  // tslint:disable-next-line:variable-name
-  moving_time: number;
-  external_id: string;
-  start_latlng: number[];
+  distance_meters: number;
+  moving_time_seconds: number;
+  encoded_route: string | null;
+  start_latitude: number | null;
+  start_longitude: number | null;
+  duration?: number;
+  averageHR?: number;
+  maxHR?: number;
+  trainingEffect?: number;
+  anaerobicTrainingEffect?: number;
+  trainingEffectLabel?: string;
+  activityTrainingLoad?: number;
 }

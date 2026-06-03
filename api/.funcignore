@@ -5,3 +5,8 @@
 local.settings.json
 test
 tsconfig.json
+tests/
+migrate_activities.py
+__pycache__/
+.pytest_cache/
+*.pyc

@@ -92,3 +92,10 @@ bin
 obj
 appsettings.json
 local.settings.json
+corporate-ca.pem
+ca-bundle.pem
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
