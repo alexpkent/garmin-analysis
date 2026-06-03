@@ -384,7 +384,8 @@ export class HeatmapComponent implements OnInit {
         this.distanceToMiles(activity.distance_meters),
         '1.0-1'
       )} Miles<br>` +
-      `Time: ${this.getDuration(activity.moving_time_seconds)}`
+      `Time: ${this.getDuration(activity.moving_time_seconds)}<br>` +
+      `<a href="https://connect.garmin.com/app/activity/${activity.id}" target="_blank" rel="noopener noreferrer">View on Garmin Connect</a>`
     );
   }
 
