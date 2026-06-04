@@ -22,6 +22,15 @@
 
   @if (loaded) {
     <div class="analysis-content">
+      <app-trend-chart
+        [activities]="activities"
+        [startDate]="periodStart"
+        [endDate]="periodEnd"
+        [canGoBack]="canGoBack"
+        [canGoForward]="canGoForward"
+        (periodBack)="goBack()"
+        (periodForward)="goForward()">
+      </app-trend-chart>
       <app-calendar-heatmap
         title="Training Effect"
         valueKey="trainingEffect"

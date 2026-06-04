@@ -1,0 +1,18 @@
+<div class="trend-card">
+  <div class="trend-header">
+    <span class="trend-title">Trends over period</span>
+    <div class="trend-period-nav">
+      <button class="period-nav-btn" (click)="periodBack.emit()" [disabled]="!canGoBack" aria-label="Previous year">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <span class="trend-period">{{ periodLabel }}</span>
+      <button class="period-nav-btn" (click)="periodForward.emit()" [disabled]="!canGoForward" aria-label="Next year">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+  <div class="trend-chart-wrap">
+    <canvas #canvas></canvas>
+  </div>
+  <div class="trend-hint">Click a legend item to toggle a series</div>
+</div>
