@@ -1,10 +1,18 @@
 <div class="heatmap-card">
   <div class="heatmap-header">
     <span class="heatmap-title">{{ title }}</span>
-    <span class="heatmap-period">{{ periodLabel }}</span>
+    <div class="heatmap-period-nav">
+      <button class="period-nav-btn" (click)="periodBack.emit()" [disabled]="!canGoBack" aria-label="Previous year">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <span class="heatmap-period">{{ periodLabel }}</span>
+      <button class="period-nav-btn" (click)="periodForward.emit()" [disabled]="!canGoForward" aria-label="Next year">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
   </div>
 
-  <div class="heatmap-scroll">
+  <div class="heatmap-scroll" #scrollEl>
     <div class="heatmap-grid">
       <!-- Day-of-week labels -->
       <div class="dow-col">

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { ActivityService } from '../activity.service';
+import { environment } from '../../environments/environment';
 import moment from 'moment';
 import { View } from '../types/View';
 import { Activity } from '../types/Activity';
@@ -14,7 +15,7 @@ declare var L: any;
   standalone: false
 })
 export class HeatmapComponent implements OnInit {
-  private mapCenter = [50.883269, -0.135436];
+  private mapCenter = environment.mapCenter;
   private mapDefaultZoom = 11;
   activities: Activity[] = [];
   syncError = false;
