@@ -2,16 +2,67 @@ $highlight-color: #ffc107;
 $runs-color: #e63419;
 $rides-color: #2b54d4;
 $mapSwitch-color: #ff0783;
+$card-bg: #1a1d21;
+$card-border: #343a40;
+$muted: #adb5bd;
+$dim: #6c757d;
 
+/* ── Navbar ───────────────────────────────────────────── */
 .summary {
   white-space: nowrap;
 }
 
 .navbar-text.home {
   font-size: 65%;
-  padding: 0px;
+  padding: 0;
 }
 
+.garmin-link {
+  font-size: 0.75rem;
+  opacity: 0.75;
+  vertical-align: middle;
+  margin-left: 5px;
+
+  &:hover { opacity: 1; }
+}
+
+/* ── View selector (segmented control) ───────────────── */
+.view-selector {
+  display: flex;
+  align-items: center;
+  background: $card-bg;
+  border-bottom: 1px solid $card-border;
+  padding: 6px 12px;
+  gap: 4px;
+}
+
+.view-btn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid $card-border;
+  border-radius: 6px;
+  color: $muted;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 5px 0;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+
+  &:hover:not(.view-btn--active) {
+    background: #2a2d31;
+    color: #fff;
+    border-color: #555;
+  }
+}
+
+.view-btn--active {
+  background: $highlight-color;
+  border-color: $highlight-color;
+  color: #111;
+}
+
+/* ── Map ──────────────────────────────────────────────── */
 .map-container {
   height: calc(100vh - 105px);
 
@@ -33,9 +84,3 @@ $mapSwitch-color: #ff0783;
   height: 100%;
 }
 
-.list-group .list-group-item {
-  text-align: center;
-  padding: 2px;
-  cursor: pointer;
-  border-radius: 0px;
-}

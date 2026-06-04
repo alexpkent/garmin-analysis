@@ -39,21 +39,42 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
   @Output() periodBack = new EventEmitter<void>();
   @Output() periodForward = new EventEmitter<void>();
 
-  @ViewChild('canvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('canvas', { static: true })
+  canvasRef!: ElementRef<HTMLCanvasElement>;
 
   private chart: any = null;
   periodLabel = '';
 
   readonly series: Series[] = [
-    { label: 'Training Load',  valueKey: 'activityTrainingLoad', color: '#ffc107' },
-    { label: 'Training Effect (Aerobic)', valueKey: 'trainingEffect', color: '#1FA87A' },
-    { label: 'Anaerobic Effect', valueKey: 'anaerobicTrainingEffect', color: '#6A1B9A' },
-    { label: 'Avg HR',          valueKey: 'averageHR',              color: '#42a5f5' },
-    { label: 'Max HR',          valueKey: 'maxHR',                  color: '#ef5350' },
-    { label: 'Distance (mi)',   valueKey: 'distance_meters',        color: '#4caf50',
-      transform: (v) => Math.round(v * 0.000621371 * 10) / 10 },
-    { label: 'Duration (min)',  valueKey: 'moving_time_seconds',    color: '#ff8c00',
-      transform: (v) => Math.round(v / 60) }
+    {
+      label: 'Training Load',
+      valueKey: 'activityTrainingLoad',
+      color: '#ffc107'
+    },
+    {
+      label: 'Training Effect (Aerobic)',
+      valueKey: 'trainingEffect',
+      color: '#1FA87A'
+    },
+    {
+      label: 'Anaerobic Effect',
+      valueKey: 'anaerobicTrainingEffect',
+      color: '#6A1B9A'
+    },
+    { label: 'Avg HR', valueKey: 'averageHR', color: '#42a5f5' },
+    { label: 'Max HR', valueKey: 'maxHR', color: '#ef5350' },
+    {
+      label: 'Distance (mi)',
+      valueKey: 'distance_meters',
+      color: '#4caf50',
+      transform: (v) => Math.round(v * 0.000621371 * 10) / 10
+    },
+    {
+      label: 'Duration (min)',
+      valueKey: 'moving_time_seconds',
+      color: '#ff8c00',
+      transform: (v) => Math.round(v / 60)
+    }
   ];
 
   ngOnChanges(_: SimpleChanges): void {
@@ -65,8 +86,12 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
   }
 
   private buildChart(): void {
-    const end = this.endDate ? this.endDate.clone().startOf('day') : moment().startOf('day');
-    const start = this.startDate ? this.startDate.clone().startOf('day') : end.clone().subtract(364, 'days');
+    const end = this.endDate
+      ? this.endDate.clone().startOf('day')
+      : moment().startOf('day');
+    const start = this.startDate
+      ? this.startDate.clone().startOf('day')
+      : end.clone().subtract(364, 'days');
 
     this.periodLabel = `${start.format('MMM YYYY')} – ${end.format('MMM YYYY')}`;
 
@@ -108,7 +133,9 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
       data: Array.from({ length: weekCount }, (_, i) => {
         const vals = buckets[si].get(i);
         if (!vals || vals.length === 0) return null;
-        return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
+        return (
+          Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10
+        );
       }),
       borderColor: s.color,
       backgroundColor: s.color + '22',

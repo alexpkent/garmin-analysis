@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { ActivityService } from '../activity.service';
-import { Activity } from '../types/Activity';
+import { Activity, formatTrainingEffectLabel } from '../types/Activity';
 import moment from 'moment';
 
 interface NavMonth {
@@ -472,5 +472,9 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
 
   getTimeSince(startDate: string): string {
     return moment(startDate).fromNow();
+  }
+
+  formatTrainingEffectLabel(label: string | undefined | null): string {
+    return formatTrainingEffectLabel(label);
   }
 }
