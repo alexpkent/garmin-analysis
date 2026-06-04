@@ -18,7 +18,40 @@
   align-items: baseline;
   gap: 12px;
   margin-bottom: 12px;
+  justify-content: space-between;
 }
+
+.heatmap-period-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.period-nav-btn {
+  background: none;
+  border: 1px solid #495057;
+  border-radius: 4px;
+  color: #adb5bd;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    color: #fff;
+    border-color: #ffc107;
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+}
+
 
 .heatmap-title {
   font-size: 1rem;

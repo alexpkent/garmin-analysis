@@ -67,8 +67,10 @@ To prevent cached responses hiding new activities:
 
 # Code Settings
 
-- `app.component.ts` needs the following:
-  - `mapCenter` — LatLong coordinates to centre the map on load (i.e. the area where most activities exist).
+Angular environment settings than can be set in environment files or passed into the ng build process:
+
+- `mapCenter` — LatLong coordinates to centre the map on load (i.e. the area where most activities exist).
+- `userDob` - Users DOB for heart rate zone calculations.
 
 # Deployment Settings
 
@@ -87,9 +89,8 @@ On each page load the Azure Function (`GET /api/activities`) is called:
 
 1. Loads saved Garmin OAuth tokens from `garmin/tokens.json` in blob storage (or performs a fresh login if none exist).
 2. Fetches new Garmin activities since the last sync and retrieves GPS route data for each, using [python-garminconnect](https://github.com/cyberjunky/python-garminconnect).
-3. Backfills route data for up to 20 previously stored activities that are missing a route.
-4. Reads all activities (Garmin + any migrated Strava history) from `garmin/activities.json`, merges new ones, and returns them sorted newest-first.
-5. If Garmin Connect is unreachable the response still returns cached activities, with an `X-Sync-Error: true` header so the UI can show an error banner.
+3. Reads all activities from `garmin/activities.json`, merges new ones, and returns them sorted newest-first.
+4. If Garmin Connect is unreachable the response still returns cached activities, with an `X-Sync-Error: true` header so the UI can show an error banner.
 
 # Local Development
 

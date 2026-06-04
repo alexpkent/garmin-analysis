@@ -3,16 +3,6 @@
     <span class="navbar-brand mb-0 h1 text-warning">Analysis</span>
   </nav>
 
-  <div class="period-selector">
-    <button class="period-btn" (click)="goBack()" [disabled]="!canGoBack" aria-label="Previous year">
-      <i class="fas fa-chevron-left"></i>
-    </button>
-    <span class="period-label">{{ periodLabel }}</span>
-    <button class="period-btn" (click)="goForward()" [disabled]="!canGoForward" aria-label="Next year">
-      <i class="fas fa-chevron-right"></i>
-    </button>
-  </div>
-
   @if (syncError) {
     <div class="alert alert-warning mx-3 mt-2" role="alert">
       Could not connect to Garmin — showing cached activities.
@@ -32,16 +22,15 @@
 
   @if (loaded) {
     <div class="analysis-content">
-      <app-calendar-heatmap
-        title="Activity Training Load"
-        valueKey="activityTrainingLoad"
-        valueLabel="Training Load"
+      <app-trend-chart
         [activities]="activities"
-        [bands]="trainingLoadBands"
         [startDate]="periodStart"
         [endDate]="periodEnd"
-        (daySelected)="selectedDay = $event">
-      </app-calendar-heatmap>
+        [canGoBack]="canGoBack"
+        [canGoForward]="canGoForward"
+        (periodBack)="goBack()"
+        (periodForward)="goForward()">
+      </app-trend-chart>
       <app-calendar-heatmap
         title="Training Effect"
         valueKey="trainingEffect"
@@ -49,9 +38,27 @@
         [activities]="activities"
         [bands]="trainingEffectBands"
         [activityClassifier]="trainingEffectClassifier"
+        [canGoBack]="canGoBack"
+        [canGoForward]="canGoForward"
         [startDate]="periodStart"
         [endDate]="periodEnd"
-        (daySelected)="selectedDay = $event">
+        (daySelected)="selectedDay = $event"
+        (periodBack)="goBack()"
+        (periodForward)="goForward()">
+      </app-calendar-heatmap>
+      <app-calendar-heatmap
+        title="Activity Training Load"
+        valueKey="activityTrainingLoad"
+        valueLabel="Training Load"
+        [activities]="activities"
+        [bands]="trainingLoadBands"
+        [canGoBack]="canGoBack"
+        [canGoForward]="canGoForward"
+        [startDate]="periodStart"
+        [endDate]="periodEnd"
+        (daySelected)="selectedDay = $event"
+        (periodBack)="goBack()"
+        (periodForward)="goForward()">
       </app-calendar-heatmap>
       <app-calendar-heatmap
         title="Average Heart Rate"
@@ -60,9 +67,13 @@
         [activities]="activities"
         [bands]="maxHrBands"
         [activityClassifier]="avgHrClassifier"
+        [canGoBack]="canGoBack"
+        [canGoForward]="canGoForward"
         [startDate]="periodStart"
         [endDate]="periodEnd"
-        (daySelected)="selectedDay = $event">
+        (daySelected)="selectedDay = $event"
+        (periodBack)="goBack()"
+        (periodForward)="goForward()">
       </app-calendar-heatmap>
       <app-calendar-heatmap
         title="Max Heart Rate"
@@ -71,9 +82,13 @@
         [activities]="activities"
         [bands]="maxHrBands"
         [activityClassifier]="maxHrClassifier"
+        [canGoBack]="canGoBack"
+        [canGoForward]="canGoForward"
         [startDate]="periodStart"
         [endDate]="periodEnd"
-        (daySelected)="selectedDay = $event">
+        (daySelected)="selectedDay = $event"
+        (periodBack)="goBack()"
+        (periodForward)="goForward()">
       </app-calendar-heatmap>
       <app-calendar-heatmap
         title="Distance (miles)"
@@ -82,9 +97,13 @@
         [activities]="activities"
         [bands]="distanceBands"
         [activityClassifier]="distanceClassifier"
+        [canGoBack]="canGoBack"
+        [canGoForward]="canGoForward"
         [startDate]="periodStart"
         [endDate]="periodEnd"
-        (daySelected)="selectedDay = $event">
+        (daySelected)="selectedDay = $event"
+        (periodBack)="goBack()"
+        (periodForward)="goForward()">
       </app-calendar-heatmap>
       <app-calendar-heatmap
         title="Duration"
@@ -93,9 +112,13 @@
         [activities]="activities"
         [bands]="durationBands"
         [activityClassifier]="durationClassifier"
+        [canGoBack]="canGoBack"
+        [canGoForward]="canGoForward"
         [startDate]="periodStart"
         [endDate]="periodEnd"
-        (daySelected)="selectedDay = $event">
+        (daySelected)="selectedDay = $event"
+        (periodBack)="goBack()"
+        (periodForward)="goForward()">
       </app-calendar-heatmap>
     </div>
   }

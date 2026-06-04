@@ -1,12 +1,19 @@
 import {
   Component,
+  ElementRef,
   Input,
   OnChanges,
+  OnDestroy,
+  OnInit,
   Output,
   EventEmitter,
-  SimpleChanges
+  SimpleChanges,
+  ViewChild
 } from '@angular/core';
+import { Subscription, fromEvent } from 'rxjs';
+
 import { Activity } from '../../types/Activity';
+import { ScrollSyncService } from '../scroll-sync.service';
 import moment from 'moment';
 
 export interface DaySelection {
@@ -44,7 +51,7 @@ interface WeekColumn {
   styleUrls: ['./calendar-heatmap.component.scss'],
   standalone: false
 })
-export class CalendarHeatmapComponent implements OnChanges {
+export class CalendarHeatmapComponent implements OnInit, OnChanges, OnDestroy {
   @Input() title = '';
   @Input() activities: Activity[] = [];
   @Input() valueKey: keyof Activity = 'activityTrainingLoad';
@@ -54,13 +61,51 @@ export class CalendarHeatmapComponent implements OnChanges {
     null;
   @Input() startDate: moment.Moment | null = null;
   @Input() endDate: moment.Moment | null = null;
+  @Input() canGoBack = false;
+  @Input() canGoForward = false;
 
   @Output() daySelected = new EventEmitter<DaySelection>();
+  @Output() periodBack = new EventEmitter<void>();
+  @Output() periodForward = new EventEmitter<void>();
+
+  @ViewChild('scrollEl', { static: true })
+  scrollElRef!: ElementRef<HTMLElement>;
 
   readonly DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   weeks: WeekColumn[] = [];
   periodLabel = '';
+
+  private syncing = false;
+  private subs = new Subscription();
+
+  constructor(private scrollSync: ScrollSyncService) {}
+
+  ngOnInit(): void {
+    const el = this.scrollElRef.nativeElement;
+
+    // Publish our scroll position to all peers
+    this.subs.add(
+      fromEvent(el, 'scroll').subscribe(() => {
+        if (this.syncing) return;
+        this.scrollSync.scroll$.next(el.scrollLeft);
+      })
+    );
+
+    // Receive scroll positions from peers
+    this.subs.add(
+      this.scrollSync.scroll$.subscribe((pos) => {
+        if (el.scrollLeft === pos) return;
+        this.syncing = true;
+        el.scrollLeft = pos;
+        this.syncing = false;
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.subs.unsubscribe();
+  }
 
   ngOnChanges(_: SimpleChanges): void {
     this.build();

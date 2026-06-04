@@ -28,35 +28,35 @@
       <!-- Main content -->
       <div class="log-main">
         <!-- Summaries -->
-        <div class="container-fluid px-3 pt-3 pb-2">
-          <div class="row g-2">
-            @for (summary of summaries; track summary.label) {
-              <div class="col-12 col-sm-6 col-md-3">
-                <div class="summary-card h-100 p-2">
-                  <h6 class="text-warning mb-1">{{ summary.label }}</h6>
-                  <div class="small">
-                    <span class="summary-distance">
-                      {{ distanceToMiles(summary.distance) | number:'1.0-1' }} mi
-                    </span>
-                    <span class="text-warning mx-1">|</span>
-                    <span class="summary-hours">{{ secondsToHours(summary.seconds) | number:'1.0-1' }} hrs</span>
-                  </div>
-                  <div class="small mt-1">
-                    <span class="run-badge mr-1">{{ summary.runCount }} Runs</span>
-                    <span class="ride-badge mr-1">{{ summary.rideCount }} Rides</span>
-                    <span class="other-badge">{{ summary.otherCount }} Others</span>
-                  </div>
-                </div>
+        <div class="summaries-grid">
+          @for (summary of summaries; track summary.label) {
+            <div class="summary-card">
+              <div class="summary-label">{{ summary.label }}</div>
+              <div class="summary-primary">{{ distanceToMiles(summary.distance) | number:'1.0-1' }} <small style="font-size:0.85rem;color:#adb5bd">mi</small></div>
+              <div class="summary-secondary">{{ secondsToHours(summary.seconds) | number:'1.0-1' }} hrs</div>
+              <div class="summary-badges">
+                <span class="badge-pill badge-run">{{ summary.runCount }} Runs</span>
+                <span class="badge-pill badge-ride">{{ summary.rideCount }} Rides</span>
+                <span class="badge-pill badge-other">{{ summary.otherCount }} Other</span>
               </div>
-            }
-          </div>
+            </div>
+          }
         </div>
 
         <!-- Legend -->
-        <div class="px-3 pb-2">
-          <span class="legend-dot run-dot"></span><small class="mr-3">Run</small>
-          <span class="legend-dot ride-dot"></span><small class="mr-3">Ride</small>
-          <span class="legend-dot other-dot"></span><small>Other</small>
+        <div class="legend-bar">
+          <div class="legend-item">
+            <span class="legend-swatch" style="background:#e63419"></span> Run
+          </div>
+          <div class="legend-item">
+            <span class="legend-swatch" style="background:#2b54d4"></span> Ride
+          </div>
+          <div class="legend-item">
+            <span class="legend-swatch" style="background:#b316de"></span> Other
+          </div>
+          <div class="legend-item" style="margin-left:auto;font-size:0.7rem;color:#6c757d">
+            Circle size = distance
+          </div>
         </div>
 
         <!-- Weekly bubble grid -->
@@ -158,6 +158,40 @@
             <span class="detail-label">Time</span>
             <span>{{ getDuration(selectedActivity.moving_time_seconds) }}</span>
           </div>
+          @if (selectedActivity.averageHR) {
+            <div class="detail-row">
+              <span class="detail-label">Avg HR</span>
+              <span>{{ selectedActivity.averageHR }} bpm</span>
+            </div>
+          }
+          @if (selectedActivity.maxHR) {
+            <div class="detail-row">
+              <span class="detail-label">Max HR</span>
+              <span>{{ selectedActivity.maxHR }} bpm</span>
+            </div>
+          }
+          @if (selectedActivity.trainingEffect) {
+            <div class="detail-row">
+              <span class="detail-label">Training Effect</span>
+              <span>{{ selectedActivity.trainingEffect | number:'1.1-1' }}
+                @if (selectedActivity.trainingEffectLabel) {
+                  <span class="text-muted" style="font-size:0.8em"> {{ formatTrainingEffectLabel(selectedActivity.trainingEffectLabel) }}</span>
+                }
+              </span>
+            </div>
+          }
+          @if (selectedActivity.anaerobicTrainingEffect) {
+            <div class="detail-row">
+              <span class="detail-label">Anaerobic Effect</span>
+              <span>{{ selectedActivity.anaerobicTrainingEffect | number:'1.1-1' }}</span>
+            </div>
+          }
+          @if (selectedActivity.activityTrainingLoad) {
+            <div class="detail-row">
+              <span class="detail-label">Training Load</span>
+              <span>{{ selectedActivity.activityTrainingLoad | number:'1.0-0' }}</span>
+            </div>
+          }
           <div class="detail-row">
             <span class="detail-label">When</span>
             <span>{{ getTimeSince(selectedActivity.start_date) }}</span>

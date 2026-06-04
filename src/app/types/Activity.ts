@@ -17,3 +17,27 @@ export interface Activity {
   trainingEffectLabel?: string;
   activityTrainingLoad?: number;
 }
+
+const TRAINING_EFFECT_LABEL_MAP: Record<string, string> = {
+  NO_EFFECT:              'No Activity',
+  RECOVERY:               'Recovery',
+  RECOVERY_AEROBIC:       'Recovery',
+  BASE:                   'Base (Low Aerobic)',
+  AEROBIC_BASE:           'Base (Low Aerobic)',
+  TEMPO:                  'Tempo (Low/Med Aerobic)',
+  THRESHOLD:              'Threshold',
+  VO2MAX:                 'VO₂ Max (High Aerobic)',
+  HIGH_AEROBIC:           'High Aerobic / Mixed',
+  ANAEROBIC_CAPACITY:     'Anaerobic Capacity',
+  SPRINT:                 'Sprint (Anaerobic)',
+  OVERREACHING:           'Anaerobic (Overreaching)',
+  IMPROVING:              'Improving',
+  MAINTAINING:            'Maintaining',
+  PEAKING:                'Peaking',
+  UNKNOWN:                '',
+};
+
+export function formatTrainingEffectLabel(label: string | undefined | null): string {
+  if (!label) return '';
+  return TRAINING_EFFECT_LABEL_MAP[label] ?? label;
+}

@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { ActivityService } from '../activity.service';
+import { environment } from '../../environments/environment';
 import moment from 'moment';
 import { View } from '../types/View';
-import { Activity } from '../types/Activity';
+import { Activity, formatTrainingEffectLabel } from '../types/Activity';
 import { Polyline } from '../types/Polyline';
 declare var L: any;
 
@@ -14,7 +15,7 @@ declare var L: any;
   standalone: false
 })
 export class HeatmapComponent implements OnInit {
-  private mapCenter = [50.883269, -0.135436];
+  private mapCenter = environment.mapCenter;
   private mapDefaultZoom = 11;
   activities: Activity[] = [];
   syncError = false;
@@ -376,6 +377,20 @@ export class HeatmapComponent implements OnInit {
       image = '<i class="fas fa-biking"></i>';
     }
 
+    const avgHR = activity.averageHR
+      ? `Avg HR: ${activity.averageHR} bpm<br>`
+      : '';
+    const maxHR = activity.maxHR ? `Max HR: ${activity.maxHR} bpm<br>` : '';
+    const tEffect = activity.trainingEffect
+      ? `Training Effect: ${activity.trainingEffect.toFixed(1)}${activity.trainingEffectLabel ? ' (' + formatTrainingEffectLabel(activity.trainingEffectLabel) + ')' : ''}<br>`
+      : '';
+    const aEffect = activity.anaerobicTrainingEffect
+      ? `Anaerobic Effect: ${activity.anaerobicTrainingEffect.toFixed(1)}<br>`
+      : '';
+    const tLoad = activity.activityTrainingLoad
+      ? `Training Load: ${Math.round(activity.activityTrainingLoad)}<br>`
+      : '';
+
     return (
       `<b>${image} | ${activity.name}</b><br>` +
       `${this.getTimeSince(activity.start_date)}<br>` +
@@ -385,6 +400,11 @@ export class HeatmapComponent implements OnInit {
         '1.0-1'
       )} Miles<br>` +
       `Time: ${this.getDuration(activity.moving_time_seconds)}<br>` +
+      avgHR +
+      maxHR +
+      tEffect +
+      aEffect +
+      tLoad +
       `<a href="https://connect.garmin.com/app/activity/${activity.id}" target="_blank" rel="noopener noreferrer">View on Garmin Connect</a>`
     );
   }
