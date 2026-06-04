@@ -68,7 +68,8 @@ export class CalendarHeatmapComponent implements OnInit, OnChanges, OnDestroy {
   @Output() periodBack = new EventEmitter<void>();
   @Output() periodForward = new EventEmitter<void>();
 
-  @ViewChild('scrollEl', { static: true }) scrollElRef!: ElementRef<HTMLElement>;
+  @ViewChild('scrollEl', { static: true })
+  scrollElRef!: ElementRef<HTMLElement>;
 
   readonly DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -93,7 +94,7 @@ export class CalendarHeatmapComponent implements OnInit, OnChanges, OnDestroy {
 
     // Receive scroll positions from peers
     this.subs.add(
-      this.scrollSync.scroll$.subscribe(pos => {
+      this.scrollSync.scroll$.subscribe((pos) => {
         if (el.scrollLeft === pos) return;
         this.syncing = true;
         el.scrollLeft = pos;
