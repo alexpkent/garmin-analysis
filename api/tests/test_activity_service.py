@@ -23,10 +23,9 @@ def _stored_activity(
     date_str: str,
     encoded_route=None,
     source="garmin",
-    route_status=None,
 ) -> dict:
     """Normalised activity as stored in garmin/activities.json (post-migration format)."""
-    activity = {
+    return {
         "id": str(activity_id),
         "source": source,
         "name": f"Activity {activity_id}",
@@ -38,9 +37,6 @@ def _stored_activity(
         "start_latitude": 51.5,
         "start_longitude": -0.1,
     }
-    if route_status is not None:
-        activity["route_status"] = route_status
-    return activity
 
 
 def _garmin_raw_activity(activity_id: int, date_str: str) -> dict:
@@ -130,63 +126,6 @@ def test_polyline_fetched_for_new_activities():
     mock_garmin.get_activity_polyline.assert_called_once_with(1001)
     written_data = mock_blob.write_json.call_args[0][1]
     assert written_data[0]["encoded_route"] == "encoded_polyline_123"
-    assert written_data[0]["route_status"] == "present"
-
-
-def test_backfill_up_to_20_activities_without_route():
-    """25 existing garmin activities with encoded_route=None → polyline fetched for exactly 20."""
-    garmin_blob = [_stored_activity(i, f"2024-01-{i:02d}") for i in range(1, 26)]
-    service, mock_blob, mock_garmin = _make_service(garmin_blob=garmin_blob)
-    mock_garmin.get_activities.return_value = []  # no new activities
-    mock_garmin.get_activity_polyline.return_value = "polyline"
-
-    service.get_activities()
-
-    assert mock_garmin.get_activity_polyline.call_count == 20
-
-
-def test_failed_backfill_marks_activity_unavailable():
-    garmin_blob = [_stored_activity(1001, "2024-01-10")]
-    service, mock_blob, mock_garmin = _make_service(garmin_blob=garmin_blob)
-    mock_garmin.get_activities.return_value = []
-    mock_garmin.get_activity_polyline.return_value = None
-
-    activities, _ = service.get_activities()
-
-    mock_garmin.get_activity_polyline.assert_called_once_with(1001)
-    written_data = mock_blob.write_json.call_args[0][1]
-    assert written_data[0]["encoded_route"] is None
-    assert written_data[0]["route_status"] == "unavailable"
-    assert activities[0]["route_status"] == "unavailable"
-
-
-def test_unavailable_backfill_activity_is_skipped():
-    garmin_blob = [
-        _stored_activity(1001, "2024-01-10", route_status="unavailable"),
-        _stored_activity(1002, "2024-01-09"),
-    ]
-    service, mock_blob, mock_garmin = _make_service(garmin_blob=garmin_blob)
-    mock_garmin.get_activities.return_value = []
-    mock_garmin.get_activity_polyline.return_value = "polyline"
-
-    activities, _ = service.get_activities()
-
-    mock_garmin.get_activity_polyline.assert_called_once_with(1002)
-    assert any(a["id"] == "1001" and a["route_status"] == "unavailable" for a in activities)
-
-
-def test_successful_backfill_marks_activity_present():
-    garmin_blob = [_stored_activity(1001, "2024-01-10")]
-    service, mock_blob, mock_garmin = _make_service(garmin_blob=garmin_blob)
-    mock_garmin.get_activities.return_value = []
-    mock_garmin.get_activity_polyline.return_value = "polyline"
-
-    activities, _ = service.get_activities()
-
-    written_data = mock_blob.write_json.call_args[0][1]
-    assert written_data[0]["encoded_route"] == "polyline"
-    assert written_data[0]["route_status"] == "present"
-    assert activities[0]["route_status"] == "present"
 
 
 def test_garmin_unreachable_serves_cached_data():

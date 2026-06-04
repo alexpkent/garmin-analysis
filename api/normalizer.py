@@ -72,7 +72,6 @@ class Normalizer:
             "duration": raw.get("duration"),
             "moving_time_seconds": moving_time,
             "encoded_route": encoded_route,
-            "route_status": "present" if encoded_route else "unknown",
             "start_latitude": lat,
             "start_longitude": lon,
             "averageHR": raw.get("averageHR"),
