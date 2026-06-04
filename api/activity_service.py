@@ -5,7 +5,6 @@ from garminconnect import GarminConnectConnectionError
 from normalizer import Normalizer
 
 _GARMIN_BLOB = "garmin/activities.json"
-_BACKFILL_LIMIT = 20
 
 
 class ActivityService:
@@ -43,28 +42,6 @@ class ActivityService:
             new_ids = {a["id"] for a in new_normalised}
 
             changed = bool(new_raw)
-
-            # Backfill: fetch polylines for up to 20 stored Garmin activities
-            # that lack a polyline.
-            backfill = [
-                a
-                for a in stored
-                if a.get("encoded_route") is None
-                and a["id"] not in new_ids
-                and a.get("source") == "garmin"
-                and a.get("route_status") != "unavailable"
-            ][:_BACKFILL_LIMIT]
-
-            for act in backfill:
-                polyline = self._garmin_client.get_activity_polyline(
-                    int(act["id"])
-                )
-                if polyline is not None:
-                    act["encoded_route"] = polyline
-                    act["route_status"] = "present"
-                else:
-                    act["route_status"] = "unavailable"
-                changed = True
 
             # Only persist when something actually changed.
             if changed:

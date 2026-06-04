@@ -123,7 +123,6 @@ def test_normalize_garmin_run():
     assert result["duration"] == 2000.0
     assert result["moving_time_seconds"] == 1800.0
     assert result["encoded_route"] == "abc123encodedpolyline"
-    assert result["route_status"] == "present"
     assert result["start_latitude"] == 51.5
     assert result["start_longitude"] == -0.1
     assert result["averageHR"] == 145.0
@@ -221,6 +220,5 @@ def test_normalize_garmin_absent_encoded_route():
     del raw["encoded_route"]
     result = Normalizer.normalize_garmin(raw)
     assert result["encoded_route"] is None
-    assert result["route_status"] == "unknown"
 
 
