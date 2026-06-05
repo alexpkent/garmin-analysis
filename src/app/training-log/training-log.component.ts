@@ -454,17 +454,12 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
   getDuration(durationInSeconds: number): string {
     try {
       const hours = Math.floor(durationInSeconds / this.SECONDS_PER_HOUR);
-      const minutes = Math.floor(durationInSeconds / 60) - hours * 60;
-      const secs = durationInSeconds % 60;
-      let formatted = '';
-      if (hours > 0) {
-        formatted += hours + ':';
-      }
-      formatted +=
-        minutes.toString().padStart(2, '0') +
-        ':' +
-        secs.toString().padStart(2, '0');
-      return formatted;
+      const minutes = Math.round(
+        (durationInSeconds % this.SECONDS_PER_HOUR) / 60
+      );
+      if (hours > 0 && minutes > 0) return `${hours} hr ${minutes} mins`;
+      if (hours > 0) return `${hours} hr`;
+      return `${minutes} mins`;
     } catch {
       return '';
     }

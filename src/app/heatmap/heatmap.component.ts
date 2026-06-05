@@ -399,7 +399,7 @@ export class HeatmapComponent implements OnInit {
         this.distanceToMiles(activity.distance_meters),
         '1.0-1'
       )} Miles<br>` +
-      `Time: ${this.getDuration(activity.moving_time_seconds)}<br>` +
+      `Time: ${this.getDuration(activity.duration ?? activity.moving_time_seconds)}<br>` +
       avgHR +
       maxHR +
       tEffect +
@@ -432,22 +432,11 @@ export class HeatmapComponent implements OnInit {
 
   private getDuration(durationInSeconds: number) {
     try {
-      const hours = Math.floor(durationInSeconds / 60 / 60);
-      const minutes = Math.floor(durationInSeconds / 60) - hours * 60;
-      const seconds = durationInSeconds % 60;
-
-      let formatted = '';
-
-      if (hours > 0) {
-        formatted += hours.toString() + ':';
-      }
-
-      formatted +=
-        minutes.toString().padStart(2, '0') +
-        ':' +
-        seconds.toString().padStart(2, '0');
-
-      return formatted;
+      const hours = Math.floor(durationInSeconds / 3600);
+      const minutes = Math.round((durationInSeconds % 3600) / 60);
+      if (hours > 0 && minutes > 0) return `${hours} hr ${minutes} mins`;
+      if (hours > 0) return `${hours} hr`;
+      return `${minutes} mins`;
     } catch (error) {
       return '';
     }

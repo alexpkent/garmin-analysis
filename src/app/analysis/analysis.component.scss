@@ -1,6 +1,133 @@
+/* ── Loading overlay ──────────────────────────────────── */
+.loading-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 56px);
+  gap: 20px;
+}
+
+.loading-ring {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid #2a2d31;
+  border-top-color: #ffc107;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6c757d;
+}
+
 .analysis-content {
   padding: 20px 16px;
   max-width: 1200px;
+}
+
+/* ── Latest activity card ──────────────────────────────── */
+.latest-card {
+  background: #1a1d21;
+  border: 1px solid #343a40;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.latest-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #212529;
+  border-bottom: 1px solid #343a40;
+}
+
+.latest-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.latest-icon {
+  color: #ffc107;
+  font-size: 0.95rem;
+}
+
+.latest-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.latest-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.latest-ago {
+  font-size: 0.75rem;
+  color: #adb5bd;
+}
+
+.latest-garmin-link {
+  font-size: 0.78rem;
+  color: #adb5bd;
+  text-decoration: none;
+  &:hover { color: #ffc107; }
+}
+
+.latest-card-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+.latest-stat {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 16px;
+  border-right: 1px solid #2a2d31;
+  min-width: 120px;
+
+  &:last-child { border-right: none; }
+}
+
+.latest-stat-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6c757d;
+  margin-bottom: 3px;
+}
+
+.latest-stat-value {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.latest-stat-band {
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.latest-stat-sublabel {
+  font-size: 0.7rem;
+  color: #adb5bd;
+  margin-top: 1px;
 }
 
 /* ── Day detail popup ──────────────────────────────────── */
@@ -98,8 +225,7 @@
 }
 
 .day-activity-band {
-  font-weight: 400;
-  color: #adb5bd;
+  font-weight: 600;
 }
 
 .day-garmin-link {

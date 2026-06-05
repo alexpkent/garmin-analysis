@@ -52,7 +52,7 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
       color: '#ffc107'
     },
     {
-      label: 'Training Effect (Aerobic)',
+      label: 'Training Effect',
       valueKey: 'trainingEffect',
       color: '#1FA87A'
     },
@@ -95,12 +95,14 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
 
     this.periodLabel = `${start.format('MMM YYYY')} – ${end.format('MMM YYYY')}`;
 
-    // Build weekly labels (Monday of each week)
+    // Build weekly labels — each week is labelled by its Sunday (end of week)
+    // so the last tick clearly shows the week containing today rather than the
+    // preceding Monday (e.g. "7 Jun" instead of "1 Jun" when today is Thu 5 Jun).
     const labels: string[] = [];
     const cursor = start.clone().isoWeekday(1);
     if (cursor.isAfter(start)) cursor.subtract(7, 'days');
     while (cursor.isSameOrBefore(end, 'day')) {
-      labels.push(cursor.format('D MMM'));
+      labels.push(cursor.clone().add(6, 'days').format('D MMM'));
       cursor.add(7, 'days');
     }
 

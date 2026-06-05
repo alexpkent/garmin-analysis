@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivityService } from '../activity.service';
-import { Activity } from '../types/Activity';
+import { Activity, formatTrainingEffectLabel } from '../types/Activity';
 import {
   DaySelection,
   HeatmapBand
@@ -20,6 +20,7 @@ export class AnalysisComponent implements OnInit {
   loading = true;
   loaded = false;
   selectedDay: DaySelection | null = null;
+  latestActivity: Activity | null = null;
 
   // Period navigation
   private yearsBack = 0;
@@ -90,15 +91,45 @@ export class AnalysisComponent implements OnInit {
     const ae = a.trainingEffect ?? 0;
     const an = a.anaerobicTrainingEffect ?? 0;
     if (ae === 0 && an === 0) return null;
-    if (an >= 4) return this.trainingEffectBands[8];
-    if (an >= 3) return this.trainingEffectBands[7];
-    if (an >= 2) return this.trainingEffectBands[6];
-    if (an >= 1) return this.trainingEffectBands[5];
-    if (ae >= 4) return this.trainingEffectBands[4];
-    if (ae >= 3) return this.trainingEffectBands[3];
-    if (ae >= 2) return this.trainingEffectBands[2];
-    if (ae >= 1) return this.trainingEffectBands[1];
-    return this.trainingEffectBands[0];
+
+    // Use Garmin's own label as the primary classifier — it already encodes
+    // the correct primary benefit (aerobic vs anaerobic dominant).
+    const labelBandIndex: Record<string, number> = {
+      NO_EFFECT: 0,
+      RECOVERY: 0,
+      RECOVERY_AEROBIC: 0,
+      BASE: 1,
+      AEROBIC_BASE: 1,
+      TEMPO: 2,
+      THRESHOLD: 3,
+      VO2MAX: 4,
+      HIGH_AEROBIC: 5,
+      ANAEROBIC_CAPACITY: 6,
+      SPRINT: 7,
+      OVERREACHING: 8
+    };
+    if (
+      a.trainingEffectLabel &&
+      labelBandIndex[a.trainingEffectLabel] != null
+    ) {
+      return this.trainingEffectBands[labelBandIndex[a.trainingEffectLabel]];
+    }
+
+    // Fallback numeric thresholds (when label absent).
+    // Garmin scale: 1=Minor, 2=Maintaining, 3=Improving, 4=Highly Improving, 5=Overreaching
+    // Aerobic takes priority when it is the dominant score.
+    if (ae >= an) {
+      if (ae >= 5) return this.trainingEffectBands[8];
+      if (ae >= 4) return this.trainingEffectBands[4];
+      if (ae >= 3) return this.trainingEffectBands[3];
+      if (ae >= 2) return this.trainingEffectBands[2];
+      if (ae >= 1) return this.trainingEffectBands[1];
+    }
+    if (an >= 5) return this.trainingEffectBands[8];
+    if (an >= 4) return this.trainingEffectBands[7];
+    if (an >= 3) return this.trainingEffectBands[6];
+    if (an >= 2) return this.trainingEffectBands[5];
+    return this.trainingEffectBands[1];
   };
 
   // Max HR = 220 − age. Bands by % of expected max HR.
@@ -200,6 +231,9 @@ export class AnalysisComponent implements OnInit {
         this.loading = false;
         this.loaded = true;
         if (activities.length > 0) {
+          this.latestActivity = activities.reduce((latest, a) =>
+            new Date(a.start_date) > new Date(latest.start_date) ? a : latest
+          );
           this.minActivityDate = activities.reduce((earliest, a) => {
             const d = moment(a.start_date);
             return d.isBefore(earliest) ? d : earliest;
@@ -215,10 +249,100 @@ export class AnalysisComponent implements OnInit {
     this.selectedDay = null;
   }
 
+  latestActivityIcon(a: Activity): string {
+    const t = (a.activity_type ?? '').toLowerCase();
+    if (t.includes('run')) return 'fas fa-running';
+    if (t.includes('ride') || t.includes('cycl') || t.includes('bike')) return 'fas fa-biking';
+    return 'fas fa-heartbeat';
+  }
+
+  latestDuration(a: Activity): string {
+    const secs = a.duration ?? a.moving_time_seconds;
+    if (!secs) return '';
+    const hours = Math.floor(secs / 3600);
+    const mins = Math.round((secs % 3600) / 60);
+    if (hours > 0 && mins > 0) return `${hours} hr ${mins} mins`;
+    if (hours > 0) return `${hours} hr`;
+    return `${mins} mins`;
+  }
+
+  latestTrainingEffectBand(a: Activity): HeatmapBand | null {
+    return this.trainingEffectClassifier(a);
+  }
+
+  latestDistanceBand(a: Activity): HeatmapBand | null {
+    return this.distanceClassifier(a);
+  }
+
+  latestDurationBand(a: Activity): HeatmapBand | null {
+    return this.durationClassifier(a);
+  }
+
+  latestHrBand(hr: number | undefined): HeatmapBand | null {
+    if (!hr) return null;
+    return this.maxHrBands.find(b => hr >= b.min && hr < b.max) ?? null;
+  }
+
+  latestTrainingLoadBand(a: Activity): HeatmapBand | null {
+    const v = a.activityTrainingLoad;
+    if (v == null) return null;
+    return this.trainingLoadBands.find(b => v >= b.min && v < b.max) ?? null;
+  }
+
+  formatTeLabel(label: string | undefined): string {
+    return formatTrainingEffectLabel(label);
+  }
+
+  garminUrl(activity: Activity): string {
+    return `https://connect.garmin.com/app/activity/${activity.id}`;
+  }
+
   activityValue(activity: Activity): number | null {
     if (!this.selectedDay || this.selectedDay.activityClassifier) return null;
     const v = activity[this.selectedDay.valueKey];
     return typeof v === 'number' ? v : null;
+  }
+
+  activityFormattedValue(activity: Activity): string | null {
+    if (!this.selectedDay) return null;
+    const key = this.selectedDay.valueKey;
+    switch (key) {
+      case 'trainingEffect': {
+        const ae = activity.trainingEffect;
+        const an = activity.anaerobicTrainingEffect;
+        const parts: string[] = [];
+        if (ae != null && ae > 0) parts.push(`Aerobic ${ae.toFixed(1)}`);
+        if (an != null && an > 0) parts.push(`Anaerobic ${an.toFixed(1)}`);
+        return parts.length ? parts.join(' · ') : null;
+      }
+      case 'averageHR': {
+        const hr = activity.averageHR;
+        return hr != null && hr > 0 ? `${Math.round(hr)} bpm` : null;
+      }
+      case 'maxHR': {
+        const hr = activity.maxHR;
+        return hr != null && hr > 0 ? `${Math.round(hr)} bpm` : null;
+      }
+      case 'distance_meters': {
+        const miles = (activity.distance_meters ?? 0) / 1609.344;
+        return miles > 0 ? `${miles.toFixed(1)} mi` : null;
+      }
+      case 'moving_time_seconds': {
+        const secs = activity.duration ?? activity.moving_time_seconds;
+        if (!secs) return null;
+        const hours = Math.floor(secs / 3600);
+        const mins = Math.round((secs % 3600) / 60);
+        if (hours > 0 && mins > 0) return `${hours} hr ${mins} mins`;
+        if (hours > 0) return `${hours} hr`;
+        return `${mins} mins`;
+      }
+      case 'activityTrainingLoad': {
+        const v = activity.activityTrainingLoad;
+        return v != null ? `${Math.round(v)}` : null;
+      }
+      default:
+        return null;
+    }
   }
 
   activityBand(activity: Activity): HeatmapBand | null {
@@ -229,10 +353,6 @@ export class AnalysisComponent implements OnInit {
     const v = this.activityValue(activity);
     if (v == null) return null;
     return this.selectedDay.bands.find((b) => v >= b.min && v < b.max) ?? null;
-  }
-
-  garminUrl(activity: Activity): string {
-    return `https://connect.garmin.com/app/activity/${activity.id}`;
   }
 
   activityIcon(activity: Activity): string {
