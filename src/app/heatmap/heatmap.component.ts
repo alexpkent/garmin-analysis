@@ -151,7 +151,8 @@ export class HeatmapComponent implements OnInit {
         }
         if (include) {
           this.totalDistance += activity.distance_meters;
-          this.totalSeconds += activity.moving_time_seconds;
+          this.totalSeconds +=
+            activity.duration ?? activity.moving_time_seconds;
           if (this.isRun(activity)) {
             this.runCount++;
           } else if (this.isRide(activity)) {
@@ -183,7 +184,8 @@ export class HeatmapComponent implements OnInit {
     }
 
     this.totalDistance += polyline.activity.distance_meters;
-    this.totalSeconds += polyline.activity.moving_time_seconds;
+    this.totalSeconds +=
+      polyline.activity.duration ?? polyline.activity.moving_time_seconds;
 
     if (isRun) {
       this.runCount += 1;
