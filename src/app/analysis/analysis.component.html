@@ -173,7 +173,7 @@
         <div class="latest-card">
           <div class="latest-card-header">
             <div class="latest-card-title">
-              <i [class]="latestActivityIcon(latestActivity) + ' latest-icon'"></i>
+              <span class="latest-icon">💪</span>
               <span class="latest-name">{{ latestActivity.name }}</span>
             </div>
             <div class="latest-card-meta">
@@ -259,6 +259,14 @@
           </div>
         </div>
       }
+
+      <!-- Period size selector -->
+      <div class="period-size-toggle">
+        <button class="btn btn-sm period-size-btn" [class.active]="periodSize === 'week'" (click)="setPeriodSize('week')">Week</button>
+        <button class="btn btn-sm period-size-btn" [class.active]="periodSize === 'month'" (click)="setPeriodSize('month')">Month</button>
+        <button class="btn btn-sm period-size-btn" [class.active]="periodSize === 'quarter'" (click)="setPeriodSize('quarter')">Quarter</button>
+        <button class="btn btn-sm period-size-btn" [class.active]="periodSize === 'year'" (click)="setPeriodSize('year')">Year</button>
+      </div>
 
       <app-volume-chart
         [activities]="activities"

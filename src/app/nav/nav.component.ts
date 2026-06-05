@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { ActivityService } from '../activity.service';
 
 @Component({
   selector: 'app-nav',
@@ -13,4 +14,6 @@ export class NavComponent {
     { label: 'Training Log', icon: 'fas fa-calendar-alt', route: '/log' },
     { label: 'Records', icon: 'fas fa-trophy', route: '/records' }
   ];
+
+  constructor(public activityService: ActivityService) {}
 }

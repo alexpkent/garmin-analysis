@@ -62,17 +62,43 @@ export class AnalysisComponent implements OnInit {
   latestHealth: HealthSnapshot | null = null;
 
   // Period navigation
-  private yearsBack = 0;
+  periodSize: 'week' | 'month' | 'quarter' | 'year' = 'year';
+  private periodsBack = 0;
   periodEnd: moment.Moment = moment().startOf('day');
   periodStart: moment.Moment = moment().startOf('day').subtract(364, 'days');
   minActivityDate: moment.Moment | null = null;
 
+  private get periodDuration(): {
+    amount: number;
+    unit: moment.unitOfTime.DurationConstructor;
+  } {
+    switch (this.periodSize) {
+      case 'week':
+        return { amount: 1, unit: 'week' };
+      case 'month':
+        return { amount: 1, unit: 'month' };
+      case 'quarter':
+        return { amount: 3, unit: 'months' };
+      default:
+        return { amount: 12, unit: 'months' };
+    }
+  }
+
   get periodLabel(): string {
+    if (this.periodSize === 'week') {
+      return `${this.periodStart.format('D MMM')} – ${this.periodEnd.format('D MMM YYYY')}`;
+    }
+    if (this.periodSize === 'month') {
+      return this.periodStart.format('MMMM YYYY');
+    }
+    if (this.periodSize === 'quarter') {
+      return `${this.periodStart.format('MMM')} – ${this.periodEnd.format('MMM YYYY')}`;
+    }
     return `${this.periodStart.format('MMM YYYY')} – ${this.periodEnd.format('MMM YYYY')}`;
   }
 
   get canGoForward(): boolean {
-    return this.yearsBack > 0;
+    return this.periodsBack > 0;
   }
 
   get canGoBack(): boolean {
@@ -85,18 +111,27 @@ export class AnalysisComponent implements OnInit {
   }
 
   private updatePeriod(): void {
-    this.periodEnd = moment().startOf('day').subtract(this.yearsBack, 'years');
-    this.periodStart = this.periodEnd.clone().subtract(364, 'days');
+    const { amount, unit } = this.periodDuration;
+    this.periodEnd = moment()
+      .startOf('day')
+      .subtract(this.periodsBack * amount, unit as any);
+    this.periodStart = this.periodEnd.clone().subtract(amount, unit as any);
+  }
+
+  setPeriodSize(size: 'week' | 'month' | 'quarter' | 'year'): void {
+    this.periodSize = size;
+    this.periodsBack = 0;
+    this.updatePeriod();
   }
 
   goBack(): void {
-    this.yearsBack++;
+    this.periodsBack++;
     this.updatePeriod();
   }
 
   goForward(): void {
-    if (this.yearsBack > 0) {
-      this.yearsBack--;
+    if (this.periodsBack > 0) {
+      this.periodsBack--;
       this.updatePeriod();
     }
   }
@@ -278,6 +313,7 @@ export class AnalysisComponent implements OnInit {
             return d.isBefore(earliest) ? d : earliest;
           }, moment(activities[0].start_date));
         }
+        this.updateAlertCount();
       })
       .catch(() => {
         this.loading = false;
@@ -289,7 +325,14 @@ export class AnalysisComponent implements OnInit {
         snapshots.length > 0
           ? snapshots.reduce((a, b) => (a.date > b.date ? a : b))
           : null;
+      this.updateAlertCount();
     });
+  }
+
+  private updateAlertCount(): void {
+    this.activityService.trainingAlertCount = this.trainingInsights.filter(
+      (i) => i.level === 'alert'
+    ).length;
   }
 
   closePopup(): void {

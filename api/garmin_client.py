@@ -32,7 +32,12 @@ class GarminClient:
     # Public API
     # ------------------------------------------------------------------
 
-    def get_activities(self, after_date: date) -> list:
+    def ensure_logged_in(self) -> None:
+        """Read stored tokens, log in to Garmin, and persist refreshed tokens if changed.
+
+        Separated from fetch_activities so callers can run the login concurrently
+        with other I/O (e.g. reading the activities blob).
+        """
         tokens = self._blob_store.read_json(_TOKEN_BLOB)
         tokens_raw = json.dumps(tokens) if tokens is not None else None
         if tokens_raw is not None:
@@ -40,11 +45,15 @@ class GarminClient:
         else:
             self._client.login()
 
-        # Only persist tokens when they have actually changed (e.g. after a refresh)
         new_tokens_raw = self._client.client.dumps()
         if new_tokens_raw != tokens_raw:
             self._blob_store.write_json(_TOKEN_BLOB, json.loads(new_tokens_raw))
 
+    def fetch_activities(self, after_date: date) -> list:
+        """Fetch raw activities from Garmin newer than *after_date*.
+
+        Requires ensure_logged_in() to have been called first.
+        """
         all_activities: list = []
         start = 0
 
@@ -61,6 +70,11 @@ class GarminClient:
             start += _BATCH_SIZE
 
         return all_activities
+
+    def get_activities(self, after_date: date) -> list:
+        """Login and fetch activities in one call (backwards-compatible)."""
+        self.ensure_logged_in()
+        return self.fetch_activities(after_date)
 
     def get_activity_polyline(self, activity_id: int) -> str | None:
         """Return encoded_polyline from the activity details endpoint."""

@@ -58,6 +58,9 @@ export class ActivityService {
   private healthCache: Promise<HealthSnapshot[]> | null = null;
   private recordsCache: Promise<RecordsData | null> | null = null;
 
+  /** Number of alert-level training insights — written by AnalysisComponent, read by NavComponent */
+  trainingAlertCount = 0;
+
   constructor(private http: HttpClient) {}
 
   getActivities(): Promise<{ activities: Activity[]; syncError: boolean }> {

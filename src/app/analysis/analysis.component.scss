@@ -1,3 +1,27 @@
+/* ── Period size toggle ───────────────────────────────── */
+.period-size-toggle {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 12px;
+}
+
+.period-size-btn {
+  font-size: 0.72rem;
+  padding: 2px 10px;
+  color: #adb5bd;
+  background: transparent;
+  border: 1px solid #495057;
+  border-radius: 4px;
+
+  &:hover { color: #fff; border-color: #6c757d; }
+
+  &.active {
+    color: #1a1d21;
+    background: #ffc107;
+    border-color: #ffc107;
+  }
+}
+
 /* ── Loading overlay ──────────────────────────────────── */
 .loading-overlay {
   display: flex;

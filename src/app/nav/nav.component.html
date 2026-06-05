@@ -6,7 +6,12 @@
            routerLinkActive="active"
            [routerLinkActiveOptions]="{ exact: item.route === '/' }"
            class="nav-link">
-          <i [class]="item.icon + ' nav-icon'"></i>
+          <span class="nav-icon-wrap">
+            <i [class]="item.icon + ' nav-icon'"></i>
+            @if (item.route === '/' && activityService.trainingAlertCount > 0) {
+              <span class="nav-badge">{{ activityService.trainingAlertCount }}</span>
+            }
+          </span>
           <span class="nav-label">{{ item.label }}</span>
         </a>
       </li>

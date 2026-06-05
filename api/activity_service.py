@@ -1,4 +1,6 @@
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime
+from threading import Thread
 
 from garminconnect import GarminConnectConnectionError
 
@@ -7,6 +9,7 @@ from normalizer import Normalizer
 _GARMIN_BLOB = "garmin/activities.json"
 _HEALTH_BLOB = "garmin/health.json"
 _RECORDS_BLOB = "garmin/records.json"
+_MAX_POLYLINE_WORKERS = 8  # parallel polyline fetches
 
 
 class ActivityService:
@@ -17,8 +20,17 @@ class ActivityService:
     def get_activities(self) -> tuple[list, bool]:
         sync_failed = False
 
-        # garmin/activities.json stores pre-normalised activities (post-migration)
-        stored: list = self._blob_store.read_json(_GARMIN_BLOB) or []
+        # ── Read cached activities and log in to Garmin concurrently ──────────
+        # The blob read (~200 ms) and token refresh + login (~350 ms) are
+        # independent, so we overlap them with a thread pool.
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            stored_future = executor.submit(
+                lambda: self._blob_store.read_json(_GARMIN_BLOB) or []
+            )
+            login_future = executor.submit(self._garmin_client.ensure_logged_in)
+            # Raise any login error eagerly; stored result is still pending
+            login_future.result()
+            stored: list = stored_future.result()
 
         # Determine incremental sync start date from normalised start_date field
         if stored:
@@ -30,36 +42,44 @@ class ActivityService:
             after_date = date(2000, 1, 1)
 
         try:
-            # Fetch new raw activities from Garmin since last known date
-            new_raw: list = self._garmin_client.get_activities(after_date)
+            # Fetch new raw activities since last known date
+            new_raw: list = self._garmin_client.fetch_activities(after_date)
 
-            # Fetch polylines for new activities
-            for act in new_raw:
-                act["encoded_route"] = self._garmin_client.get_activity_polyline(
-                    act["activityId"]
-                )
+            # ── Fetch polylines in parallel ───────────────────────────────────
+            if new_raw:
+                workers = min(len(new_raw), _MAX_POLYLINE_WORKERS)
+                with ThreadPoolExecutor(max_workers=workers) as pool:
+                    polylines = list(pool.map(
+                        lambda act: self._garmin_client.get_activity_polyline(act["activityId"]),
+                        new_raw,
+                    ))
+                for act, pl in zip(new_raw, polylines):
+                    act["encoded_route"] = pl
 
-            # Normalise new activities before merging
+            # Normalise and merge
             new_normalised = [Normalizer.normalize_garmin(a) for a in new_raw]
             new_ids = {a["id"] for a in new_normalised}
 
-            changed = bool(new_raw)
-
-            # Only persist when something actually changed.
-            if changed:
+            if new_raw:
                 updated = new_normalised + [a for a in stored if a["id"] not in new_ids]
-                self._blob_store.write_json(_GARMIN_BLOB, updated)
+                # Write blob in background — don't block the response
+                Thread(
+                    target=self._blob_store.write_json,
+                    args=(_GARMIN_BLOB, updated),
+                    daemon=True,
+                ).start()
                 stored = updated
 
-            # Capture today's health metrics on every successful Garmin connection
-            self._save_health_snapshot()
-            self._save_records_snapshot()
+            # Background snapshots (health + records) — already non-blocking
+            Thread(target=self._save_health_snapshot, daemon=True).start()
+            Thread(target=self._save_records_snapshot, daemon=True).start()
 
         except GarminConnectConnectionError:
             sync_failed = True
 
         stored.sort(key=lambda a: a["start_date"], reverse=True)
         return stored, sync_failed
+
 
     def _save_health_snapshot(self) -> None:
         """Append today's VO2 max / training status to garmin/health.json if not already present."""
