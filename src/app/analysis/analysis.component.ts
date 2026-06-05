@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivityService } from '../activity.service';
+import { ActivityService, HealthSnapshot } from '../activity.service';
 import { Activity, formatTrainingEffectLabel } from '../types/Activity';
 import {
   DaySelection,
@@ -7,6 +7,35 @@ import {
 } from './calendar-heatmap/calendar-heatmap.component';
 import { environment } from '../../environments/environment';
 import moment from 'moment';
+
+const TRAINING_STATUS_LABEL: Record<string, string> = {
+  PRODUCTIVE: 'Productive',
+  MAINTAINING: 'Maintaining',
+  PEAKING: 'Peaking',
+  RECOVERY: 'Recovery',
+  UNPRODUCTIVE: 'Unproductive',
+  OVERREACHING: 'Overreaching',
+  DETRAINING: 'Detraining'
+};
+
+const TRAINING_STATUS_COLOR: Record<string, string> = {
+  PRODUCTIVE: '#1FA87A',
+  MAINTAINING: '#42a5f5',
+  PEAKING: '#ffc107',
+  RECOVERY: '#4caf50',
+  UNPRODUCTIVE: '#ff8c00',
+  OVERREACHING: '#e63419',
+  DETRAINING: '#6c757d'
+};
+
+const LOAD_BALANCE_LABEL: Record<string, string> = {
+  AEROBIC_HIGH_FOCUS: 'Aerobic High Focus',
+  AEROBIC_LOW_FOCUS: 'Aerobic Low Focus',
+  ANAEROBIC_FOCUS: 'Anaerobic Focus',
+  BALANCED: 'Balanced',
+  LOAD_BALANCED: 'Balanced',
+  LOW_LOAD: 'Low Load'
+};
 
 @Component({
   selector: 'app-analysis',
@@ -21,6 +50,8 @@ export class AnalysisComponent implements OnInit {
   loaded = false;
   selectedDay: DaySelection | null = null;
   latestActivity: Activity | null = null;
+  healthSnapshots: HealthSnapshot[] = [];
+  latestHealth: HealthSnapshot | null = null;
 
   // Period navigation
   private yearsBack = 0;
@@ -243,10 +274,41 @@ export class AnalysisComponent implements OnInit {
       .catch(() => {
         this.loading = false;
       });
+
+    this.activityService.getHealth().then((snapshots) => {
+      this.healthSnapshots = snapshots;
+      this.latestHealth =
+        snapshots.length > 0
+          ? snapshots.reduce((a, b) => (a.date > b.date ? a : b))
+          : null;
+    });
   }
 
   closePopup(): void {
     this.selectedDay = null;
+  }
+
+  formatTrainingStatus(phrase: string | null | undefined): string {
+    if (!phrase) return 'No Status';
+    const prefix = phrase.replace(/_\d+$/, '');
+    return TRAINING_STATUS_LABEL[prefix] ?? phrase;
+  }
+
+  trainingStatusColor(phrase: string | null | undefined): string {
+    if (!phrase) return '#6c757d';
+    const prefix = phrase.replace(/_\d+$/, '');
+    return TRAINING_STATUS_COLOR[prefix] ?? '#adb5bd';
+  }
+
+  formatLoadBalance(phrase: string | null | undefined): string {
+    if (!phrase) return '';
+    return (
+      LOAD_BALANCE_LABEL[phrase] ??
+      phrase
+        .replace(/_/g, ' ')
+        .toLowerCase()
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+    );
   }
 
   latestActivityIcon(a: Activity): string {

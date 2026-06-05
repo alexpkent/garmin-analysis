@@ -1,0 +1,69 @@
+.trend-card {
+  background: #1a1d21;
+  border: 1px solid #343a40;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.trend-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 12px;
+  justify-content: space-between;
+}
+
+.trend-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.trend-hint {
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.trend-period-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trend-period {
+  font-size: 0.78rem;
+  color: #adb5bd;
+}
+
+.period-nav-btn {
+  background: none;
+  border: 1px solid #495057;
+  border-radius: 4px;
+  color: #adb5bd;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    color: #fff;
+    border-color: #ffc107;
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+}
+
+.trend-chart-wrap {
+  position: relative;
+  height: 260px;
+}

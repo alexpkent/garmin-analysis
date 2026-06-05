@@ -111,6 +111,96 @@
         </div>
       }
 
+      <!-- Latest health snapshot card -->
+      @if (latestHealth) {
+        <div class="latest-card">
+          <div class="latest-card-header">
+            <div class="latest-card-title">
+              <i class="fas fa-heartbeat latest-icon"></i>
+              <span class="latest-name">Health Snapshot</span>
+            </div>
+            <div class="latest-card-meta">
+              <span class="latest-ago">{{ latestHealth.date | date:'mediumDate' }}</span>
+            </div>
+          </div>
+          <div class="latest-card-body">
+
+            @if (latestHealth.vo2max_running != null) {
+              <div class="latest-stat">
+                <span class="latest-stat-label">VO₂ Max (Run)</span>
+                <span class="latest-stat-value" style="color:#42a5f5">
+                  {{ latestHealth.vo2max_running | number:'1.1-1' }}
+                </span>
+              </div>
+            }
+
+            @if (latestHealth.vo2max_cycling != null) {
+              <div class="latest-stat">
+                <span class="latest-stat-label">VO₂ Max (Cycle)</span>
+                <span class="latest-stat-value" style="color:#42a5f5">
+                  {{ latestHealth.vo2max_cycling | number:'1.1-1' }}
+                </span>
+              </div>
+            }
+
+            @if (latestHealth.training_status) {
+              <div class="latest-stat">
+                <span class="latest-stat-label">Training Status</span>
+                <span class="latest-stat-value" [style.color]="trainingStatusColor(latestHealth.training_status)">
+                  {{ formatTrainingStatus(latestHealth.training_status) }}
+                </span>
+              </div>
+            }
+
+            @if (latestHealth.load_focus?.load_balance_phrase) {
+              <div class="latest-stat">
+                <span class="latest-stat-label">Load Balance</span>
+                <span class="latest-stat-value" style="color:#adb5bd">
+                  {{ formatLoadBalance(latestHealth.load_focus!.load_balance_phrase) }}
+                </span>
+              </div>
+            }
+
+            @if (latestHealth.load_focus?.low_aerobic_actual != null) {
+              <div class="latest-stat">
+                <span class="latest-stat-label">Low Aerobic</span>
+                <span class="latest-stat-value" style="color:#1FA87A">
+                  {{ latestHealth.load_focus!.low_aerobic_actual | number:'1.0-0' }}
+                </span>
+                <span class="latest-stat-band" style="color:#1FA87A">
+                  target {{ latestHealth.load_focus!.low_aerobic_low | number:'1.0-0' }}–{{ latestHealth.load_focus!.low_aerobic_high | number:'1.0-0' }}
+                </span>
+              </div>
+            }
+
+            @if (latestHealth.load_focus?.high_aerobic_actual != null) {
+              <div class="latest-stat">
+                <span class="latest-stat-label">High Aerobic</span>
+                <span class="latest-stat-value" style="color:#ffc107">
+                  {{ latestHealth.load_focus!.high_aerobic_actual | number:'1.0-0' }}
+                </span>
+                <span class="latest-stat-band" style="color:#ffc107">
+                  target {{ latestHealth.load_focus!.high_aerobic_low | number:'1.0-0' }}–{{ latestHealth.load_focus!.high_aerobic_high | number:'1.0-0' }}
+                </span>
+              </div>
+            }
+
+            @if (latestHealth.load_focus?.anaerobic_actual != null) {
+              <div class="latest-stat">
+                <span class="latest-stat-label">Anaerobic</span>
+                <span class="latest-stat-value" style="color:#6A1B9A">
+                  {{ latestHealth.load_focus!.anaerobic_actual | number:'1.0-0' }}
+                </span>
+                <span class="latest-stat-band" style="color:#6A1B9A">
+                  target {{ latestHealth.load_focus!.anaerobic_low | number:'1.0-0' }}–{{ latestHealth.load_focus!.anaerobic_high | number:'1.0-0' }}
+                </span>
+              </div>
+            }
+
+          </div>
+        </div>
+      }
+
       <app-trend-chart
         [activities]="activities"
         [startDate]="periodStart"
@@ -120,6 +210,18 @@
         (periodBack)="goBack()"
         (periodForward)="goForward()">
       </app-trend-chart>
+
+      <app-health-trend-chart
+        [snapshots]="healthSnapshots"
+        [activities]="activities"
+        [startDate]="periodStart"
+        [endDate]="periodEnd"
+        [canGoBack]="canGoBack"
+        [canGoForward]="canGoForward"
+        (periodBack)="goBack()"
+        (periodForward)="goForward()">
+      </app-health-trend-chart>
+
       <app-calendar-heatmap
         title="Training Effect"
         valueKey="trainingEffect"

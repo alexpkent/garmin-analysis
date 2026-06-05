@@ -18,6 +18,7 @@ interface Series {
   label: string;
   valueKey: keyof Activity;
   color: string;
+  yAxisID?: string;
   /** Optional transform applied before aggregating (e.g. metres → miles) */
   transform?: (v: number) => number;
   hidden?: boolean;
@@ -54,15 +55,15 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
     {
       label: 'Training Effect',
       valueKey: 'trainingEffect',
-      color: '#1FA87A'
+      color: '#1FA87A',
+      yAxisID: 'yEffect'
     },
     {
       label: 'Anaerobic Effect',
       valueKey: 'anaerobicTrainingEffect',
-      color: '#6A1B9A'
+      color: '#6A1B9A',
+      yAxisID: 'yEffect'
     },
-    { label: 'Avg HR', valueKey: 'averageHR', color: '#42a5f5' },
-    { label: 'Max HR', valueKey: 'maxHR', color: '#ef5350' },
     {
       label: 'Distance (mi)',
       valueKey: 'distance_meters',
@@ -147,7 +148,7 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
       tension: 0.3,
       spanGaps: true,
       hidden: s.hidden ?? false,
-      yAxisID: 'y'
+      yAxisID: s.yAxisID ?? 'y'
     }));
 
     if (this.chart) {
@@ -194,9 +195,28 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
             grid: { color: '#2a2d31' }
           },
           y: {
+            type: 'linear',
+            position: 'left',
             ticks: { color: '#6c757d' },
             grid: { color: '#2a2d31' },
             beginAtZero: true
+          },
+          yEffect: {
+            type: 'linear',
+            position: 'right',
+            min: 0,
+            max: 5,
+            ticks: {
+              color: '#1FA87A',
+              stepSize: 1
+            },
+            grid: { drawOnChartArea: false },
+            title: {
+              display: true,
+              text: 'Effect (0–5)',
+              color: '#1FA87A',
+              font: { size: 11 }
+            }
           }
         }
       }

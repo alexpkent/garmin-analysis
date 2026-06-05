@@ -75,6 +75,70 @@ class GarminClient:
 
         return polyline
 
+    def get_health_snapshot(self, today: date) -> dict:
+        """Fetch today's VO2 max and training load/status snapshot."""
+        date_str = today.isoformat()
+        snapshot: dict = {"date": date_str}
+
+        try:
+            status = self._client.get_training_status(date_str)
+            if isinstance(status, dict):
+                # VO2 max — nested under mostRecentVO2Max.generic
+                vo2_generic = (
+                    status.get("mostRecentVO2Max") or {}
+                ).get("generic") or {}
+                snapshot["vo2max_running"] = vo2_generic.get("vo2MaxPreciseValue") or vo2_generic.get("vo2MaxValue")
+                vo2_cycling = (
+                    status.get("mostRecentVO2Max") or {}
+                ).get("cycling") or {}
+                snapshot["vo2max_cycling"] = vo2_cycling.get("vo2MaxPreciseValue") or vo2_cycling.get("vo2MaxValue")
+
+                # Training status phrase — from primary device entry
+                latest_status_map = (
+                    (status.get("mostRecentTrainingStatus") or {}).get("latestTrainingStatusData") or {}
+                )
+                primary_status = next(
+                    (v for v in latest_status_map.values() if isinstance(v, dict) and v.get("primaryTrainingDevice")),
+                    next(iter(latest_status_map.values()), {}) if latest_status_map else {}
+                )
+                snapshot["training_status"] = primary_status.get("trainingStatusFeedbackPhrase")
+
+                # Load focus — from primary device in mostRecentTrainingLoadBalance
+                load_map = (
+                    (status.get("mostRecentTrainingLoadBalance") or {}).get("metricsTrainingLoadBalanceDTOMap") or {}
+                )
+                primary_load = next(
+                    (v for v in load_map.values() if isinstance(v, dict) and v.get("primaryTrainingDevice")),
+                    next(iter(load_map.values()), {}) if load_map else {}
+                )
+                if primary_load:
+                    snapshot["load_focus"] = {
+                        "low_aerobic_actual": primary_load.get("monthlyLoadAerobicLow"),
+                        "low_aerobic_low": primary_load.get("monthlyLoadAerobicLowTargetMin"),
+                        "low_aerobic_high": primary_load.get("monthlyLoadAerobicLowTargetMax"),
+                        "high_aerobic_actual": primary_load.get("monthlyLoadAerobicHigh"),
+                        "high_aerobic_low": primary_load.get("monthlyLoadAerobicHighTargetMin"),
+                        "high_aerobic_high": primary_load.get("monthlyLoadAerobicHighTargetMax"),
+                        "anaerobic_actual": primary_load.get("monthlyLoadAnaerobic"),
+                        "anaerobic_low": primary_load.get("monthlyLoadAnaerobicTargetMin"),
+                        "anaerobic_high": primary_load.get("monthlyLoadAnaerobicTargetMax"),
+                        "load_balance_phrase": primary_load.get("trainingBalanceFeedbackPhrase"),
+                    }
+                else:
+                    snapshot["load_focus"] = None
+            else:
+                snapshot["vo2max_running"] = None
+                snapshot["vo2max_cycling"] = None
+                snapshot["training_status"] = None
+                snapshot["load_focus"] = None
+        except Exception:
+            snapshot.setdefault("vo2max_running", None)
+            snapshot.setdefault("vo2max_cycling", None)
+            snapshot.setdefault("training_status", None)
+            snapshot.setdefault("load_focus", None)
+
+        return snapshot
+
     def save_tokens(self, blob_store: Any) -> None:
         tokens = json.loads(self._client.client.dumps())
         blob_store.write_json(_TOKEN_BLOB, tokens)
@@ -105,6 +169,16 @@ class GarminClient:
                 if lat is not None and lon is not None:
                     result.append((float(lat), float(lon)))
         return result if len(result) >= 2 else None
+
+    def _extract_metric(self, metrics_map: dict, key: str) -> float | None:
+        values = metrics_map.get(key, [])
+        if isinstance(values, list) and values:
+            first = values[0]
+            if isinstance(first, dict):
+                v = first.get("sampleValue")
+                return float(v) if v is not None else None
+            return float(first) if first is not None else None
+        return None
 
     def _extract_polyline_from_gpx(self, gpx_bytes: bytes) -> str | None:
         try:

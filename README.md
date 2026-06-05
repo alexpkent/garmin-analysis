@@ -1,12 +1,20 @@
-# Activity Heatmap
+# Garmin Data Analysis
+
+Uses Garmin activity and health data to display the following on an Angular SPA hosted/backed by a very low cost (free!) Azure set-up.
+
+Analysis Graphs
+
+![site image](screenshots/analysis-graphs.png)
+
+Analysis Heatmaps
+
+![site image](screenshots/analysis-heatmaps.png)
 
 Overlays all training activities from **Garmin Connect** on a [Leaflet](https://leafletjs.com/) map with summary data and activity selection controls.
 
 More base maps can be added as [listed here](https://leaflet-extras.github.io/leaflet-providers/preview/).
 
 Routes are darker colours the more they have been run/ridden and cluster markers display the number of activities starting in each area automatically updating with the zoom level.
-
-An Angular SPA hosted/backed by a very low cost (free!) Azure set-up.
 
 With a number of filters and options such as viewing activities by time, by type, with detail popups and with different map providers.
 
@@ -15,10 +23,6 @@ With a number of filters and options such as viewing activities by time, by type
 Region count summary markers.
 
 ![site image](screenshots/markers.png)
-
-Analysis Heatmaps
-
-![site image](screenshots/analysis-heatmaps.png)
 
 Training Log
 

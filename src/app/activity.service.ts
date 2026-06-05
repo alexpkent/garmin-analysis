@@ -2,11 +2,36 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Activity } from './types/Activity';
 
+export interface LoadFocus {
+  low_aerobic_actual: number | null;
+  low_aerobic_low: number | null;
+  low_aerobic_high: number | null;
+  high_aerobic_actual: number | null;
+  high_aerobic_low: number | null;
+  high_aerobic_high: number | null;
+  anaerobic_actual: number | null;
+  anaerobic_low: number | null;
+  anaerobic_high: number | null;
+  load_balance_phrase: string | null;
+}
+
+export interface HealthSnapshot {
+  date: string;
+  vo2max_running: number | null;
+  vo2max_cycling: number | null;
+  training_status: string | null;
+  load_focus: LoadFocus | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class ActivityService {
-  private cache: Promise<{ activities: Activity[]; syncError: boolean }> | null = null;
+  private cache: Promise<{
+    activities: Activity[];
+    syncError: boolean;
+  }> | null = null;
+  private healthCache: Promise<HealthSnapshot[]> | null = null;
 
   constructor(private http: HttpClient) {}
 
@@ -15,15 +40,26 @@ export class ActivityService {
       this.cache = this.http
         .get<Activity[]>('/api/activities', { observe: 'response' })
         .toPromise()
-        .then(response => ({
+        .then((response) => ({
           activities: (response?.body ?? []) as Activity[],
-          syncError: response?.headers.get('X-Sync-Error') === 'true',
+          syncError: response?.headers.get('X-Sync-Error') === 'true'
         }))
-        .catch(err => {
+        .catch((err) => {
           this.cache = null;
           throw err;
         });
     }
     return this.cache;
+  }
+
+  getHealth(): Promise<HealthSnapshot[]> {
+    if (!this.healthCache) {
+      this.healthCache = this.http
+        .get<HealthSnapshot[]>('/api/health')
+        .toPromise()
+        .then((data) => data ?? [])
+        .catch(() => []);
+    }
+    return this.healthCache;
   }
 }
