@@ -139,6 +139,106 @@ class GarminClient:
 
         return snapshot
 
+    def get_personal_records(self) -> dict:
+        """Fetch and normalise personal records + race predictions from Garmin."""
+        result: dict = {"records": [], "race_predictions": None}
+
+        # ── Personal records ──────────────────────────────────────────
+        try:
+            raw = self._client.get_personal_record()
+            result["records"] = self._normalise_records(raw)
+        except Exception:
+            pass
+
+        # ── Race predictions ──────────────────────────────────────────
+        try:
+            pred = self._client.get_race_predictions()
+            if isinstance(pred, dict):
+                result["race_predictions"] = {
+                    "time_5k_seconds":              pred.get("time5K"),
+                    "time_10k_seconds":             pred.get("time10K"),
+                    "time_half_marathon_seconds":   pred.get("timeHalfMarathon"),
+                    "time_marathon_seconds":        pred.get("timeMarathon"),
+                }
+        except Exception:
+            pass
+
+        return result
+
+    # ── PR type metadata ───────────────────────────────────────────────
+    # Confirmed from live API: values are seconds for time, meters for distance
+    _PR_TYPE_MAP: dict = {
+        # Running (timed)
+        1:  ("Fastest 1K",            "running",  "time"),
+        2:  ("Fastest 1 Mile",        "running",  "time"),
+        3:  ("Fastest 5K",            "running",  "time"),
+        4:  ("Fastest 10K",           "running",  "time"),
+        5:  ("Fastest Half Marathon", "running",  "time"),
+        6:  ("Fastest Marathon",      "running",  "time"),
+        # Running (distance)
+        7:  ("Longest Run",           "running",  "distance"),
+        # Cycling (distance)
+        8:  ("Longest Ride",          "cycling",  "distance"),
+        # Cycling (timed)
+        9:  ("Fastest 10K",           "cycling",  "time"),
+        11: ("Fastest 40K",           "cycling",  "time"),
+        # Swimming (timed) — pool
+        17: ("Longest Swim",          "lap_swimming", "distance"),
+        19: ("Fastest 50m",           "lap_swimming", "time"),
+        21: ("Fastest 400m",          "lap_swimming", "time"),
+        24: ("Fastest 1500m",         "lap_swimming", "time"),
+    }
+
+    def _normalise_records(self, raw: list | dict) -> list:
+        """Turn Garmin's raw PR payload into a clean list of record dicts."""
+        out: list = []
+        items: list = []
+
+        if isinstance(raw, list):
+            items = raw
+        elif isinstance(raw, dict):
+            for v in raw.values():
+                if isinstance(v, list):
+                    items = v
+                    break
+
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+
+            type_id = item.get("typeId")
+            if type_id is None:
+                continue
+
+            # Skip entries with no activity type (multi-sport totals, streaks, etc.)
+            act_type = item.get("activityType")
+            if not act_type:
+                continue
+
+            meta = self._PR_TYPE_MAP.get(type_id)
+            label = meta[0] if meta else f"Record (type {type_id})"
+            unit  = meta[2] if meta else "unknown"
+
+            # Date: use the formatted field (prStartTimeGmt is a ms timestamp)
+            pr_fmt = item.get("prStartTimeGmtFormatted") or item.get("actStartDateTimeInGMTFormatted") or ""
+            pr_date = pr_fmt[:10] if pr_fmt else None
+
+            out.append({
+                "type_id":       type_id,
+                "label":         label,
+                "activity_type": act_type,
+                "activity_name": item.get("activityName"),
+                "value":         item.get("value"),
+                "unit":          unit,
+                "activity_id":   str(item["activityId"]) if item.get("activityId") else None,
+                "date":          pr_date,
+            })
+
+        # Sort: running → cycling → swimming; within each group by type_id
+        order = {"running": 0, "cycling": 1, "lap_swimming": 2}
+        out.sort(key=lambda r: (order.get(r["activity_type"], 3), r["type_id"]))
+        return out
+
     def save_tokens(self, blob_store: Any) -> None:
         tokens = json.loads(self._client.client.dumps())
         blob_store.write_json(_TOKEN_BLOB, tokens)

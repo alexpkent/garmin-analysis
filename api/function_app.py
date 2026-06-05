@@ -37,3 +37,14 @@ def get_health(req: func.HttpRequest) -> func.HttpResponse:
         status_code=200,
         mimetype="application/json",
     )
+
+
+@app.route(route="records", methods=["GET"])
+def get_records(req: func.HttpRequest) -> func.HttpResponse:
+    blob_store = BlobStore()
+    data = blob_store.read_json("garmin/records.json") or {}
+    return func.HttpResponse(
+        json.dumps(data),
+        status_code=200,
+        mimetype="application/json",
+    )

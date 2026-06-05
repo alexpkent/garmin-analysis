@@ -60,6 +60,55 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
 
   summaries: Summary[] = [];
 
+  // ── Filter state ────────────────────────────────────────
+  searchQuery = '';
+  filterTypes: Set<string> = new Set(['run', 'ride', 'other']);
+
+  get filteredWeekGroups(): WeekData[] {
+    const q = this.searchQuery.trim().toLowerCase();
+    const showRun = this.filterTypes.has('run');
+    const showRide = this.filterTypes.has('ride');
+    const showOther = this.filterTypes.has('other');
+
+    return this.weekGroups
+      .map((week) => ({
+        ...week,
+        days: week.days.map((day) => ({
+          ...day,
+          activities: day.activities.filter((a) => {
+            const typeMatch =
+              (this.isRun(a) && showRun) ||
+              (this.isRide(a) && showRide) ||
+              (this.isOtherActivity(a) && showOther);
+            const nameMatch = !q || a.name.toLowerCase().includes(q);
+            return typeMatch && nameMatch;
+          })
+        }))
+      }))
+      .filter((week) => week.days.some((d) => d.activities.length > 0));
+  }
+
+  get isFiltered(): boolean {
+    return this.searchQuery.trim().length > 0 || this.filterTypes.size < 3;
+  }
+
+  toggleTypeFilter(type: string): void {
+    if (this.filterTypes.has(type)) {
+      if (this.filterTypes.size > 1) {
+        this.filterTypes = new Set(this.filterTypes);
+        this.filterTypes.delete(type);
+      }
+    } else {
+      this.filterTypes = new Set(this.filterTypes);
+      this.filterTypes.add(type);
+    }
+  }
+
+  clearFilters(): void {
+    this.searchQuery = '';
+    this.filterTypes = new Set(['run', 'ride', 'other']);
+  }
+
   private scrollObserver: IntersectionObserver | null = null;
   private weekToNavKey = new Map<string, string>();
   private visibleWeeks = new Set<string>();

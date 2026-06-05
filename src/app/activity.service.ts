@@ -23,6 +23,30 @@ export interface HealthSnapshot {
   load_focus: LoadFocus | null;
 }
 
+export interface PersonalRecord {
+  type_id: number;
+  label: string;
+  activity_type: string;
+  activity_name: string | null;
+  value: number | null;
+  unit: 'time' | 'distance' | 'unknown';
+  activity_id: string | null;
+  date: string | null;
+}
+
+export interface RacePredictions {
+  time_5k_seconds: number | null;
+  time_10k_seconds: number | null;
+  time_half_marathon_seconds: number | null;
+  time_marathon_seconds: number | null;
+}
+
+export interface RecordsData {
+  date: string;
+  records: PersonalRecord[];
+  race_predictions: RacePredictions | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -32,6 +56,7 @@ export class ActivityService {
     syncError: boolean;
   }> | null = null;
   private healthCache: Promise<HealthSnapshot[]> | null = null;
+  private recordsCache: Promise<RecordsData | null> | null = null;
 
   constructor(private http: HttpClient) {}
 
@@ -61,5 +86,16 @@ export class ActivityService {
         .catch(() => []);
     }
     return this.healthCache;
+  }
+
+  getRecords(): Promise<RecordsData | null> {
+    if (!this.recordsCache) {
+      this.recordsCache = this.http
+        .get<RecordsData>('/api/records')
+        .toPromise()
+        .then((data) => data ?? null)
+        .catch(() => null);
+    }
+    return this.recordsCache;
   }
 }

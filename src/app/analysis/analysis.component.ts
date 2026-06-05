@@ -37,6 +37,14 @@ const LOAD_BALANCE_LABEL: Record<string, string> = {
   LOW_LOAD: 'Low Load'
 };
 
+export interface TrainingInsight {
+  icon: string;
+  label: string;
+  text: string;
+  color: string;
+  level: 'good' | 'info' | 'warn' | 'alert';
+}
+
 @Component({
   selector: 'app-analysis',
   templateUrl: './analysis.component.html',
@@ -509,5 +517,281 @@ export class AnalysisComponent implements OnInit {
     if (t.includes('cycling') || t.includes('ride') || t.includes('bike'))
       return 'fas fa-biking';
     return 'fas fa-heartbeat';
+  }
+
+  // ── Training Assessment ─────────────────────────────────
+  get trainingInsights(): TrainingInsight[] {
+    const insights: TrainingInsight[] = [];
+    const now = moment();
+
+    // 1. Garmin training status
+    if (this.latestHealth?.training_status) {
+      const status = this.latestHealth.training_status.replace(/_\d+$/, '');
+      const color = TRAINING_STATUS_COLOR[status] ?? '#adb5bd';
+      const label = TRAINING_STATUS_LABEL[status] ?? status;
+      const descriptions: Record<string, string> = {
+        PRODUCTIVE: 'Your fitness is improving — keep it up.',
+        MAINTAINING: "You're maintaining current fitness levels.",
+        PEAKING: "You're at peak fitness — excellent work.",
+        RECOVERY: 'Your body is recovering — ease off intensity.',
+        UNPRODUCTIVE:
+          "Load isn't yielding fitness gains — try adjusting intensity.",
+        OVERREACHING: 'You may be overtraining — prioritise recovery.',
+        DETRAINING: "Activity has dropped — you're losing fitness."
+      };
+      const level: TrainingInsight['level'] = ['OVERREACHING'].includes(status)
+        ? 'alert'
+        : ['UNPRODUCTIVE', 'DETRAINING'].includes(status)
+          ? 'warn'
+          : ['PRODUCTIVE', 'PEAKING'].includes(status)
+            ? 'good'
+            : 'info';
+      insights.push({
+        icon: 'fas fa-chart-line',
+        label: 'Training Status',
+        text: `${label} — ${descriptions[status] ?? ''}`,
+        color,
+        level
+      });
+    }
+
+    // 2. Weekly load trend (last 7d vs prior 7d)
+    const last7 = this.activities
+      .filter((a) =>
+        moment(a.start_date).isAfter(now.clone().subtract(7, 'days'))
+      )
+      .reduce((sum, a) => sum + (a.activityTrainingLoad ?? 0), 0);
+    const prior7 = this.activities
+      .filter((a) => {
+        const d = moment(a.start_date);
+        return (
+          d.isAfter(now.clone().subtract(14, 'days')) &&
+          d.isSameOrBefore(now.clone().subtract(7, 'days'))
+        );
+      })
+      .reduce((sum, a) => sum + (a.activityTrainingLoad ?? 0), 0);
+    if (last7 > 0 || prior7 > 0) {
+      if (prior7 > 0) {
+        const pct = Math.round(((last7 - prior7) / prior7) * 100);
+        const sign = pct > 0 ? '+' : '';
+        if (pct > 25) {
+          insights.push({
+            icon: 'fas fa-arrow-up',
+            label: 'Load Spike',
+            text: `Load jumped ${sign}${pct}% this week vs last — watch for overreaching.`,
+            color: '#e63419',
+            level: 'alert'
+          });
+        } else if (pct > 10) {
+          insights.push({
+            icon: 'fas fa-arrow-up',
+            label: 'Load Rising',
+            text: `Load up ${pct}% this week — steady progression.`,
+            color: '#ffc107',
+            level: 'info'
+          });
+        } else if (pct >= -10) {
+          insights.push({
+            icon: 'fas fa-minus',
+            label: 'Load Stable',
+            text: `Load consistent week-on-week (${sign}${pct}%).`,
+            color: '#4caf50',
+            level: 'good'
+          });
+        } else if (pct >= -30) {
+          insights.push({
+            icon: 'fas fa-arrow-down',
+            label: 'Load Easing',
+            text: `Load down ${Math.abs(pct)}% this week — recovery or taper.`,
+            color: '#42a5f5',
+            level: 'info'
+          });
+        } else {
+          insights.push({
+            icon: 'fas fa-arrow-down',
+            label: 'Low Load',
+            text: `Load dropped ${Math.abs(pct)}% this week — significant rest period.`,
+            color: '#adb5bd',
+            level: 'info'
+          });
+        }
+      } else {
+        insights.push({
+          icon: 'fas fa-bolt',
+          label: 'First Week Back',
+          text: 'No load last week — this is your first active week back.',
+          color: '#42a5f5',
+          level: 'info'
+        });
+      }
+    }
+
+    // 3. Load zone balance (from Garmin load_focus)
+    const lf = this.latestHealth?.load_focus;
+    if (lf) {
+      if (
+        lf.low_aerobic_actual != null &&
+        lf.low_aerobic_low != null &&
+        lf.low_aerobic_actual < lf.low_aerobic_low
+      ) {
+        insights.push({
+          icon: 'fas fa-walking',
+          label: 'More Easy Work',
+          text: `Low aerobic load (${Math.round(lf.low_aerobic_actual)}) is below target (${Math.round(lf.low_aerobic_low)}–${Math.round(lf.low_aerobic_high ?? 0)}) — add more easy/base sessions.`,
+          color: '#1FA87A',
+          level: 'warn'
+        });
+      }
+      if (
+        lf.high_aerobic_actual != null &&
+        lf.high_aerobic_low != null &&
+        lf.high_aerobic_actual < lf.high_aerobic_low
+      ) {
+        insights.push({
+          icon: 'fas fa-fire',
+          label: 'More Tempo Work',
+          text: `High aerobic load (${Math.round(lf.high_aerobic_actual)}) is below target (${Math.round(lf.high_aerobic_low)}–${Math.round(lf.high_aerobic_high ?? 0)}) — add tempo or threshold sessions.`,
+          color: '#ffc107',
+          level: 'warn'
+        });
+      }
+      if (
+        lf.anaerobic_actual != null &&
+        lf.anaerobic_high != null &&
+        lf.anaerobic_actual > lf.anaerobic_high
+      ) {
+        insights.push({
+          icon: 'fas fa-exclamation-triangle',
+          label: 'Anaerobic Overload',
+          text: `Anaerobic load (${Math.round(lf.anaerobic_actual)}) exceeds target ceiling (${Math.round(lf.anaerobic_high)}) — reduce high-intensity work.`,
+          color: '#e63419',
+          level: 'alert'
+        });
+      }
+      if (
+        lf.low_aerobic_actual != null &&
+        lf.low_aerobic_high != null &&
+        lf.high_aerobic_actual != null &&
+        lf.high_aerobic_high != null &&
+        lf.low_aerobic_actual >= lf.low_aerobic_low! &&
+        lf.low_aerobic_actual <= lf.low_aerobic_high &&
+        lf.high_aerobic_actual >= lf.high_aerobic_low! &&
+        lf.high_aerobic_actual <= lf.high_aerobic_high
+      ) {
+        insights.push({
+          icon: 'fas fa-balance-scale',
+          label: 'Zones Balanced',
+          text: 'Low aerobic and high aerobic loads are both within Garmin targets — great balance.',
+          color: '#4caf50',
+          level: 'good'
+        });
+      }
+    }
+
+    // 4. Intensity distribution (last 28 days)
+    const last28 = this.activities.filter((a) =>
+      moment(a.start_date).isAfter(now.clone().subtract(28, 'days'))
+    );
+    const withTE = last28.filter(
+      (a) => a.trainingEffect != null && a.trainingEffect > 0
+    );
+    if (withTE.length >= 4) {
+      const hardLabels = [
+        'VO2MAX',
+        'HIGH_AEROBIC',
+        'ANAEROBIC_CAPACITY',
+        'SPRINT',
+        'OVERREACHING'
+      ];
+      const hard = withTE.filter(
+        (a) =>
+          a.trainingEffectLabel && hardLabels.includes(a.trainingEffectLabel)
+      ).length;
+      const hardPct = Math.round((hard / withTE.length) * 100);
+      const easyPct = 100 - hardPct;
+      if (hardPct > 40) {
+        insights.push({
+          icon: 'fas fa-exclamation-triangle',
+          label: 'Too Much Intensity',
+          text: `${hardPct}% of sessions over 4 weeks were high-intensity. Aim for ~80% easy / 20% hard.`,
+          color: '#ff8c00',
+          level: 'warn'
+        });
+      } else if (hardPct < 10) {
+        const status = this.latestHealth?.training_status?.replace(/_\d+$/, '');
+        if (status !== 'RECOVERY') {
+          insights.push({
+            icon: 'fas fa-bolt',
+            label: 'Add Intensity',
+            text: `Only ${hardPct}% of sessions were high-intensity. Consider adding a tempo or VO₂ max effort.`,
+            color: '#42a5f5',
+            level: 'info'
+          });
+        }
+      } else {
+        insights.push({
+          icon: 'fas fa-check-circle',
+          label: 'Good Intensity Mix',
+          text: `${easyPct}% easy / ${hardPct}% hard over the last 4 weeks — solid polarised distribution.`,
+          color: '#4caf50',
+          level: 'good'
+        });
+      }
+    }
+
+    // 5. Days since last activity
+    if (this.latestActivity) {
+      const daysSince = now.diff(
+        moment(this.latestActivity.start_date),
+        'days'
+      );
+      if (daysSince >= 7) {
+        insights.push({
+          icon: 'fas fa-bed',
+          label: 'Long Break',
+          text: `Last activity was ${daysSince} days ago — you may be losing recent fitness gains.`,
+          color: '#adb5bd',
+          level: 'warn'
+        });
+      } else if (daysSince >= 3) {
+        insights.push({
+          icon: 'fas fa-coffee',
+          label: 'Rest Period',
+          text: `${daysSince} days since your last session — good rest or recovery block.`,
+          color: '#42a5f5',
+          level: 'info'
+        });
+      }
+    }
+
+    // 6. VO2 max trend (last 5 snapshots)
+    const vo2Snaps = this.healthSnapshots
+      .filter((s) => s.vo2max_running != null)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-5);
+    if (vo2Snaps.length >= 3) {
+      const first = vo2Snaps[0].vo2max_running!;
+      const last = vo2Snaps[vo2Snaps.length - 1].vo2max_running!;
+      const diff = +(last - first).toFixed(1);
+      if (diff >= 1) {
+        insights.push({
+          icon: 'fas fa-lungs',
+          label: 'VO₂ Max Improving',
+          text: `Running VO₂ max up ${diff} over recent snapshots (now ${last.toFixed(1)}) — aerobic fitness growing.`,
+          color: '#4caf50',
+          level: 'good'
+        });
+      } else if (diff <= -1) {
+        insights.push({
+          icon: 'fas fa-lungs',
+          label: 'VO₂ Max Declining',
+          text: `Running VO₂ max down ${Math.abs(diff)} (now ${last.toFixed(1)}) — consider more aerobic base work.`,
+          color: '#ff8c00',
+          level: 'warn'
+        });
+      }
+    }
+
+    return insights;
   }
 }

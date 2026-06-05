@@ -159,6 +159,48 @@
   transition: width 0.3s ease;
 }
 
+/* ── Training Assessment card ──────────────────────────── */
+.assess-list {
+  padding: 4px 0;
+}
+
+.assess-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #2a2d31;
+
+  &:last-child { border-bottom: none; }
+}
+
+.assess-icon {
+  font-size: 0.88rem;
+  margin-top: 3px;
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+}
+
+.assess-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.assess-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.assess-text {
+  font-size: 0.85rem;
+  color: #dee2e6;
+  line-height: 1.45;
+}
+
 /* ── Day detail popup ──────────────────────────────────── */
 .day-backdrop {
   position: fixed;

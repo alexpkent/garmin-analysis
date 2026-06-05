@@ -6,6 +6,7 @@ from normalizer import Normalizer
 
 _GARMIN_BLOB = "garmin/activities.json"
 _HEALTH_BLOB = "garmin/health.json"
+_RECORDS_BLOB = "garmin/records.json"
 
 
 class ActivityService:
@@ -52,6 +53,7 @@ class ActivityService:
 
             # Capture today's health metrics on every successful Garmin connection
             self._save_health_snapshot()
+            self._save_records_snapshot()
 
         except GarminConnectConnectionError:
             sync_failed = True
@@ -72,3 +74,17 @@ class ActivityService:
             self._blob_store.write_json(_HEALTH_BLOB, health)
         except Exception:
             pass  # health snapshot is best-effort; don't fail the activity sync
+
+    def _save_records_snapshot(self) -> None:
+        """Refresh garmin/records.json once per day with latest PRs + race predictions."""
+        today = date.today()
+        date_str = today.isoformat()
+        existing: dict | None = self._blob_store.read_json(_RECORDS_BLOB)
+        if isinstance(existing, dict) and existing.get("date") == date_str:
+            return  # already fetched today
+        try:
+            data = self._garmin_client.get_personal_records()
+            data["date"] = date_str
+            self._blob_store.write_json(_RECORDS_BLOB, data)
+        except Exception:
+            pass  # records are best-effort

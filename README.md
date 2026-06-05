@@ -1,87 +1,86 @@
 # Garmin Data Analysis
 
-Uses Garmin activity and health data to display the following on an Angular SPA hosted/backed by a very low cost (free!) Azure set-up.
+An Angular SPA backed by Python Azure Functions that pulls training and health data from **Garmin Connect** and presents it across four pages. Hosted on Azure Static Web Apps with Azure Blob Storage as the data cache — effectively free at personal-use scale.
 
-Analysis Graphs
+## Pages
+
+### Analysis
+Training assessment, health snapshot, VO2 max categories, fitness and trend charts.
 
 ![site image](screenshots/analysis-graphs.png)
 
-Analysis Heatmaps
+### Heatmap
+All activities overlaid on a [Leaflet](https://leafletjs.com/) map. Routes are rendered darker the more times they have been covered. Cluster markers show the count of activities starting in each area and update automatically with zoom level. Supports multiple base map providers, activity-type filters, time filters, and detail popups.
 
 ![site image](screenshots/analysis-heatmaps.png)
 
-Overlays all training activities from **Garmin Connect** on a [Leaflet](https://leafletjs.com/) map with summary data and activity selection controls.
-
-More base maps can be added as [listed here](https://leaflet-extras.github.io/leaflet-providers/preview/).
-
-Routes are darker colours the more they have been run/ridden and cluster markers display the number of activities starting in each area automatically updating with the zoom level.
-
-With a number of filters and options such as viewing activities by time, by type, with detail popups and with different map providers.
-
 ![site image](screenshots/site_no_map.png)
-
-Region count summary markers.
 
 ![site image](screenshots/markers.png)
 
-Training Log
+### Training Log
+Weekly activity breakdown with search/filter by name and activity type, and a detail popup for each activity.
 
 ![site image](screenshots/training-log.png)
+
+### Personal Records
+Best times and longest efforts fetched from Garmin Connect, grouped by sport (Running, Cycling, Swimming). Includes race time predictions based on current fitness.
 
 # Azure Setup
 
 ## Azure Storage Account
 
-Create a storage account and add a container called `activities`. Inside it, create the following blob structure:
+Create a storage account and add a container called `activities`. Inside it, the following blobs are created automatically:
 
 ```
 activities/
   garmin/
-    activities.json   ← created automatically on first sync (can pre-create as [])
-    tokens.json       ← created automatically on first Garmin login
-    health.json       ← created automatically on first sync
+    activities.json   <- created on first sync (can pre-create as [])
+    tokens.json       <- created on first Garmin login
+    health.json       <- created on first sync
+    records.json      <- created on first sync
 ```
 
-`garmin/activities.json` stores all activities in a unified normalised schema. It is managed automatically.
+`garmin/activities.json` — all activities in a unified normalised schema.
 
-`garmin/health.json` stores a time-series of daily health snapshots (VO₂ max, training status, and load focus). One entry is appended per day on the first successful Garmin sync of that day.
+`garmin/health.json` — time-series of daily health snapshots (VO2 max, training status, load focus). One entry is appended per day on the first successful Garmin sync of that day.
+
+`garmin/records.json` — personal records and race predictions. Refreshed once per day during the activities sync.
 
 ## Static Web App
 
-- Create a Static Web App and sign in to GitHub selecting the repo. Azure will generate the workflow file for the deployment.
+Create a Static Web App and sign in to GitHub selecting the repo. Azure will generate the workflow file for the deployment, which:
 
-This contains the actions that will:
-
-- On creation of a PR, deploy to a staging environment in the Azure Static Web App to test changes.
-- On merge of PR into master, delete the staging deployment, build master, and deploy the new build into the main deployment.
+- On PR creation: deploys to a staging environment for preview.
+- On merge to master: deletes the staging deployment, builds master, and deploys to production.
 
 ## CDN (Optional)
 
 Static Web Apps by default allocate a unique URL. An easy way to provide a custom URL is to put a CDN in front of the static site.
 
 - Create Azure CDN (Standard Microsoft tier)
-- Create Endpoint with desired name (`azureedge.net` will be appended)
-- Origin Type: Custom Origin
-- Origin Hostname: URL of the Static Web App (without `https://`)
-- Origin Host header: URL of the Static Web App (without `https://`)
+- Create Endpoint -> Origin Type: Custom Origin -> Origin Hostname: URL of the Static Web App (without `https://`)
 - Disable HTTP
 
 To prevent cached responses hiding new activities:
 
-- Go to Rules Engine → Add Rule
+- Go to Rules Engine -> Add Rule
 - `If Request URL` set to `Any`
 - Then `Cache Expiration` set to `Bypass cache`
 
 # Code Settings
 
-Angular environment settings than can be set in environment files or passed into the ng build process:
+Angular environment settings in `src/environments/environment.ts`:
 
-- `mapCenter` — LatLong coordinates to centre the map on load (i.e. the area where most activities exist).
-- `userDob` - Users DOB for heart rate zone calculations.
+| Setting      | Description                                                          |
+| ------------ | -------------------------------------------------------------------- |
+| `mapCenter`  | `[lat, lng]` to centre the map on load                               |
+| `userDob`    | User's date of birth (`YYYY-MM-DD`) for heart rate zone calculations |
+| `userGender` | `'male'` or `'female'` for VO2 max category bands                   |
 
 # Deployment Settings
 
-In the Static Web App configuration (Application settings) set the following environment variables, which are loaded by the Python Azure Function:
+In the Static Web App configuration (Application settings) set the following environment variables:
 
 | Setting                  | Description                                 |
 | ------------------------ | ------------------------------------------- |
@@ -94,37 +93,46 @@ In the Static Web App configuration (Application settings) set the following env
 
 ## Activities — `GET /api/activities`
 
-On each page load the Azure Function (`GET /api/activities`) is called:
-
-1. Loads saved Garmin OAuth tokens from `garmin/tokens.json` in blob storage (or performs a fresh login if none exist).
+1. Loads saved Garmin OAuth tokens from `garmin/tokens.json` (or performs a fresh login if none exist).
 2. Fetches new Garmin activities since the last sync and retrieves GPS route data for each, using [python-garminconnect](https://github.com/cyberjunky/python-garminconnect).
 3. Reads all activities from `garmin/activities.json`, merges new ones, and returns them sorted newest-first.
 4. If Garmin Connect is unreachable the response still returns cached activities, with an `X-Sync-Error: true` header so the UI can show an error banner.
-5. On every successful Garmin connection, captures today’s health snapshot (see below) and appends it to `garmin/health.json` if an entry for today doesn’t already exist.
+5. On every successful Garmin connection, also captures today's health snapshot and personal records (if not already done today).
 
 ## Health Data — `GET /api/health`
 
-Returns the full contents of `garmin/health.json` as a JSON array, newest entries first. Each entry is written automatically by the activities sync and contains:
+Returns the full contents of `garmin/health.json` as a JSON array, newest entries first. Each entry contains:
 
-| Field             | Description                                                                                    |
-| ----------------- | ---------------------------------------------------------------------------------------------- |
-| `date`            | ISO date the snapshot was taken (`YYYY-MM-DD`)                                                 |
-| `vo2max_running`  | VO₂ max estimate for running (precise value)                                                   |
-| `vo2max_cycling`  | VO₂ max estimate for cycling (precise value)                                                   |
-| `training_status` | Garmin training status phrase (e.g. `PRODUCTIVE_1`, `MAINTAINING_2`)                           |
-| `load_focus`      | Object with monthly aerobic/anaerobic load actuals, target ranges, and a `load_balance_phrase` |
+| Field             | Description                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| `date`            | ISO date the snapshot was taken (`YYYY-MM-DD`)                                     |
+| `vo2max_running`  | VO2 max estimate for running                                                       |
+| `vo2max_cycling`  | VO2 max estimate for cycling                                                       |
+| `training_status` | Garmin training status phrase (e.g. `PRODUCTIVE_1`, `MAINTAINING_2`)               |
+| `load_focus`      | Monthly aerobic/anaerobic load actuals, target ranges, and a `load_balance_phrase` |
 
-The `load_focus` object fields:
+## Personal Records — `GET /api/records`
 
-| Field                       | Description                                            |
-| --------------------------- | ------------------------------------------------------ |
-| `low_aerobic_actual`        | Actual low-aerobic load this month                     |
-| `low_aerobic_low` / `high`  | Target range min/max for low-aerobic load              |
-| `high_aerobic_actual`       | Actual high-aerobic load this month                    |
-| `high_aerobic_low` / `high` | Target range min/max for high-aerobic load             |
-| `anaerobic_actual`          | Actual anaerobic load this month                       |
-| `anaerobic_low` / `high`    | Target range min/max for anaerobic load                |
-| `load_balance_phrase`       | Garmin load balance phrase (e.g. `AEROBIC_HIGH_FOCUS`) |
+Returns the contents of `garmin/records.json`. Written once per day during the activities sync. Contains:
+
+| Field              | Description                                                   |
+| ------------------ | ------------------------------------------------------------- |
+| `date`             | ISO date the snapshot was taken                               |
+| `records`          | Array of personal record objects (see below)                  |
+| `race_predictions` | Predicted race times for 5K, 10K, half marathon, and marathon |
+
+Each record object:
+
+| Field           | Description                                              |
+| --------------- | -------------------------------------------------------- |
+| `type_id`       | Garmin PR type identifier                                |
+| `label`         | Human-readable label (e.g. `Fastest 5K`, `Longest Run`) |
+| `activity_type` | `running`, `cycling`, or `lap_swimming`                  |
+| `activity_name` | Name of the activity that set the record                 |
+| `value`         | Seconds (timed records) or metres (distance records)     |
+| `unit`          | `time` or `distance`                                     |
+| `activity_id`   | Garmin Connect activity ID (for deep-link)               |
+| `date`          | ISO date the record was set                              |
 
 # Local Development
 
@@ -137,7 +145,7 @@ The `load_focus` object fields:
 
 ## 1. Create `api/local.settings.json`
 
-This file is gitignored. It holds all environment variables for local runs, including your Garmin credentials:
+This file is gitignored. It holds all environment variables for local runs:
 
 ```json
 {
@@ -153,7 +161,7 @@ This file is gitignored. It holds all environment variables for local runs, incl
 }
 ```
 
-Get `BLOB_CONNECTION_STRING` from your Azure Storage Account → **Access keys** → Connection string.
+Get `BLOB_CONNECTION_STRING` from your Azure Storage Account -> **Access keys** -> Connection string.
 
 ## 2. Install Python dependencies
 
@@ -169,7 +177,7 @@ cd api
 func start --python
 ```
 
-The function runs at `http://localhost:7071/api/activities`.
+The function runs at `http://localhost:7071`.
 
 ## 4. Start the Angular dev server (terminal 2)
 

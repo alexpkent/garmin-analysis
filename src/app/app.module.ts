@@ -13,6 +13,7 @@ import { VolumeChartComponent } from './analysis/volume-chart/volume-chart.compo
 import { HeatmapComponent } from './heatmap/heatmap.component';
 import { NavComponent } from './nav/nav.component';
 import { TrainingLogComponent } from './training-log/training-log.component';
+import { RecordsComponent } from './records/records.component';
 import {
   provideHttpClient,
   withInterceptorsFromDi
@@ -36,7 +37,8 @@ registerLocaleData(localeEnGb, 'en-GB');
     VolumeChartComponent,
     HeatmapComponent,
     NavComponent,
-    TrainingLogComponent
+    TrainingLogComponent,
+    RecordsComponent
   ],
   bootstrap: [AppComponent],
   imports: [

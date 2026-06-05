@@ -1,0 +1,146 @@
+$accent: #ffc107;
+$card-bg: #1a1d21;
+$card-border: #343a40;
+$muted: #adb5bd;
+$dim: #6c757d;
+
+.records-content {
+  max-width: 680px;
+  padding: 20px 16px;
+}
+
+/* ── Empty state ─────────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: $dim;
+  text-align: center;
+  gap: 16px;
+}
+
+.empty-icon {
+  font-size: 2.5rem;
+  color: $card-border;
+}
+
+/* ── PR Card ─────────────────────────────────────────────── */
+.pr-card {
+  background: $card-bg;
+  border: 1px solid $card-border;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.pr-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #212529;
+  border-bottom: 1px solid $card-border;
+}
+
+.pr-header-icon {
+  color: $accent;
+  font-size: 0.95rem;
+}
+
+.pr-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.pr-card-subtitle {
+  font-size: 0.72rem;
+  color: $dim;
+  margin-left: auto;
+}
+
+/* ── PR Table rows ───────────────────────────────────────── */
+.pr-table {
+  padding: 4px 0;
+}
+
+.pr-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  column-gap: 16px;
+  align-items: baseline;
+  padding: 10px 16px;
+  border-bottom: 1px solid #2a2d31;
+
+  &:last-child { border-bottom: none; }
+}
+
+.pr-label {
+  grid-column: 1;
+  grid-row: 1;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #dee2e6;
+}
+
+.pr-pace {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 0.75rem;
+  color: $dim;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.pr-value {
+  grid-column: 3;
+  grid-row: 1;
+  font-size: 1.05rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.pr-meta {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.pr-date {
+  font-size: 0.72rem;
+  color: $dim;
+}
+
+.pr-ago {
+  font-size: 0.72rem;
+  color: #495057;
+}
+
+.pr-link {
+  font-size: 0.72rem;
+  color: $dim;
+  text-decoration: none;
+  margin-left: auto;
+
+  &:hover { color: $accent; }
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
+.records-footer {
+  font-size: 0.72rem;
+  color: $dim;
+  padding: 4px 2px 16px;
+}
+
+/* ── Mobile ──────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .pr-card-subtitle {
+    display: none;
+  }
+}
