@@ -128,18 +128,24 @@
             @if (latestHealth.vo2max_running != null) {
               <div class="latest-stat">
                 <span class="latest-stat-label">VO₂ Max (Run)</span>
-                <span class="latest-stat-value" style="color:#42a5f5">
+                <span class="latest-stat-value" [style.color]="vo2maxCategory(latestHealth.vo2max_running)?.color ?? '#42a5f5'">
                   {{ latestHealth.vo2max_running | number:'1.1-1' }}
                 </span>
+                @if (vo2maxCategory(latestHealth.vo2max_running)) {
+                  <span class="latest-stat-band" [style.color]="vo2maxCategory(latestHealth.vo2max_running)!.color">{{ vo2maxCategory(latestHealth.vo2max_running)!.label }}</span>
+                }
               </div>
             }
 
             @if (latestHealth.vo2max_cycling != null) {
               <div class="latest-stat">
                 <span class="latest-stat-label">VO₂ Max (Cycle)</span>
-                <span class="latest-stat-value" style="color:#42a5f5">
+                <span class="latest-stat-value" [style.color]="vo2maxCategory(latestHealth.vo2max_cycling)?.color ?? '#42a5f5'">
                   {{ latestHealth.vo2max_cycling | number:'1.1-1' }}
                 </span>
+                @if (vo2maxCategory(latestHealth.vo2max_cycling)) {
+                  <span class="latest-stat-band" [style.color]="vo2maxCategory(latestHealth.vo2max_cycling)!.color">{{ vo2maxCategory(latestHealth.vo2max_cycling)!.label }}</span>
+                }
               </div>
             }
 

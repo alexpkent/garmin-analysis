@@ -352,6 +352,59 @@ export class AnalysisComponent implements OnInit {
     return this.trainingLoadBands.find((b) => v >= b.min && v < b.max) ?? null;
   }
 
+  // ── VO2 max category (Garmin / Cooper Institute standard ratings) ───────
+  // Thresholds are the *minimum* value for each category per age group.
+  // Age groups (index 0-5): 20-29, 30-39, 40-49, 50-59, 60-69, 70+
+  // Each row: [superior, excellent, good, fair]
+  private readonly VO2_MAX_THRESHOLDS: Record<'male' | 'female', number[][]> = {
+    male: [
+      [55.4, 51.1, 45.4, 41.7], // 20-29
+      [54.0, 48.3, 44.0, 40.5], // 30-39
+      [52.5, 46.4, 42.4, 38.5], // 40-49
+      [48.9, 43.4, 39.2, 35.6], // 50-59
+      [45.7, 39.5, 35.5, 32.3], // 60-69
+      [42.1, 36.7, 32.3, 29.4] // 70+
+    ],
+    female: [
+      [49.6, 43.9, 39.5, 36.1], // 20-29
+      [47.4, 42.4, 37.8, 34.4], // 30-39
+      [45.3, 39.7, 36.3, 33.0], // 40-49
+      [41.1, 36.7, 33.0, 30.1], // 50-59
+      [37.8, 33.0, 30.0, 27.5], // 60-69
+      [36.7, 30.9, 28.1, 25.9] // 70+
+    ]
+  };
+
+  private readonly userAgeGroup: number = (() => {
+    const dob = new Date(environment.userDob);
+    const now = new Date();
+    const age =
+      now.getFullYear() -
+      dob.getFullYear() -
+      (now < new Date(now.getFullYear(), dob.getMonth(), dob.getDate())
+        ? 1
+        : 0);
+    if (age < 30) return 0;
+    if (age < 40) return 1;
+    if (age < 50) return 2;
+    if (age < 60) return 3;
+    if (age < 70) return 4;
+    return 5;
+  })();
+
+  vo2maxCategory(
+    vo2: number | null | undefined
+  ): { label: string; color: string } | null {
+    if (vo2 == null) return null;
+    const thresholds =
+      this.VO2_MAX_THRESHOLDS[environment.userGender][this.userAgeGroup];
+    if (vo2 >= thresholds[0]) return { label: 'Superior', color: '#9c27b0' };
+    if (vo2 >= thresholds[1]) return { label: 'Excellent', color: '#42a5f5' };
+    if (vo2 >= thresholds[2]) return { label: 'Good', color: '#4caf50' };
+    if (vo2 >= thresholds[3]) return { label: 'Fair', color: '#ff8c00' };
+    return { label: 'Poor', color: '#e63419' };
+  }
+
   formatTeLabel(label: string | undefined): string {
     return formatTrainingEffectLabel(label);
   }
