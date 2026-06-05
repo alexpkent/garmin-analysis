@@ -7,6 +7,9 @@ import { AppComponent } from './app.component';
 import { AnalysisComponent } from './analysis/analysis.component';
 import { CalendarHeatmapComponent } from './analysis/calendar-heatmap/calendar-heatmap.component';
 import { TrendChartComponent } from './analysis/trend-chart/trend-chart.component';
+import { HealthTrendChartComponent } from './analysis/health-trend-chart/health-trend-chart.component';
+import { FitnessChartComponent } from './analysis/fitness-chart/fitness-chart.component';
+import { VolumeChartComponent } from './analysis/volume-chart/volume-chart.component';
 import { HeatmapComponent } from './heatmap/heatmap.component';
 import { NavComponent } from './nav/nav.component';
 import { TrainingLogComponent } from './training-log/training-log.component';
@@ -28,6 +31,9 @@ registerLocaleData(localeEnGb, 'en-GB');
     AnalysisComponent,
     CalendarHeatmapComponent,
     TrendChartComponent,
+    HealthTrendChartComponent,
+    FitnessChartComponent,
+    VolumeChartComponent,
     HeatmapComponent,
     NavComponent,
     TrainingLogComponent

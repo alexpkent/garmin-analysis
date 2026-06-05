@@ -183,9 +183,7 @@ export class CalendarHeatmapComponent implements OnInit, OnChanges, OnDestroy {
             date: day,
             value,
             band,
-            tooltip: this.activityClassifier
-              ? this.makeClassifierTooltip(day, band)
-              : this.makeTooltip(day, value),
+            tooltip: this.makeTooltip(day, entry?.acts ?? []),
             activities: entry?.acts ?? []
           });
         }
@@ -210,19 +208,65 @@ export class CalendarHeatmapComponent implements OnInit, OnChanges, OnDestroy {
     return this.bands.find((b) => value >= b.min && value < b.max) ?? null;
   }
 
-  private makeTooltip(day: moment.Moment, value: number | null): string {
-    const dateStr = day.format('ddd D MMM YYYY');
-    if (value == null) return `${dateStr}: no activity`;
-    const band = this.getBand(value);
-    return `${dateStr}: ${Math.round(value)}${band ? ' – ' + band.label : ''}`;
+  private formatActivityValue(a: Activity): string {
+    switch (this.valueKey) {
+      case 'trainingEffect': {
+        const parts: string[] = [];
+        if (a.trainingEffect != null && a.trainingEffect > 0)
+          parts.push(`Aerobic ${a.trainingEffect.toFixed(1)}`);
+        if (a.anaerobicTrainingEffect != null && a.anaerobicTrainingEffect > 0)
+          parts.push(`Anaerobic ${a.anaerobicTrainingEffect.toFixed(1)}`);
+        return parts.join(' · ');
+      }
+      case 'averageHR':
+        return a.averageHR != null && a.averageHR > 0
+          ? `${Math.round(a.averageHR)} bpm`
+          : '';
+      case 'maxHR':
+        return a.maxHR != null && a.maxHR > 0
+          ? `${Math.round(a.maxHR)} bpm`
+          : '';
+      case 'distance_meters': {
+        const miles = (a.distance_meters ?? 0) / 1609.344;
+        return miles > 0 ? `${miles.toFixed(1)} mi` : '';
+      }
+      case 'moving_time_seconds': {
+        const secs = a.duration ?? a.moving_time_seconds;
+        if (!secs) return '';
+        const hours = Math.floor(secs / 3600);
+        const mins = Math.round((secs % 3600) / 60);
+        if (hours > 0 && mins > 0) return `${hours} hr ${mins} mins`;
+        if (hours > 0) return `${hours} hr`;
+        return `${mins} mins`;
+      }
+      case 'activityTrainingLoad':
+        return a.activityTrainingLoad != null
+          ? `${Math.round(a.activityTrainingLoad)}`
+          : '';
+      default:
+        return '';
+    }
   }
 
-  private makeClassifierTooltip(
-    day: moment.Moment,
-    band: HeatmapBand | null
-  ): string {
+  private activityLine(a: Activity): string {
+    const val = this.formatActivityValue(a);
+    let band: HeatmapBand | null = null;
+    if (this.activityClassifier) {
+      band = this.activityClassifier(a);
+    } else {
+      const raw = a[this.valueKey];
+      if (typeof raw === 'number') band = this.getBand(raw);
+    }
+    const parts: string[] = [a.name];
+    if (val) parts.push(val);
+    if (band) parts.push(`(${band.label})`);
+    return parts.join(' – ');
+  }
+
+  private makeTooltip(day: moment.Moment, acts: Activity[]): string {
     const dateStr = day.format('ddd D MMM YYYY');
-    return band ? `${dateStr}: ${band.label}` : `${dateStr}: no activity`;
+    if (!acts.length) return `${dateStr}: no activity`;
+    return [dateStr, ...acts.map((a) => this.activityLine(a))].join('\n');
   }
 
   cellColor(cell: DayCell | null): string {

@@ -156,7 +156,7 @@
           </div>
           <div class="detail-row">
             <span class="detail-label">Time</span>
-            <span>{{ getDuration(selectedActivity.moving_time_seconds) }}</span>
+            <span>{{ getDuration(selectedActivity.duration ?? selectedActivity.moving_time_seconds) }}</span>
           </div>
           @if (selectedActivity.averageHR) {
             <div class="detail-row">

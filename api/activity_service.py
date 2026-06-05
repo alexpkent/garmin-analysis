@@ -5,6 +5,7 @@ from garminconnect import GarminConnectConnectionError
 from normalizer import Normalizer
 
 _GARMIN_BLOB = "garmin/activities.json"
+_HEALTH_BLOB = "garmin/health.json"
 
 
 class ActivityService:
@@ -49,8 +50,25 @@ class ActivityService:
                 self._blob_store.write_json(_GARMIN_BLOB, updated)
                 stored = updated
 
+            # Capture today's health metrics on every successful Garmin connection
+            self._save_health_snapshot()
+
         except GarminConnectConnectionError:
             sync_failed = True
 
         stored.sort(key=lambda a: a["start_date"], reverse=True)
         return stored, sync_failed
+
+    def _save_health_snapshot(self) -> None:
+        """Append today's VO2 max / training status to garmin/health.json if not already present."""
+        today = date.today()
+        date_str = today.isoformat()
+        health: list = self._blob_store.read_json(_HEALTH_BLOB) or []
+        if any(e.get("date") == date_str for e in health):
+            return  # already captured today
+        try:
+            snapshot = self._garmin_client.get_health_snapshot(today)
+            health.insert(0, snapshot)
+            self._blob_store.write_json(_HEALTH_BLOB, health)
+        except Exception:
+            pass  # health snapshot is best-effort; don't fail the activity sync

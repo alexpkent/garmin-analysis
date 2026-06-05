@@ -1,12 +1,20 @@
-# Activity Heatmap
+# Garmin Data Analysis
+
+Uses Garmin activity and health data to display the following on an Angular SPA hosted/backed by a very low cost (free!) Azure set-up.
+
+Analysis Graphs
+
+![site image](screenshots/analysis-graphs.png)
+
+Analysis Heatmaps
+
+![site image](screenshots/analysis-heatmaps.png)
 
 Overlays all training activities from **Garmin Connect** on a [Leaflet](https://leafletjs.com/) map with summary data and activity selection controls.
 
 More base maps can be added as [listed here](https://leaflet-extras.github.io/leaflet-providers/preview/).
 
 Routes are darker colours the more they have been run/ridden and cluster markers display the number of activities starting in each area automatically updating with the zoom level.
-
-An Angular SPA hosted/backed by a very low cost (free!) Azure set-up.
 
 With a number of filters and options such as viewing activities by time, by type, with detail popups and with different map providers.
 
@@ -15,10 +23,6 @@ With a number of filters and options such as viewing activities by time, by type
 Region count summary markers.
 
 ![site image](screenshots/markers.png)
-
-Analysis Heatmaps
-
-![site image](screenshots/analysis-heatmaps.png)
 
 Training Log
 
@@ -35,9 +39,12 @@ activities/
   garmin/
     activities.json   ← created automatically on first sync (can pre-create as [])
     tokens.json       ← created automatically on first Garmin login
+    health.json       ← created automatically on first sync
 ```
 
 `garmin/activities.json` stores all activities in a unified normalised schema. It is managed automatically.
+
+`garmin/health.json` stores a time-series of daily health snapshots (VO₂ max, training status, and load focus). One entry is appended per day on the first successful Garmin sync of that day.
 
 ## Static Web App
 
@@ -85,12 +92,39 @@ In the Static Web App configuration (Application settings) set the following env
 
 # How It Works
 
+## Activities — `GET /api/activities`
+
 On each page load the Azure Function (`GET /api/activities`) is called:
 
 1. Loads saved Garmin OAuth tokens from `garmin/tokens.json` in blob storage (or performs a fresh login if none exist).
 2. Fetches new Garmin activities since the last sync and retrieves GPS route data for each, using [python-garminconnect](https://github.com/cyberjunky/python-garminconnect).
 3. Reads all activities from `garmin/activities.json`, merges new ones, and returns them sorted newest-first.
 4. If Garmin Connect is unreachable the response still returns cached activities, with an `X-Sync-Error: true` header so the UI can show an error banner.
+5. On every successful Garmin connection, captures today’s health snapshot (see below) and appends it to `garmin/health.json` if an entry for today doesn’t already exist.
+
+## Health Data — `GET /api/health`
+
+Returns the full contents of `garmin/health.json` as a JSON array, newest entries first. Each entry is written automatically by the activities sync and contains:
+
+| Field             | Description                                                                                    |
+| ----------------- | ---------------------------------------------------------------------------------------------- |
+| `date`            | ISO date the snapshot was taken (`YYYY-MM-DD`)                                                 |
+| `vo2max_running`  | VO₂ max estimate for running (precise value)                                                   |
+| `vo2max_cycling`  | VO₂ max estimate for cycling (precise value)                                                   |
+| `training_status` | Garmin training status phrase (e.g. `PRODUCTIVE_1`, `MAINTAINING_2`)                           |
+| `load_focus`      | Object with monthly aerobic/anaerobic load actuals, target ranges, and a `load_balance_phrase` |
+
+The `load_focus` object fields:
+
+| Field                       | Description                                            |
+| --------------------------- | ------------------------------------------------------ |
+| `low_aerobic_actual`        | Actual low-aerobic load this month                     |
+| `low_aerobic_low` / `high`  | Target range min/max for low-aerobic load              |
+| `high_aerobic_actual`       | Actual high-aerobic load this month                    |
+| `high_aerobic_low` / `high` | Target range min/max for high-aerobic load             |
+| `anaerobic_actual`          | Actual anaerobic load this month                       |
+| `anaerobic_low` / `high`    | Target range min/max for anaerobic load                |
+| `load_balance_phrase`       | Garmin load balance phrase (e.g. `AEROBIC_HIGH_FOCUS`) |
 
 # Local Development
 

@@ -18,6 +18,7 @@ interface Series {
   label: string;
   valueKey: keyof Activity;
   color: string;
+  yAxisID?: string;
   /** Optional transform applied before aggregating (e.g. metres → miles) */
   transform?: (v: number) => number;
   hidden?: boolean;
@@ -52,17 +53,17 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
       color: '#ffc107'
     },
     {
-      label: 'Training Effect (Aerobic)',
+      label: 'Training Effect',
       valueKey: 'trainingEffect',
-      color: '#1FA87A'
+      color: '#1FA87A',
+      yAxisID: 'yEffect'
     },
     {
       label: 'Anaerobic Effect',
       valueKey: 'anaerobicTrainingEffect',
-      color: '#6A1B9A'
+      color: '#6A1B9A',
+      yAxisID: 'yEffect'
     },
-    { label: 'Avg HR', valueKey: 'averageHR', color: '#42a5f5' },
-    { label: 'Max HR', valueKey: 'maxHR', color: '#ef5350' },
     {
       label: 'Distance (mi)',
       valueKey: 'distance_meters',
@@ -95,12 +96,14 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
 
     this.periodLabel = `${start.format('MMM YYYY')} – ${end.format('MMM YYYY')}`;
 
-    // Build weekly labels (Monday of each week)
+    // Build weekly labels — each week is labelled by its Sunday (end of week)
+    // so the last tick clearly shows the week containing today rather than the
+    // preceding Monday (e.g. "7 Jun" instead of "1 Jun" when today is Thu 5 Jun).
     const labels: string[] = [];
     const cursor = start.clone().isoWeekday(1);
     if (cursor.isAfter(start)) cursor.subtract(7, 'days');
     while (cursor.isSameOrBefore(end, 'day')) {
-      labels.push(cursor.format('D MMM'));
+      labels.push(cursor.clone().add(6, 'days').format('D MMM'));
       cursor.add(7, 'days');
     }
 
@@ -145,7 +148,7 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
       tension: 0.3,
       spanGaps: true,
       hidden: s.hidden ?? false,
-      yAxisID: 'y'
+      yAxisID: s.yAxisID ?? 'y'
     }));
 
     if (this.chart) {
@@ -192,9 +195,28 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
             grid: { color: '#2a2d31' }
           },
           y: {
+            type: 'linear',
+            position: 'left',
             ticks: { color: '#6c757d' },
             grid: { color: '#2a2d31' },
             beginAtZero: true
+          },
+          yEffect: {
+            type: 'linear',
+            position: 'right',
+            min: 0,
+            max: 5,
+            ticks: {
+              color: '#1FA87A',
+              stepSize: 1
+            },
+            grid: { drawOnChartArea: false },
+            title: {
+              display: true,
+              text: 'Effect (0–5)',
+              color: '#1FA87A',
+              font: { size: 11 }
+            }
           }
         }
       }
