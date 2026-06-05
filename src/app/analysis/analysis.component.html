@@ -168,8 +168,18 @@
                   {{ latestHealth.load_focus!.low_aerobic_actual | number:'1.0-0' }}
                 </span>
                 <span class="latest-stat-band" style="color:#1FA87A">
-                  target {{ latestHealth.load_focus!.low_aerobic_low | number:'1.0-0' }}–{{ latestHealth.load_focus!.low_aerobic_high | number:'1.0-0' }}
+                  target {{ latestHealth.load_focus!.low_aerobic_low | number:'1.0-0' }}&ndash;{{ latestHealth.load_focus!.low_aerobic_high | number:'1.0-0' }}
                 </span>
+                <div class="load-gauge-track">
+                  <div class="load-gauge-target"
+                       [style.left]="loadGaugeTargetLeft(latestHealth.load_focus!.low_aerobic_actual, latestHealth.load_focus!.low_aerobic_low, latestHealth.load_focus!.low_aerobic_high)"
+                       [style.width]="loadGaugeTargetWidth(latestHealth.load_focus!.low_aerobic_actual, latestHealth.load_focus!.low_aerobic_low, latestHealth.load_focus!.low_aerobic_high)">
+                  </div>
+                  <div class="load-gauge-fill"
+                       [style.width]="loadGaugeActualPct(latestHealth.load_focus!.low_aerobic_actual, latestHealth.load_focus!.low_aerobic_low, latestHealth.load_focus!.low_aerobic_high)"
+                       style="background:#1FA87A">
+                  </div>
+                </div>
               </div>
             }
 
@@ -180,8 +190,18 @@
                   {{ latestHealth.load_focus!.high_aerobic_actual | number:'1.0-0' }}
                 </span>
                 <span class="latest-stat-band" style="color:#ffc107">
-                  target {{ latestHealth.load_focus!.high_aerobic_low | number:'1.0-0' }}–{{ latestHealth.load_focus!.high_aerobic_high | number:'1.0-0' }}
+                  target {{ latestHealth.load_focus!.high_aerobic_low | number:'1.0-0' }}&ndash;{{ latestHealth.load_focus!.high_aerobic_high | number:'1.0-0' }}
                 </span>
+                <div class="load-gauge-track">
+                  <div class="load-gauge-target"
+                       [style.left]="loadGaugeTargetLeft(latestHealth.load_focus!.high_aerobic_actual, latestHealth.load_focus!.high_aerobic_low, latestHealth.load_focus!.high_aerobic_high)"
+                       [style.width]="loadGaugeTargetWidth(latestHealth.load_focus!.high_aerobic_actual, latestHealth.load_focus!.high_aerobic_low, latestHealth.load_focus!.high_aerobic_high)">
+                  </div>
+                  <div class="load-gauge-fill"
+                       [style.width]="loadGaugeActualPct(latestHealth.load_focus!.high_aerobic_actual, latestHealth.load_focus!.high_aerobic_low, latestHealth.load_focus!.high_aerobic_high)"
+                       style="background:#ffc107">
+                  </div>
+                </div>
               </div>
             }
 
@@ -192,8 +212,18 @@
                   {{ latestHealth.load_focus!.anaerobic_actual | number:'1.0-0' }}
                 </span>
                 <span class="latest-stat-band" style="color:#6A1B9A">
-                  target {{ latestHealth.load_focus!.anaerobic_low | number:'1.0-0' }}–{{ latestHealth.load_focus!.anaerobic_high | number:'1.0-0' }}
+                  target {{ latestHealth.load_focus!.anaerobic_low | number:'1.0-0' }}&ndash;{{ latestHealth.load_focus!.anaerobic_high | number:'1.0-0' }}
                 </span>
+                <div class="load-gauge-track">
+                  <div class="load-gauge-target"
+                       [style.left]="loadGaugeTargetLeft(latestHealth.load_focus!.anaerobic_actual, latestHealth.load_focus!.anaerobic_low, latestHealth.load_focus!.anaerobic_high)"
+                       [style.width]="loadGaugeTargetWidth(latestHealth.load_focus!.anaerobic_actual, latestHealth.load_focus!.anaerobic_low, latestHealth.load_focus!.anaerobic_high)">
+                  </div>
+                  <div class="load-gauge-fill"
+                       [style.width]="loadGaugeActualPct(latestHealth.load_focus!.anaerobic_actual, latestHealth.load_focus!.anaerobic_low, latestHealth.load_focus!.anaerobic_high)"
+                       style="background:#6A1B9A">
+                  </div>
+                </div>
               </div>
             }
 
@@ -201,7 +231,7 @@
         </div>
       }
 
-      <app-trend-chart
+      <app-volume-chart
         [activities]="activities"
         [startDate]="periodStart"
         [endDate]="periodEnd"
@@ -209,7 +239,7 @@
         [canGoForward]="canGoForward"
         (periodBack)="goBack()"
         (periodForward)="goForward()">
-      </app-trend-chart>
+      </app-volume-chart>
 
       <app-health-trend-chart
         [snapshots]="healthSnapshots"
@@ -221,6 +251,26 @@
         (periodBack)="goBack()"
         (periodForward)="goForward()">
       </app-health-trend-chart>
+
+      <app-fitness-chart
+        [activities]="activities"
+        [startDate]="periodStart"
+        [endDate]="periodEnd"
+        [canGoBack]="canGoBack"
+        [canGoForward]="canGoForward"
+        (periodBack)="goBack()"
+        (periodForward)="goForward()">
+      </app-fitness-chart>
+
+      <app-trend-chart
+        [activities]="activities"
+        [startDate]="periodStart"
+        [endDate]="periodEnd"
+        [canGoBack]="canGoBack"
+        [canGoForward]="canGoForward"
+        (periodBack)="goBack()"
+        (periodForward)="goForward()">
+      </app-trend-chart>
 
       <app-calendar-heatmap
         title="Training Effect"

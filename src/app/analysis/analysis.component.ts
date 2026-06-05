@@ -360,6 +360,38 @@ export class AnalysisComponent implements OnInit {
     return `https://connect.garmin.com/app/activity/${activity.id}`;
   }
 
+  // ── Load zone gauge helpers ─────────────────────────────
+  private gaugeMax(actual: number | null, high: number | null): number {
+    return Math.max(actual ?? 0, high ?? 0) * 1.35 || 100;
+  }
+
+  loadGaugeActualPct(
+    actual: number | null,
+    low: number | null,
+    high: number | null
+  ): string {
+    if (actual == null) return '0%';
+    return `${Math.min(100, (actual / this.gaugeMax(actual, high)) * 100).toFixed(1)}%`;
+  }
+
+  loadGaugeTargetLeft(
+    actual: number | null,
+    low: number | null,
+    high: number | null
+  ): string {
+    if (low == null) return '0%';
+    return `${((low / this.gaugeMax(actual, high)) * 100).toFixed(1)}%`;
+  }
+
+  loadGaugeTargetWidth(
+    actual: number | null,
+    low: number | null,
+    high: number | null
+  ): string {
+    if (low == null || high == null) return '0%';
+    return `${(((high - low) / this.gaugeMax(actual, high)) * 100).toFixed(1)}%`;
+  }
+
   activityValue(activity: Activity): number | null {
     if (!this.selectedDay || this.selectedDay.activityClassifier) return null;
     const v = activity[this.selectedDay.valueKey];

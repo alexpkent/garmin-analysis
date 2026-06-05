@@ -25,6 +25,16 @@ const TRAINING_STATUS_LABEL: Record<string, string> = {
   DETRAINING: 'Detraining'
 };
 
+const TRAINING_STATUS_COLOR: Record<string, string> = {
+  PRODUCTIVE: '#1FA87A',
+  MAINTAINING: '#42a5f5',
+  PEAKING: '#ffc107',
+  RECOVERY: '#4caf50',
+  UNPRODUCTIVE: '#ff8c00',
+  OVERREACHING: '#e63419',
+  DETRAINING: '#6c757d'
+};
+
 @Component({
   selector: 'app-health-trend-chart',
   templateUrl: './health-trend-chart.component.html',
@@ -47,6 +57,7 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
 
   private chart: any = null;
   periodLabel = '';
+  private statusLabels: (string | null)[] = [];
 
   ngOnChanges(_: SimpleChanges): void {
     this.buildChart();
@@ -122,12 +133,14 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
     const anaerobicWeekly: (number | null)[] = new Array(weekCount).fill(null);
     const lowTargetWeekly: (number | null)[] = new Array(weekCount).fill(null);
     const highTargetWeekly: (number | null)[] = new Array(weekCount).fill(null);
+    const statusWeekly: (string | null)[] = new Array(weekCount).fill(null);
 
     for (const s of filtered) {
       const d = moment(s.date).startOf('day');
       const idx = Math.floor(d.diff(weekStart, 'days') / 7);
       if (idx < 0 || idx >= weekCount) continue;
       if (s.vo2max_running != null) vo2Weekly[idx] = s.vo2max_running;
+      if (s.training_status != null) statusWeekly[idx] = s.training_status;
       if (s.load_focus) {
         if (s.load_focus.low_aerobic_actual != null)
           lowAerobicWeekly[idx] = s.load_focus.low_aerobic_actual;
@@ -145,6 +158,21 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
           highTargetWeekly[idx] = Math.round((hMin + hMax) / 2);
       }
     }
+
+    // Compute status dot colours and labels from weekly status phrases
+    this.statusLabels = statusWeekly.map((s) => {
+      if (!s) return null;
+      const prefix = s.replace(/_\d+$/, '');
+      return TRAINING_STATUS_LABEL[prefix] ?? s;
+    });
+    const statusColors = statusWeekly.map((s) => {
+      if (!s) return 'transparent';
+      const prefix = s.replace(/_\d+$/, '');
+      return TRAINING_STATUS_COLOR[prefix] ?? '#6c757d';
+    });
+    const statusDotData: (number | null)[] = statusWeekly.map((s) =>
+      s ? 0.5 : null
+    );
 
     const datasets = [
       {
@@ -242,6 +270,18 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
         tension: 0.3,
         spanGaps: true,
         yAxisID: 'yLoad'
+      },
+      {
+        label: 'Training Status',
+        data: statusDotData,
+        pointBackgroundColor: statusColors,
+        pointBorderColor: statusColors,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        borderWidth: 0,
+        showLine: false,
+        spanGaps: false,
+        yAxisID: 'yStatus'
       }
     ];
 
@@ -272,6 +312,10 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
             borderWidth: 1,
             callbacks: {
               label: (ctx: any) => {
+                if (ctx.dataset.label === 'Training Status') {
+                  const lbl = this.statusLabels[ctx.dataIndex];
+                  return lbl ? ` Status: ${lbl}` : '';
+                }
                 if (ctx.parsed.y == null) return '';
                 return ` ${ctx.dataset.label}: ${ctx.parsed.y}`;
               }
@@ -323,6 +367,13 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
               color: '#ef5350',
               font: { size: 11 }
             }
+          },
+          yStatus: {
+            type: 'linear',
+            position: 'left',
+            display: false,
+            min: 0,
+            max: 1
           }
         }
       }

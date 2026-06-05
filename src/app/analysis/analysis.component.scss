@@ -130,6 +130,35 @@
   margin-top: 1px;
 }
 
+/* ── Load zone gauge bars ──────────────────────────────── */
+.load-gauge-track {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  background: #2a2d31;
+  border-radius: 3px;
+  margin-top: 5px;
+  overflow: hidden;
+}
+
+.load-gauge-target {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 3px;
+}
+
+.load-gauge-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 3px;
+  opacity: 0.85;
+  transition: width 0.3s ease;
+}
+
 /* ── Day detail popup ──────────────────────────────────── */
 .day-backdrop {
   position: fixed;
