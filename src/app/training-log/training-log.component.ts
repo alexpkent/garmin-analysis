@@ -195,7 +195,10 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
       return {
         label,
         distance: filtered.reduce((sum, a) => sum + a.distance_meters, 0),
-        seconds: filtered.reduce((sum, a) => sum + a.moving_time_seconds, 0),
+        seconds: filtered.reduce(
+          (sum, a) => sum + (a.duration ?? a.moving_time_seconds),
+          0
+        ),
         runCount: filtered.filter((a) => this.isRun(a)).length,
         rideCount: filtered.filter((a) => this.isRide(a)).length,
         otherCount: filtered.filter((a) => this.isOtherActivity(a)).length

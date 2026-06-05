@@ -244,7 +244,7 @@ export class AnalysisComponent implements OnInit {
   ];
 
   readonly durationClassifier = (a: Activity): HeatmapBand | null => {
-    const secs = a.moving_time_seconds ?? 0;
+    const secs = a.duration ?? a.moving_time_seconds ?? 0;
     if (secs === 0) return null;
     return (
       this.durationBands.find((b) => secs >= b.min && secs < b.max) ?? null
