@@ -19,94 +19,25 @@
   @if (loaded) {
     <div class="analysis-content">
 
-      <!-- Latest activity summary card -->
-      @if (latestActivity) {
+      <!-- Training Assessment card -->
+      @if (trainingInsights.length > 0) {
         <div class="latest-card">
           <div class="latest-card-header">
             <div class="latest-card-title">
-              <i [class]="latestActivityIcon(latestActivity) + ' latest-icon'"></i>
-              <span class="latest-name">{{ latestActivity.name }}</span>
-            </div>
-            <div class="latest-card-meta">
-              <span class="latest-ago">{{ latestActivity.start_date | date:'mediumDate' }}</span>
-              <a [href]="garminUrl(latestActivity)" target="_blank" rel="noopener noreferrer" class="latest-garmin-link" title="Open in Garmin Connect">
-                <i class="fas fa-external-link-alt"></i>
-              </a>
+              <i class="fas fa-brain latest-icon"></i>
+              <span class="latest-name">Training Assessment</span>
             </div>
           </div>
-          <div class="latest-card-body">
-
-            <div class="latest-stat">
-              <span class="latest-stat-label">Distance</span>
-              <span class="latest-stat-value" [style.color]="latestDistanceBand(latestActivity)?.color ?? '#fff'">
-                {{ (latestActivity.distance_meters / 1609.344) | number:'1.1-1' }} mi
-              </span>
-              @if (latestDistanceBand(latestActivity)) {
-                <span class="latest-stat-band" [style.color]="latestDistanceBand(latestActivity)!.color">{{ latestDistanceBand(latestActivity)!.label }}</span>
-              }
-            </div>
-
-            <div class="latest-stat">
-              <span class="latest-stat-label">Duration</span>
-              <span class="latest-stat-value" [style.color]="latestDurationBand(latestActivity)?.color ?? '#fff'">
-                {{ latestDuration(latestActivity) }}
-              </span>
-              @if (latestDurationBand(latestActivity)) {
-                <span class="latest-stat-band" [style.color]="latestDurationBand(latestActivity)!.color">{{ latestDurationBand(latestActivity)!.label }}</span>
-              }
-            </div>
-
-            @if (latestActivity.averageHR) {
-              <div class="latest-stat">
-                <span class="latest-stat-label">Avg HR</span>
-                <span class="latest-stat-value" [style.color]="latestHrBand(latestActivity.averageHR)?.color ?? '#fff'">
-                  {{ latestActivity.averageHR | number:'1.0-0' }} bpm
-                </span>
-                @if (latestHrBand(latestActivity.averageHR)) {
-                  <span class="latest-stat-band" [style.color]="latestHrBand(latestActivity.averageHR)!.color">{{ latestHrBand(latestActivity.averageHR)!.label }}</span>
-                }
+          <div class="assess-list">
+            @for (insight of trainingInsights; track insight.label) {
+              <div class="assess-row">
+                <i [class]="insight.icon + ' assess-icon'" [style.color]="insight.color"></i>
+                <div class="assess-body">
+                  <span class="assess-label" [style.color]="insight.color">{{ insight.label }}</span>
+                  <span class="assess-text">{{ insight.text }}</span>
+                </div>
               </div>
             }
-
-            @if (latestActivity.maxHR) {
-              <div class="latest-stat">
-                <span class="latest-stat-label">Max HR</span>
-                <span class="latest-stat-value" [style.color]="latestHrBand(latestActivity.maxHR)?.color ?? '#fff'">
-                  {{ latestActivity.maxHR | number:'1.0-0' }} bpm
-                </span>
-                @if (latestHrBand(latestActivity.maxHR)) {
-                  <span class="latest-stat-band" [style.color]="latestHrBand(latestActivity.maxHR)!.color">{{ latestHrBand(latestActivity.maxHR)!.label }}</span>
-                }
-              </div>
-            }
-
-            @if (latestActivity.trainingEffect) {
-              <div class="latest-stat">
-                <span class="latest-stat-label">Training Effect</span>
-                <span class="latest-stat-value" [style.color]="latestTrainingEffectBand(latestActivity)?.color ?? '#fff'">
-                  Aerobic {{ latestActivity.trainingEffect | number:'1.1-1' }}
-                  @if (latestActivity.anaerobicTrainingEffect) {
-                    &nbsp;· Anaerobic {{ latestActivity.anaerobicTrainingEffect | number:'1.1-1' }}
-                  }
-                </span>
-                @if (latestTrainingEffectBand(latestActivity)) {
-                  <span class="latest-stat-band" [style.color]="latestTrainingEffectBand(latestActivity)!.color">{{ latestTrainingEffectBand(latestActivity)!.label }}</span>
-                }
-              </div>
-            }
-
-            @if (latestActivity.activityTrainingLoad) {
-              <div class="latest-stat">
-                <span class="latest-stat-label">Training Load</span>
-                <span class="latest-stat-value" [style.color]="latestTrainingLoadBand(latestActivity)?.color ?? '#fff'">
-                  {{ latestActivity.activityTrainingLoad | number:'1.0-0' }}
-                </span>
-                @if (latestTrainingLoadBand(latestActivity)) {
-                  <span class="latest-stat-band" [style.color]="latestTrainingLoadBand(latestActivity)!.color">{{ latestTrainingLoadBand(latestActivity)!.label }}</span>
-                }
-              </div>
-            }
-
           </div>
         </div>
       }
@@ -236,6 +167,106 @@
           </div>
         </div>
       }
+
+      <!-- Latest activity summary card -->
+      @if (latestActivity) {
+        <div class="latest-card">
+          <div class="latest-card-header">
+            <div class="latest-card-title">
+              <span class="latest-icon">💪</span>
+              <span class="latest-name">{{ latestActivity.name }}</span>
+            </div>
+            <div class="latest-card-meta">
+              <span class="latest-ago">{{ latestActivity.start_date | date:'mediumDate' }}</span>
+              <a [href]="garminUrl(latestActivity)" target="_blank" rel="noopener noreferrer" class="latest-garmin-link" title="Open in Garmin Connect">
+                <i class="fas fa-external-link-alt"></i>
+              </a>
+            </div>
+          </div>
+          <div class="latest-card-body">
+
+            <div class="latest-stat">
+              <span class="latest-stat-label">Distance</span>
+              <span class="latest-stat-value" [style.color]="latestDistanceBand(latestActivity)?.color ?? '#fff'">
+                {{ (latestActivity.distance_meters / 1609.344) | number:'1.1-1' }} mi
+              </span>
+              @if (latestDistanceBand(latestActivity)) {
+                <span class="latest-stat-band" [style.color]="latestDistanceBand(latestActivity)!.color">{{ latestDistanceBand(latestActivity)!.label }}</span>
+              }
+            </div>
+
+            <div class="latest-stat">
+              <span class="latest-stat-label">Duration</span>
+              <span class="latest-stat-value" [style.color]="latestDurationBand(latestActivity)?.color ?? '#fff'">
+                {{ latestDuration(latestActivity) }}
+              </span>
+              @if (latestDurationBand(latestActivity)) {
+                <span class="latest-stat-band" [style.color]="latestDurationBand(latestActivity)!.color">{{ latestDurationBand(latestActivity)!.label }}</span>
+              }
+            </div>
+
+            @if (latestActivity.averageHR) {
+              <div class="latest-stat">
+                <span class="latest-stat-label">Avg HR</span>
+                <span class="latest-stat-value" [style.color]="latestHrBand(latestActivity.averageHR)?.color ?? '#fff'">
+                  {{ latestActivity.averageHR | number:'1.0-0' }} bpm
+                </span>
+                @if (latestHrBand(latestActivity.averageHR)) {
+                  <span class="latest-stat-band" [style.color]="latestHrBand(latestActivity.averageHR)!.color">{{ latestHrBand(latestActivity.averageHR)!.label }}</span>
+                }
+              </div>
+            }
+
+            @if (latestActivity.maxHR) {
+              <div class="latest-stat">
+                <span class="latest-stat-label">Max HR</span>
+                <span class="latest-stat-value" [style.color]="latestHrBand(latestActivity.maxHR)?.color ?? '#fff'">
+                  {{ latestActivity.maxHR | number:'1.0-0' }} bpm
+                </span>
+                @if (latestHrBand(latestActivity.maxHR)) {
+                  <span class="latest-stat-band" [style.color]="latestHrBand(latestActivity.maxHR)!.color">{{ latestHrBand(latestActivity.maxHR)!.label }}</span>
+                }
+              </div>
+            }
+
+            @if (latestActivity.trainingEffect) {
+              <div class="latest-stat">
+                <span class="latest-stat-label">Training Effect</span>
+                <span class="latest-stat-value" [style.color]="latestTrainingEffectBand(latestActivity)?.color ?? '#fff'">
+                  Aerobic {{ latestActivity.trainingEffect | number:'1.1-1' }}
+                  @if (latestActivity.anaerobicTrainingEffect) {
+                    &nbsp;· Anaerobic {{ latestActivity.anaerobicTrainingEffect | number:'1.1-1' }}
+                  }
+                </span>
+                @if (latestTrainingEffectBand(latestActivity)) {
+                  <span class="latest-stat-band" [style.color]="latestTrainingEffectBand(latestActivity)!.color">{{ latestTrainingEffectBand(latestActivity)!.label }}</span>
+                }
+              </div>
+            }
+
+            @if (latestActivity.activityTrainingLoad) {
+              <div class="latest-stat">
+                <span class="latest-stat-label">Training Load</span>
+                <span class="latest-stat-value" [style.color]="latestTrainingLoadBand(latestActivity)?.color ?? '#fff'">
+                  {{ latestActivity.activityTrainingLoad | number:'1.0-0' }}
+                </span>
+                @if (latestTrainingLoadBand(latestActivity)) {
+                  <span class="latest-stat-band" [style.color]="latestTrainingLoadBand(latestActivity)!.color">{{ latestTrainingLoadBand(latestActivity)!.label }}</span>
+                }
+              </div>
+            }
+
+          </div>
+        </div>
+      }
+
+      <!-- Period size selector -->
+      <div class="period-size-toggle">
+        <button class="btn btn-sm period-size-btn" [class.active]="periodSize === 'week'" (click)="setPeriodSize('week')">Week</button>
+        <button class="btn btn-sm period-size-btn" [class.active]="periodSize === 'month'" (click)="setPeriodSize('month')">Month</button>
+        <button class="btn btn-sm period-size-btn" [class.active]="periodSize === 'quarter'" (click)="setPeriodSize('quarter')">Quarter</button>
+        <button class="btn btn-sm period-size-btn" [class.active]="periodSize === 'year'" (click)="setPeriodSize('year')">Year</button>
+      </div>
 
       <app-volume-chart
         [activities]="activities"

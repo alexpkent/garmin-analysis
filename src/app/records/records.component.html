@@ -1,0 +1,191 @@
+<div class="bg-dark min-vh-100 text-white">
+  <nav class="navbar navbar-dark bg-dark pb-0 border-bottom border-secondary">
+    <span class="navbar-brand mb-0 h1 text-warning">Personal Records</span>
+  </nav>
+
+  @if (loading) {
+    <div class="loading-overlay">
+      <div class="loading-ring"></div>
+      <span class="loading-text">Loading records…</span>
+    </div>
+  }
+
+  @if (loaded) {
+    <div class="records-content">
+
+      @if (!data || (runningRecords.length === 0 && cyclingRecords.length === 0 && swimmingRecords.length === 0 && !predictions)) {
+        <div class="empty-state">
+          <i class="fas fa-trophy empty-icon"></i>
+          <p>No records data yet — records are fetched from Garmin the next time activities sync.</p>
+        </div>
+      }
+
+      <!-- Running PRs -->
+      @if (runningRecords.length > 0) {
+        <div class="pr-card">
+          <div class="pr-card-header">
+            <i class="fas fa-running pr-header-icon" style="color:#e63419"></i>
+            <span class="pr-card-title">Running</span>
+          </div>
+          <div class="pr-table">
+            @for (rec of runningRecords; track rec.type_id) {
+              <div class="pr-row">
+                <span class="pr-label">{{ rec.label }}</span>
+                <span class="pr-value" style="color:#ffc107">{{ formatValue(rec) }}</span>
+                @if (pace(rec)) {
+                  <span class="pr-pace">{{ pace(rec) }}</span>
+                }
+                <div class="pr-meta">
+                  @if (rec.date) {
+                    <span class="pr-date">{{ formatDate(rec.date) }}</span>
+                    <span class="pr-ago">· {{ timeSince(rec.date) }}</span>
+                  }
+                  @if (garminUrl(rec.activity_id)) {
+                    <a [href]="garminUrl(rec.activity_id)" target="_blank" rel="noopener noreferrer" class="pr-link">
+                      <i class="fas fa-external-link-alt"></i>
+                    </a>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Cycling PRs -->
+      @if (cyclingRecords.length > 0) {
+        <div class="pr-card">
+          <div class="pr-card-header">
+            <i class="fas fa-biking pr-header-icon" style="color:#2b54d4"></i>
+            <span class="pr-card-title">Cycling</span>
+          </div>
+          <div class="pr-table">
+            @for (rec of cyclingRecords; track rec.type_id) {
+              <div class="pr-row">
+                <span class="pr-label">{{ rec.label }}</span>
+                <span class="pr-value" style="color:#ffc107">{{ formatValue(rec) }}</span>
+                <div class="pr-meta">
+                  @if (rec.date) {
+                    <span class="pr-date">{{ formatDate(rec.date) }}</span>
+                    <span class="pr-ago">· {{ timeSince(rec.date) }}</span>
+                  }
+                  @if (garminUrl(rec.activity_id)) {
+                    <a [href]="garminUrl(rec.activity_id)" target="_blank" rel="noopener noreferrer" class="pr-link">
+                      <i class="fas fa-external-link-alt"></i>
+                    </a>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Swimming PRs -->
+      @if (swimmingRecords.length > 0) {
+        <div class="pr-card">
+          <div class="pr-card-header">
+            <i class="fas fa-swimmer pr-header-icon" style="color:#06c"></i>
+            <span class="pr-card-title">Swimming</span>
+          </div>
+          <div class="pr-table">
+            @for (rec of swimmingRecords; track rec.type_id) {
+              <div class="pr-row">
+                <span class="pr-label">{{ rec.label }}</span>
+                <span class="pr-value" style="color:#ffc107">{{ formatValue(rec) }}</span>
+                <div class="pr-meta">
+                  @if (rec.date) {
+                    <span class="pr-date">{{ formatDate(rec.date) }}</span>
+                    <span class="pr-ago">· {{ timeSince(rec.date) }}</span>
+                  }
+                  @if (garminUrl(rec.activity_id)) {
+                    <a [href]="garminUrl(rec.activity_id)" target="_blank" rel="noopener noreferrer" class="pr-link">
+                      <i class="fas fa-external-link-alt"></i>
+                    </a>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Other PRs (non-running, non-cycling, non-swimming) -->
+      @if (otherRecords.length > swimmingRecords.length) {
+        <div class="pr-card">
+          <div class="pr-card-header">
+            <i class="fas fa-heartbeat pr-header-icon" style="color:#b316de"></i>
+            <span class="pr-card-title">Other</span>
+          </div>
+          <div class="pr-table">
+            @for (rec of otherRecords; track rec.type_id) {
+              @if (rec.activity_type !== 'lap_swimming') {
+                <div class="pr-row">
+                  <span class="pr-label">{{ rec.label }}</span>
+                  <span class="pr-value" style="color:#ffc107">{{ formatValue(rec) }}</span>
+                  <div class="pr-meta">
+                    @if (rec.date) {
+                      <span class="pr-date">{{ formatDate(rec.date) }}</span>
+                      <span class="pr-ago">· {{ timeSince(rec.date) }}</span>
+                    }
+                    @if (garminUrl(rec.activity_id)) {
+                      <a [href]="garminUrl(rec.activity_id)" target="_blank" rel="noopener noreferrer" class="pr-link">
+                        <i class="fas fa-external-link-alt"></i>
+                      </a>
+                    }
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        </div>
+      }
+
+      @if (data?.date) {
+        <div class="records-footer">Last updated: {{ formatDate(data!.date) }}</div>
+      }
+
+      <!-- Race Predictions -->
+      @if (predictions && (predictions.time_5k_seconds || predictions.time_10k_seconds || predictions.time_half_marathon_seconds || predictions.time_marathon_seconds)) {
+        <div class="pr-card">
+          <div class="pr-card-header">
+            <i class="fas fa-flag-checkered pr-header-icon"></i>
+            <span class="pr-card-title">Race Predictions</span>
+            <span class="pr-card-subtitle">Based on current fitness (Garmin)</span>
+          </div>
+          <div class="pr-table">
+            @if (predictions.time_5k_seconds) {
+              <div class="pr-row">
+                <span class="pr-label">5K</span>
+                <span class="pr-value" style="color:#42a5f5">{{ formatTime(predictions.time_5k_seconds) }}</span>
+                <span class="pr-pace">{{ formatTime(predictions.time_5k_seconds / 5 * 1.609344) }}/mi</span>
+              </div>
+            }
+            @if (predictions.time_10k_seconds) {
+              <div class="pr-row">
+                <span class="pr-label">10K</span>
+                <span class="pr-value" style="color:#42a5f5">{{ formatTime(predictions.time_10k_seconds) }}</span>
+                <span class="pr-pace">{{ formatTime(predictions.time_10k_seconds / 10 * 1.609344) }}/mi</span>
+              </div>
+            }
+            @if (predictions.time_half_marathon_seconds) {
+              <div class="pr-row">
+                <span class="pr-label">Half Marathon</span>
+                <span class="pr-value" style="color:#42a5f5">{{ formatTime(predictions.time_half_marathon_seconds) }}</span>
+                <span class="pr-pace">{{ formatTime(predictions.time_half_marathon_seconds / 21.0975 * 1.609344) }}/mi</span>
+              </div>
+            }
+            @if (predictions.time_marathon_seconds) {
+              <div class="pr-row">
+                <span class="pr-label">Marathon</span>
+                <span class="pr-value" style="color:#42a5f5">{{ formatTime(predictions.time_marathon_seconds) }}</span>
+                <span class="pr-pace">{{ formatTime(predictions.time_marathon_seconds / 42.195 * 1.609344) }}/mi</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+    </div>
+  }
+</div>

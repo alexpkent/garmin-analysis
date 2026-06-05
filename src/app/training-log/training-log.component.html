@@ -13,13 +13,9 @@
   }
 
   @if (loading) {
-    <div class="d-flex justify-content-center mt-5">
-      <div class="spinner-border text-warning" role="status">
-        <span class="sr-only">Loading...</span>
-      </div>
-    </div>
-    <div class="d-flex justify-content-center mt-3 text-warning">
-      <h2>Loading...</h2>
+    <div class="loading-overlay">
+      <div class="loading-ring"></div>
+      <span class="loading-text">Loading activities…</span>
     </div>
   }
 
@@ -43,7 +39,7 @@
           }
         </div>
 
-        <!-- Legend -->
+        <!-- Legend + Filter bar -->
         <div class="legend-bar">
           <div class="legend-item">
             <span class="legend-swatch" style="background:#e63419"></span> Run
@@ -59,6 +55,45 @@
           </div>
         </div>
 
+        <!-- Filter bar -->
+        <div class="filter-bar">
+          <div class="filter-search-wrap">
+            <i class="fas fa-search filter-search-icon"></i>
+            <input class="filter-search"
+                   type="text"
+                   placeholder="Search activities…"
+                   [(ngModel)]="searchQuery"
+                   aria-label="Search activities" />
+            @if (searchQuery) {
+              <button class="filter-clear-btn" (click)="searchQuery = ''" aria-label="Clear search">
+                <i class="fas fa-times"></i>
+              </button>
+            }
+          </div>
+          <div class="filter-type-btns">
+            <button class="filter-type-btn"
+                    [class.active-run]="filterTypes.has('run')"
+                    (click)="toggleTypeFilter('run')">
+              <i class="fas fa-running"></i> Run
+            </button>
+            <button class="filter-type-btn"
+                    [class.active-ride]="filterTypes.has('ride')"
+                    (click)="toggleTypeFilter('ride')">
+              <i class="fas fa-biking"></i> Ride
+            </button>
+            <button class="filter-type-btn"
+                    [class.active-other]="filterTypes.has('other')"
+                    (click)="toggleTypeFilter('other')">
+              <i class="fas fa-heartbeat"></i> Other
+            </button>
+          </div>
+          @if (isFiltered) {
+            <button class="filter-reset-btn" (click)="clearFilters()">
+              <i class="fas fa-undo"></i> Reset
+            </button>
+          }
+        </div>
+
         <!-- Weekly bubble grid -->
         <div class="week-grid-scroll px-3 pb-4">
           <!-- Day-of-week header -->
@@ -70,7 +105,7 @@
           </div>
 
           <!-- One row per week -->
-          @for (week of weekGroups; track week.weekKey) {
+          @for (week of filteredWeekGroups; track week.weekKey) {
             <div class="week-row" [id]="'week-' + week.weekKey">
               <div class="week-summary-col">
                 <div class="week-range">{{ week.weekLabel }}</div>
