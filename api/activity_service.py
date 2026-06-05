@@ -32,12 +32,10 @@ class ActivityService:
             login_future.result()
             stored: list = stored_future.result()
 
-        # Determine incremental sync start date from normalised start_date field
+        # Determine incremental sync start date from normalised start_date field.
+        # Blob is always written sorted newest-first, so stored[0] is the max.
         if stored:
-            after_date = max(
-                datetime.strptime(a["start_date"][:10], "%Y-%m-%d").date()
-                for a in stored
-            )
+            after_date = datetime.strptime(stored[0]["start_date"][:10], "%Y-%m-%d").date()
         else:
             after_date = date(2000, 1, 1)
 
@@ -62,7 +60,8 @@ class ActivityService:
 
             if new_raw:
                 updated = new_normalised + [a for a in stored if a["id"] not in new_ids]
-                # Write blob in background — don't block the response
+                # Sort once, write blob in background — don't block the response
+                updated.sort(key=lambda a: a["start_date"], reverse=True)
                 Thread(
                     target=self._blob_store.write_json,
                     args=(_GARMIN_BLOB, updated),
@@ -77,7 +76,8 @@ class ActivityService:
         except GarminConnectConnectionError:
             sync_failed = True
 
-        stored.sort(key=lambda a: a["start_date"], reverse=True)
+        # stored is already sorted newest-first (blob is always written sorted,
+        # and any new merge is sorted above before assignment).
         return stored, sync_failed
 
 

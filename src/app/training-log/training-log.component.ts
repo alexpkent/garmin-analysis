@@ -70,6 +70,11 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     const showRide = this.filterTypes.has('ride');
     const showOther = this.filterTypes.has('other');
 
+    // Fast path: no filtering active, avoid rebuilding the entire array tree.
+    if (!q && showRun && showRide && showOther) {
+      return this.weekGroups;
+    }
+
     return this.weekGroups
       .map((week) => ({
         ...week,

@@ -4,3 +4,4 @@ garminconnect~=0.3.2
 curl_cffi
 polyline~=2.0
 lxml
+orjson

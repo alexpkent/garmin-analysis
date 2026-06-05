@@ -1,4 +1,4 @@
-import json
+import orjson
 
 import azure.functions as func
 
@@ -8,20 +8,24 @@ from garmin_client import GarminClient
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
+# Module-level singletons — Azure Functions reuses the worker process between
+# warm invocations, so creating BlobServiceClient and Garmin once per worker
+# avoids ~50 ms of TCP/TLS setup on every request.
+_blob_store = BlobStore()
+_garmin_client = GarminClient(_blob_store)
+_activity_service = ActivityService(_blob_store, _garmin_client)
+
 
 @app.route(route="activities", methods=["GET"])
 def get_activities(req: func.HttpRequest) -> func.HttpResponse:
-    blob_store = BlobStore()
-    garmin_client = GarminClient(blob_store)
-    service = ActivityService(blob_store, garmin_client)
-    activities, sync_failed = service.get_activities()
+    activities, sync_failed = _activity_service.get_activities()
 
     headers = {}
     if sync_failed:
         headers["X-Sync-Error"] = "true"
 
     return func.HttpResponse(
-        json.dumps(activities),
+        orjson.dumps(activities),
         status_code=200,
         mimetype="application/json",
         headers=headers,
@@ -30,10 +34,9 @@ def get_activities(req: func.HttpRequest) -> func.HttpResponse:
 
 @app.route(route="health", methods=["GET"])
 def get_health(req: func.HttpRequest) -> func.HttpResponse:
-    blob_store = BlobStore()
-    data = blob_store.read_json("garmin/health.json") or []
+    data = _blob_store.read_json("garmin/health.json") or []
     return func.HttpResponse(
-        json.dumps(data),
+        orjson.dumps(data),
         status_code=200,
         mimetype="application/json",
     )
@@ -41,10 +44,9 @@ def get_health(req: func.HttpRequest) -> func.HttpResponse:
 
 @app.route(route="records", methods=["GET"])
 def get_records(req: func.HttpRequest) -> func.HttpResponse:
-    blob_store = BlobStore()
-    data = blob_store.read_json("garmin/records.json") or {}
+    data = _blob_store.read_json("garmin/records.json") or {}
     return func.HttpResponse(
-        json.dumps(data),
+        orjson.dumps(data),
         status_code=200,
         mimetype="application/json",
     )

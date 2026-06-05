@@ -330,9 +330,9 @@ export class AnalysisComponent implements OnInit {
   }
 
   private updateAlertCount(): void {
-    this.activityService.trainingAlertCount = this.trainingInsights.filter(
-      (i) => i.level === 'alert'
-    ).length;
+    this._trainingInsightsCache = this.computeTrainingInsights();
+    this.activityService.trainingAlertCount =
+      this._trainingInsightsCache.filter((i) => i.level === 'alert').length;
   }
 
   closePopup(): void {
@@ -563,7 +563,13 @@ export class AnalysisComponent implements OnInit {
   }
 
   // ── Training Assessment ─────────────────────────────────
+  private _trainingInsightsCache: TrainingInsight[] | null = null;
+
   get trainingInsights(): TrainingInsight[] {
+    return this._trainingInsightsCache ?? [];
+  }
+
+  private computeTrainingInsights(): TrainingInsight[] {
     const insights: TrainingInsight[] = [];
     const now = moment();
 
