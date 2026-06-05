@@ -252,7 +252,8 @@ export class AnalysisComponent implements OnInit {
   latestActivityIcon(a: Activity): string {
     const t = (a.activity_type ?? '').toLowerCase();
     if (t.includes('run')) return 'fas fa-running';
-    if (t.includes('ride') || t.includes('cycl') || t.includes('bike')) return 'fas fa-biking';
+    if (t.includes('ride') || t.includes('cycl') || t.includes('bike'))
+      return 'fas fa-biking';
     return 'fas fa-heartbeat';
   }
 
@@ -280,13 +281,13 @@ export class AnalysisComponent implements OnInit {
 
   latestHrBand(hr: number | undefined): HeatmapBand | null {
     if (!hr) return null;
-    return this.maxHrBands.find(b => hr >= b.min && hr < b.max) ?? null;
+    return this.maxHrBands.find((b) => hr >= b.min && hr < b.max) ?? null;
   }
 
   latestTrainingLoadBand(a: Activity): HeatmapBand | null {
     const v = a.activityTrainingLoad;
     if (v == null) return null;
-    return this.trainingLoadBands.find(b => v >= b.min && v < b.max) ?? null;
+    return this.trainingLoadBands.find((b) => v >= b.min && v < b.max) ?? null;
   }
 
   formatTeLabel(label: string | undefined): string {
