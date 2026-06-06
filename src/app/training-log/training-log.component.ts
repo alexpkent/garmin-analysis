@@ -135,6 +135,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
   readonly runColor = '#FF7A59';
   readonly rideColor = '#72A7FF';
   readonly otherColor = '#D56CFF';
+  readonly minDistanceBarPercent = 16;
 
   private readonly tanakaMaxHr: number = (() => {
     const dob = new Date(environment.userDob);
@@ -567,7 +568,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     }
     const relativeWidth =
       (Math.min(miles, this.maxActivityMiles) / this.maxActivityMiles) * 100;
-    return Math.max(Math.round(relativeWidth), 16);
+    return Math.max(Math.round(relativeWidth), this.minDistanceBarPercent);
   }
 
   onBubbleClick(activity: Activity) {
