@@ -1,6 +1,6 @@
-$run-color: #e63419;
-$ride-color: #2b54d4;
-$other-color: #b316de;
+$run-color: #ff7a59;
+$ride-color: #72a7ff;
+$other-color: #d56cff;
 $accent: #ffc107;
 $card-bg: #1a1d21;
 $card-border: #343a40;
@@ -314,54 +314,69 @@ $dim: #6c757d;
   align-items: center;
   cursor: pointer;
 
-  &:hover .activity-pill {
-    filter: brightness(1.3);
+  &:hover .activity-distance-chip {
+    filter: brightness(1.08);
     transform: scale(1.04);
   }
 }
 
-.activity-pill {
-  --pill-active-color: #adb5bd;
-  width: 68px;
-  height: 14px;
-  border-radius: 999px;
-  border: 1px solid #3b4046;
-  background: #1f2327;
-  padding: 2px;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 2px;
+.activity-distance-chip {
+  --activity-accent: #adb5bd;
+  width: 72px;
+  padding: 6px 7px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(180deg, #252a31 0%, #1c2026 100%);
   transition: filter 0.15s ease, transform 0.15s ease;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
 }
 
-.activity-pill-segment {
-  border-radius: 999px;
-  background: rgba(#adb5bd, 0.2);
-
-  &.active {
-    background: var(--pill-active-color);
-  }
+.activity-distance-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
 }
 
-.activity-distance {
-  font-size: 0.62rem;
+.activity-distance-icon {
+  color: var(--activity-accent);
+  font-size: 0.68rem;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.08);
+}
+
+.activity-distance-value {
+  font-size: 0.66rem;
   font-weight: 700;
-  color: #dee2e6;
+  color: #f8f9fa;
   line-height: 1;
-  margin-top: 4px;
+}
+
+.activity-distance-track {
+  margin-top: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.activity-distance-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--activity-accent);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
 }
 
 .activity-name {
   font-size: 0.58rem;
-  color: $dim;
+  color: #c9ced4;
   text-align: center;
-  max-width: 68px;
+  max-width: 74px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  margin-top: 3px;
+  margin-top: 5px;
 }
 
 /* ── Year / month navigator ────────────────────────────── */
