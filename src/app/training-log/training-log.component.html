@@ -31,27 +31,27 @@
               <div class="summary-primary">{{ distanceToMiles(summary.distance) | number:'1.0-1' }} <small style="font-size:0.85rem;color:#adb5bd">mi</small></div>
               <div class="summary-secondary">{{ secondsToHours(summary.seconds) | number:'1.0-1' }} hrs</div>
               <div class="summary-badges">
-                <span class="badge-pill badge-run">{{ summary.runCount }} Runs</span>
-                <span class="badge-pill badge-ride">{{ summary.rideCount }} Rides</span>
-                <span class="badge-pill badge-other">{{ summary.otherCount }} Other</span>
+                <span class="badge-pill badge-run" aria-label="Runs" title="Runs">
+                  <span>{{ summary.runCount }}</span>
+                  <i class="fas fa-running" aria-hidden="true"></i>
+                </span>
+                <span class="badge-pill badge-ride" aria-label="Rides" title="Rides">
+                  <span>{{ summary.rideCount }}</span>
+                  <i class="fas fa-biking" aria-hidden="true"></i>
+                </span>
+                <span class="badge-pill badge-other" aria-label="Other activities" title="Other activities">
+                  <span>{{ summary.otherCount }}</span>
+                  <i class="fas fa-heartbeat" aria-hidden="true"></i>
+                </span>
               </div>
             </div>
           }
         </div>
 
-        <!-- Legend + Filter bar -->
+        <!-- Filter context -->
         <div class="legend-bar">
-          <div class="legend-item">
-            <span class="legend-swatch" style="background:#e63419"></span> Run
-          </div>
-          <div class="legend-item">
-            <span class="legend-swatch" style="background:#2b54d4"></span> Ride
-          </div>
-          <div class="legend-item">
-            <span class="legend-swatch" style="background:#b316de"></span> Other
-          </div>
-          <div class="legend-item" style="margin-left:auto;font-size:0.7rem;color:#6c757d">
-            Circle size = distance
+          <div class="legend-note">
+            Bar length indicates distance
           </div>
         </div>
 
@@ -134,15 +134,16 @@
                 <div class="day-col">
                   @for (activity of day.activities; track activity.id) {
                     <div class="bubble-wrapper" (click)="onBubbleClick(activity)">
-                      <div class="activity-bubble"
-                           [style.width.px]="circleSize(activity)"
-                           [style.height.px]="circleSize(activity)"
-                           [style.background-color]="activityColor(activity)">
-                        @if (circleSize(activity) >= 34) {
-                          <span class="bubble-label">
-                            {{ distanceToMiles(activity.distance_meters) | number:'1.1-1' }}
-                          </span>
-                        }
+                      <div class="activity-distance-chip"
+                           [style.--activity-accent]="activityColor(activity)">
+                        <div class="activity-distance-top">
+                          <i [class]="activityIcon(activity) + ' activity-distance-icon'"></i>
+                          <div class="activity-distance-value">{{ distanceToMiles(activity.distance_meters) | number:'1.1-1' }} mi</div>
+                        </div>
+                        <div class="activity-distance-track">
+                          <span class="activity-distance-fill"
+                                [style.width.%]="distanceFillPercent(activity)"></span>
+                        </div>
                       </div>
                       <div class="activity-name">{{ activity.name }}</div>
                     </div>

@@ -132,9 +132,9 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
   private readonly METERS_PER_MILE = 1609;
   private readonly SECONDS_PER_HOUR = 3600;
 
-  readonly runColor = '#E63419';
-  readonly rideColor = '#2B54D4';
-  readonly otherColor = '#b316de';
+  readonly runColor = '#FF7A59';
+  readonly rideColor = '#72A7FF';
+  readonly otherColor = '#D56CFF';
 
   private readonly tanakaMaxHr: number = (() => {
     const dob = new Date(environment.userDob);
@@ -560,12 +560,14 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     }, 800);
   }
 
-  circleSize(activity: Activity): number {
+  distanceFillPercent(activity: Activity): number {
     const miles = this.distanceToMiles(activity.distance_meters);
     if (miles <= 0) {
-      return 20;
+      return 0;
     }
-    return Math.round(18 + 70 * Math.sqrt(miles / this.maxActivityMiles));
+    const relativeWidth =
+      (Math.min(miles, this.maxActivityMiles) / this.maxActivityMiles) * 100;
+    return Math.round(relativeWidth);
   }
 
   onBubbleClick(activity: Activity) {
