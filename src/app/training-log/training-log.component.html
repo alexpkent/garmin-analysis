@@ -51,7 +51,7 @@
             <span class="legend-swatch" style="background:#b316de"></span> Other
           </div>
           <div class="legend-item" style="margin-left:auto;font-size:0.7rem;color:#6c757d">
-            Circle size = distance
+            Pill segments = distance
           </div>
         </div>
 
@@ -134,16 +134,14 @@
                 <div class="day-col">
                   @for (activity of day.activities; track activity.id) {
                     <div class="bubble-wrapper" (click)="onBubbleClick(activity)">
-                      <div class="activity-bubble"
-                           [style.width.px]="circleSize(activity)"
-                           [style.height.px]="circleSize(activity)"
-                           [style.background-color]="activityColor(activity)">
-                        @if (circleSize(activity) >= 34) {
-                          <span class="bubble-label">
-                            {{ distanceToMiles(activity.distance_meters) | number:'1.1-1' }}
-                          </span>
-                        }
+                      <div class="activity-pill"
+                           [style.--pill-active-color]="activityColor(activity)">
+                        <span class="activity-pill-segment" [class.active]="distanceTier(activity) >= 1"></span>
+                        <span class="activity-pill-segment" [class.active]="distanceTier(activity) >= 2"></span>
+                        <span class="activity-pill-segment" [class.active]="distanceTier(activity) >= 3"></span>
+                        <span class="activity-pill-segment" [class.active]="distanceTier(activity) >= 4"></span>
                       </div>
+                      <div class="activity-distance">{{ distanceToMiles(activity.distance_meters) | number:'1.1-1' }} mi</div>
                       <div class="activity-name">{{ activity.name }}</div>
                     </div>
                   }

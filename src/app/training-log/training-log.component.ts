@@ -57,7 +57,6 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
 
   activities: Activity[] = [];
   weekGroups: WeekData[] = [];
-  maxActivityMiles = 1;
 
   selectedActivity: Activity | null = null;
   yearMonthNav: NavYear[] = [];
@@ -259,19 +258,6 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
       this.weekGroups = [];
       return;
     }
-
-    const sortedMiles = this.activities
-      .map((a) => this.distanceToMiles(a.distance_meters))
-      .filter((m) => m > 0)
-      .sort((a, b) => a - b);
-    const p95idx = Math.floor(sortedMiles.length * 0.95);
-    this.maxActivityMiles =
-      sortedMiles.length > 0
-        ? Math.max(
-            sortedMiles[p95idx] ?? sortedMiles[sortedMiles.length - 1],
-            1
-          )
-        : 1;
 
     const weekMap = new Map<string, Activity[]>();
     for (const activity of this.activities) {
@@ -560,12 +546,21 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     }, 800);
   }
 
-  circleSize(activity: Activity): number {
+  distanceTier(activity: Activity): number {
     const miles = this.distanceToMiles(activity.distance_meters);
     if (miles <= 0) {
-      return 20;
+      return 0;
     }
-    return Math.round(18 + 70 * Math.sqrt(miles / this.maxActivityMiles));
+    if (miles < 5) {
+      return 1;
+    }
+    if (miles < 10) {
+      return 2;
+    }
+    if (miles < 15) {
+      return 3;
+    }
+    return 4;
   }
 
   onBubbleClick(activity: Activity) {
