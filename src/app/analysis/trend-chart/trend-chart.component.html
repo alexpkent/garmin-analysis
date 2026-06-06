@@ -1,4 +1,4 @@
-<div class="trend-card">
+<div class="trend-card" [class.fullscreen]="fullscreen">
   <div class="trend-header">
     <span class="trend-title">Activity Trends</span>
     <div class="trend-period-nav">
@@ -8,6 +8,9 @@
       <span class="trend-period">{{ periodLabel }}</span>
       <button class="period-nav-btn" (click)="periodForward.emit()" [disabled]="!canGoForward" aria-label="Next year">
         <i class="fas fa-chevron-right"></i>
+      </button>
+      <button class="period-nav-btn" (click)="toggleFullscreen()" [attr.aria-label]="fullscreen ? 'Exit fullscreen' : 'Fullscreen'">
+        <i [class]="fullscreen ? 'fas fa-compress' : 'fas fa-expand'"></i>
       </button>
     </div>
   </div>

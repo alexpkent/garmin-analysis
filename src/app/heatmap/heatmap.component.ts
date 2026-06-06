@@ -345,13 +345,13 @@ export class HeatmapComponent implements OnInit {
       });
       polyline.visible = true;
       polyline.activity = stream;
-      polyline.bindPopup(this.createPolylinePopup(stream));
+      polyline.bindPopup(this.createPolylinePopup(stream), { maxWidth: 300 });
 
       if (stream.start_latitude != null && stream.start_longitude != null) {
         var marker = L.marker([stream.start_latitude, stream.start_longitude], {
           title: stream.name
         });
-        marker.bindPopup(this.createPolylinePopup(stream));
+        marker.bindPopup(this.createPolylinePopup(stream), { maxWidth: 300 });
         this.markers.addLayer(marker);
       }
 
@@ -372,43 +372,91 @@ export class HeatmapComponent implements OnInit {
   }
 
   private createPolylinePopup(activity: Activity) {
-    let image = '<i class="fas fa-heartbeat"></i>';
+    let iconClass = 'fas fa-heartbeat';
+    let typeClass = 'hm-popup__header--other';
     if (this.isRun(activity)) {
-      image = '<i class="fas fa-running"></i>';
+      iconClass = 'fas fa-running';
+      typeClass = 'hm-popup__header--run';
     } else if (this.isRide(activity)) {
-      image = '<i class="fas fa-biking"></i>';
+      iconClass = 'fas fa-biking';
+      typeClass = 'hm-popup__header--ride';
     }
 
-    const avgHR = activity.averageHR
-      ? `Avg HR: ${activity.averageHR} bpm<br>`
-      : '';
-    const maxHR = activity.maxHR ? `Max HR: ${activity.maxHR} bpm<br>` : '';
-    const tEffect = activity.trainingEffect
-      ? `Training Effect: ${activity.trainingEffect.toFixed(1)}${activity.trainingEffectLabel ? ' (' + formatTrainingEffectLabel(activity.trainingEffectLabel) + ')' : ''}<br>`
-      : '';
-    const aEffect = activity.anaerobicTrainingEffect
-      ? `Anaerobic Effect: ${activity.anaerobicTrainingEffect.toFixed(1)}<br>`
-      : '';
-    const tLoad = activity.activityTrainingLoad
-      ? `Training Load: ${Math.round(activity.activityTrainingLoad)}<br>`
+    const durationSeconds = activity.duration ?? activity.moving_time_seconds;
+    const distanceMiles = this.distanceToMiles(activity.distance_meters);
+
+    let paceHtml = '';
+    if (this.isRun(activity) && activity.distance_meters > 0) {
+      const paceSecs = durationSeconds / (activity.distance_meters / 1609);
+      const paceMin = Math.floor(paceSecs / 60);
+      const paceSec = Math.round(paceSecs % 60);
+      paceHtml = `
+        <div class="hm-popup__stat">
+          <div class="hm-popup__stat-value">${paceMin}:${paceSec.toString().padStart(2, '0')}</div>
+          <div class="hm-popup__stat-label">Min/Mile</div>
+        </div>`;
+    }
+
+    const hrHtml = activity.averageHR
+      ? `
+        <div class="hm-popup__stat">
+          <div class="hm-popup__stat-value">${activity.averageHR}</div>
+          <div class="hm-popup__stat-label">Avg HR</div>
+        </div>`
       : '';
 
-    return (
-      `<b>${image} | ${activity.name}</b><br>` +
-      `${this.getTimeSince(activity.start_date)}<br>` +
-      `Date: ${this.datePipe.transform(activity.start_date, 'shortDate')}<br>` +
-      `Distance: ${this.decimalPipe.transform(
-        this.distanceToMiles(activity.distance_meters),
-        '1.0-1'
-      )} Miles<br>` +
-      `Time: ${this.getDuration(activity.duration ?? activity.moving_time_seconds)}<br>` +
-      avgHR +
-      maxHR +
-      tEffect +
-      aEffect +
-      tLoad +
-      `<a href="https://connect.garmin.com/app/activity/${activity.id}" target="_blank" rel="noopener noreferrer">View on Garmin Connect</a>`
-    );
+    const maxHrHtml = activity.maxHR
+      ? `
+        <div class="hm-popup__stat">
+          <div class="hm-popup__stat-value">${activity.maxHR}</div>
+          <div class="hm-popup__stat-label">Max HR</div>
+        </div>`
+      : '';
+
+    const tLoadHtml = activity.activityTrainingLoad
+      ? `
+        <div class="hm-popup__stat">
+          <div class="hm-popup__stat-value">${Math.round(activity.activityTrainingLoad)}</div>
+          <div class="hm-popup__stat-label">Load</div>
+        </div>`
+      : '';
+
+    const tEffectHtml = activity.trainingEffect
+      ? `
+      <div class="hm-popup__effect">
+        <span class="hm-popup__effect-label">Training Effect</span>
+        <span class="hm-popup__effect-value">${activity.trainingEffect.toFixed(1)}${activity.trainingEffectLabel ? ' · ' + formatTrainingEffectLabel(activity.trainingEffectLabel) : ''}</span>
+      </div>`
+      : '';
+
+    return `
+      <div class="hm-popup">
+        <div class="hm-popup__header ${typeClass}">
+          <i class="${iconClass}"></i>
+          <span class="hm-popup__name">${activity.name}</span>
+        </div>
+        <div class="hm-popup__when">
+          ${this.getTimeSince(activity.start_date)} &nbsp;·&nbsp; ${this.datePipe.transform(activity.start_date, 'MMM d, y')}
+        </div>
+        <div class="hm-popup__stats">
+          <div class="hm-popup__stat">
+            <div class="hm-popup__stat-value">${this.decimalPipe.transform(distanceMiles, '1.1-1')}</div>
+            <div class="hm-popup__stat-label">Miles</div>
+          </div>
+          <div class="hm-popup__stat">
+            <div class="hm-popup__stat-value">${this.getDuration(durationSeconds)}</div>
+            <div class="hm-popup__stat-label">Duration</div>
+          </div>
+          ${paceHtml}
+          ${hrHtml}
+          ${maxHrHtml}
+          ${tLoadHtml}
+        </div>
+        ${tEffectHtml}
+        <a class="hm-popup__link" href="https://connect.garmin.com/app/activity/${activity.id}" target="_blank" rel="noopener noreferrer">
+          View on Garmin Connect <i class="fas fa-external-link-alt"></i>
+        </a>
+      </div>`;
   }
 
   private sortPolylines() {

@@ -9,3 +9,119 @@ body {
   margin: 0;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
 }
+
+/* ── Heatmap Leaflet popup ─────────────────────────────────── */
+.leaflet-popup-content-wrapper {
+  background: #1a1d21 !important;
+  color: #e9ecef !important;
+  border: 1px solid #343a40 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6) !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  width: auto !important;
+}
+
+.leaflet-popup-tip {
+  background: #1a1d21 !important;
+}
+
+.hm-popup {
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  min-width: 230px;
+}
+
+.hm-popup__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 10px 14px 9px;
+  color: #fff;
+
+  &--run   { background: #e63419; }
+  &--ride  { background: #2b54d4; }
+  &--other { background: #b316de; }
+}
+
+.hm-popup__name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 210px;
+}
+
+.hm-popup__when {
+  font-size: 0.75rem;
+  color: #adb5bd;
+  padding: 7px 14px 2px;
+}
+
+.hm-popup__stats {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 6px 8px 4px;
+}
+
+.hm-popup__stat {
+  flex: 1 1 auto;
+  min-width: 58px;
+  text-align: center;
+  padding: 4px 6px;
+  border-right: 1px solid #343a40;
+
+  &:last-child { border-right: none; }
+}
+
+.hm-popup__stat-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f8f9fa;
+  line-height: 1.2;
+}
+
+.hm-popup__stat-label {
+  font-size: 0.65rem;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hm-popup__effect {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 14px 6px;
+  border-top: 1px solid #343a40;
+  font-size: 0.75rem;
+  gap: 12px;
+}
+
+.hm-popup__effect-label {
+  color: #adb5bd;
+  white-space: nowrap;
+}
+
+.hm-popup__effect-value {
+  color: #ffc107;
+  font-weight: 600;
+  text-align: right;
+}
+
+.hm-popup__link {
+  display: block;
+  padding: 8px 14px;
+  font-size: 0.78rem;
+  color: #4dabf7 !important;
+  text-decoration: none !important;
+  border-top: 1px solid #343a40;
+
+  &:hover { color: #74c0fc !important; }
+
+  i { font-size: 0.7rem; margin-left: 3px; }
+}

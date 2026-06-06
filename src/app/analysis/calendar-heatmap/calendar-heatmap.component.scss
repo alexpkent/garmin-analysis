@@ -11,6 +11,21 @@
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 24px;
+
+  &.fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    border-radius: 0;
+    margin: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+
+    .heatmap-scroll {
+      flex: 1;
+    }
+  }
 }
 
 .heatmap-header {

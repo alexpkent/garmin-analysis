@@ -3,6 +3,7 @@ import {
   ElementRef,
   EventEmitter,
   Input,
+  NgZone,
   OnChanges,
   OnDestroy,
   Output,
@@ -33,8 +34,46 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
   @ViewChild('canvas', { static: true })
   canvasRef!: ElementRef<HTMLCanvasElement>;
 
+  constructor(private zone: NgZone) {}
+
   private chart: any = null;
   periodLabel = '';
+  fullscreen = false;
+  popupWeek: { label: string; activities: Activity[] } | null = null;
+  private weekActivities: Activity[][] = [];
+  private storedWeekLabels: string[] = [];
+
+  toggleFullscreen(): void {
+    this.fullscreen = !this.fullscreen;
+    setTimeout(() => this.chart?.resize(), 0);
+  }
+
+  closePopup(): void {
+    this.popupWeek = null;
+  }
+
+  garminUrl(a: Activity): string {
+    return `https://connect.garmin.com/app/activity/${a.id}`;
+  }
+
+  formatDistance(m: number): string {
+    return `${(m / 1609.344).toFixed(1)} mi`;
+  }
+
+  formatDuration(s: number): string {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
+  activityIcon(a: Activity): string {
+    const t = a.activity_type?.toLowerCase() ?? '';
+    if (t.includes('run')) return 'fas fa-running';
+    if (t.includes('cycl') || t.includes('ride') || t.includes('bike'))
+      return 'fas fa-bicycle';
+    if (t.includes('swim')) return 'fas fa-swimmer';
+    return 'fas fa-dumbbell';
+  }
 
   ngOnChanges(_: SimpleChanges): void {
     this.buildChart();
@@ -66,6 +105,9 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
     const weekStart = start.clone().isoWeekday(1);
     if (weekStart.isAfter(start)) weekStart.subtract(7, 'days');
 
+    this.storedWeekLabels = weekLabels;
+    this.weekActivities = Array.from({ length: weekCount }, () => []);
+
     const runData = new Array(weekCount).fill(0);
     const cycleData = new Array(weekCount).fill(0);
     const otherData = new Array(weekCount).fill(0);
@@ -81,6 +123,7 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
       else if (t.includes('cycl') || t.includes('ride') || t.includes('bike'))
         cycleData[idx] += miles;
       else otherData[idx] += miles;
+      this.weekActivities[idx].push(a);
     }
 
     for (let i = 0; i < weekCount; i++) {
@@ -117,8 +160,14 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
     ];
 
     if (this.chart) {
+      const hiddenStates = datasets.map(
+        (_: any, i: number) => this.chart.getDatasetMeta(i)?.hidden ?? false
+      );
       this.chart.data.labels = weekLabels;
       this.chart.data.datasets = datasets;
+      hiddenStates.forEach((hidden: boolean, i: number) => {
+        this.chart.getDatasetMeta(i).hidden = hidden;
+      });
       this.chart.update();
       return;
     }
@@ -130,6 +179,18 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
+        onClick: (_event: any, elements: any[]) => {
+          if (!elements.length) return;
+          const idx = elements[0].index;
+          const acts = this.weekActivities[idx] ?? [];
+          if (!acts.length) return;
+          this.zone.run(() => {
+            this.popupWeek = {
+              label: this.storedWeekLabels[idx],
+              activities: acts
+            };
+          });
+        },
         plugins: {
           legend: {
             position: 'top',

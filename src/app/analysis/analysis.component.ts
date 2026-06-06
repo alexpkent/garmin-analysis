@@ -56,6 +56,7 @@ export class AnalysisComponent implements OnInit {
   syncError = false;
   loading = true;
   loaded = false;
+  lastAssessedTime: Date | null = null;
   selectedDay: DaySelection | null = null;
   latestActivity: Activity | null = null;
   healthSnapshots: HealthSnapshot[] = [];
@@ -333,6 +334,7 @@ export class AnalysisComponent implements OnInit {
     this._trainingInsightsCache = this.computeTrainingInsights();
     this.activityService.trainingAlertCount =
       this._trainingInsightsCache.filter((i) => i.level === 'alert').length;
+    this.lastAssessedTime = new Date();
   }
 
   closePopup(): void {

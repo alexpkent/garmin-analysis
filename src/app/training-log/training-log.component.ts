@@ -36,6 +36,11 @@ interface WeekData {
   weekKey: string;
   weekLabel: string;
   totalMiles: number;
+  totalSeconds: number;
+  isEmpty: boolean;
+  runCount: number;
+  rideCount: number;
+  otherCount: number;
   days: DayData[];
 }
 
@@ -90,7 +95,9 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
           })
         }))
       }))
-      .filter((week) => week.days.some((d) => d.activities.length > 0));
+      .filter(
+        (week) => week.isEmpty || week.days.some((d) => d.activities.length > 0)
+      );
   }
 
   get isFiltered(): boolean {
@@ -277,6 +284,20 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
       weekMap.get(weekKey)!.push(activity);
     }
 
+    // Fill gaps so rest/recovery weeks appear as empty rows in the grid
+    const allSortedKeys = Array.from(weekMap.keys()).sort();
+    if (allSortedKeys.length > 1) {
+      const cursor = moment(allSortedKeys[0]);
+      const last = moment(allSortedKeys[allSortedKeys.length - 1]);
+      while (cursor.isSameOrBefore(last)) {
+        const k = cursor.format('YYYY-MM-DD');
+        if (!weekMap.has(k)) {
+          weekMap.set(k, []);
+        }
+        cursor.add(1, 'week');
+      }
+    }
+
     const weekKeys = Array.from(weekMap.keys()).sort().reverse();
 
     this.weekGroups = weekKeys.map((weekKey) => {
@@ -300,10 +321,20 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
         (sum, a) => sum + this.distanceToMiles(a.distance_meters),
         0
       );
+      const totalSeconds = weekActivities.reduce(
+        (sum, a) => sum + (a.duration ?? a.moving_time_seconds),
+        0
+      );
       return {
         weekKey,
         weekLabel: this.formatWeekLabel(weekStart, weekEnd),
         totalMiles,
+        totalSeconds,
+        isEmpty: weekActivities.length === 0,
+        runCount: weekActivities.filter((a) => this.isRun(a)).length,
+        rideCount: weekActivities.filter((a) => this.isRide(a)).length,
+        otherCount: weekActivities.filter((a) => this.isOtherActivity(a))
+          .length,
         days
       };
     });

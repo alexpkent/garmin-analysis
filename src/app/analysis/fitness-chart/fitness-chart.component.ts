@@ -39,6 +39,12 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
 
   private chart: any = null;
   periodLabel = '';
+  fullscreen = false;
+
+  toggleFullscreen(): void {
+    this.fullscreen = !this.fullscreen;
+    setTimeout(() => this.chart?.resize(), 0);
+  }
 
   ngOnChanges(_: SimpleChanges): void {
     this.buildChart();
@@ -160,8 +166,14 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
     ];
 
     if (this.chart) {
+      const hiddenStates = datasets.map((_: any, i: number) =>
+        this.chart.getDatasetMeta(i)?.hidden ?? false
+      );
       this.chart.data.labels = weekLabels;
       this.chart.data.datasets = datasets;
+      hiddenStates.forEach((hidden: boolean, i: number) => {
+        this.chart.getDatasetMeta(i).hidden = hidden;
+      });
       this.chart.update();
       return;
     }
