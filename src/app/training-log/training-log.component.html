@@ -31,26 +31,26 @@
               <div class="summary-primary">{{ distanceToMiles(summary.distance) | number:'1.0-1' }} <small style="font-size:0.85rem;color:#adb5bd">mi</small></div>
               <div class="summary-secondary">{{ secondsToHours(summary.seconds) | number:'1.0-1' }} hrs</div>
               <div class="summary-badges">
-                <span class="badge-pill badge-run">{{ summary.runCount }} Runs</span>
-                <span class="badge-pill badge-ride">{{ summary.rideCount }} Rides</span>
-                <span class="badge-pill badge-other">{{ summary.otherCount }} Other</span>
+                <span class="badge-pill badge-run" aria-label="Runs" title="Runs">
+                  <span>{{ summary.runCount }}</span>
+                  <i class="fas fa-running" aria-hidden="true"></i>
+                </span>
+                <span class="badge-pill badge-ride" aria-label="Rides" title="Rides">
+                  <span>{{ summary.rideCount }}</span>
+                  <i class="fas fa-biking" aria-hidden="true"></i>
+                </span>
+                <span class="badge-pill badge-other" aria-label="Other activities" title="Other activities">
+                  <span>{{ summary.otherCount }}</span>
+                  <i class="fas fa-heartbeat" aria-hidden="true"></i>
+                </span>
               </div>
             </div>
           }
         </div>
 
-        <!-- Legend + Filter bar -->
+        <!-- Filter context -->
         <div class="legend-bar">
-          <div class="legend-item">
-            <span class="legend-swatch" style="background:#ff7a59"></span> Run
-          </div>
-          <div class="legend-item">
-            <span class="legend-swatch" style="background:#72a7ff"></span> Ride
-          </div>
-          <div class="legend-item">
-            <span class="legend-swatch" style="background:#d56cff"></span> Other
-          </div>
-          <div class="legend-item" style="margin-left:auto;font-size:0.7rem;color:#6c757d">
+          <div class="legend-note">
             Bar length indicates distance
           </div>
         </div>

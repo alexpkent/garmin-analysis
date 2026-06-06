@@ -51,51 +51,54 @@ $dim: #6c757d;
 /* ── Summary cards ─────────────────────────────────────── */
 .summaries-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
 .summary-card {
   background: $card-bg;
   border: 1px solid $card-border;
-  border-radius: 8px;
-  padding: 14px 16px;
+  border-radius: 7px;
+  padding: 12px 14px;
 }
 
 .summary-label {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: $dim;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .summary-primary {
-  font-size: 1.4rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #fff;
   line-height: 1.1;
 }
 
 .summary-secondary {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: $muted;
   margin-top: 2px;
 }
 
 .summary-badges {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   margin-top: 8px;
   flex-wrap: wrap;
 }
 
 .badge-pill {
-  font-size: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
   font-weight: 600;
-  padding: 2px 8px;
+  padding: 2px 7px;
   border-radius: 10px;
 }
 
@@ -106,25 +109,14 @@ $dim: #6c757d;
 /* ── Legend ────────────────────────────────────────────── */
 .legend-bar {
   display: flex;
-  gap: 20px;
-  align-items: center;
+  justify-content: flex-end;
   padding: 0 0 12px;
   flex-wrap: wrap;
 }
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.78rem;
-  color: $muted;
-}
-
-.legend-swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
+.legend-note {
+  font-size: 0.7rem;
+  color: $dim;
 }
 
 /* ── Filter bar ────────────────────────────────────────── */
@@ -578,6 +570,8 @@ $dim: #6c757d;
     gap: 8px;
   }
 
-  .summary-card { padding: 10px 12px; }
-  .summary-primary { font-size: 1.15rem; }
+  .summary-card { padding: 9px 10px; }
+  .summary-primary { font-size: 1.05rem; }
+  .summary-secondary { font-size: 0.75rem; }
+  .badge-pill { font-size: 0.68rem; }
 }
