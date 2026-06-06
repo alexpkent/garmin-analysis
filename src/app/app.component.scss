@@ -10,3 +10,29 @@ $bottom-bar-height: 56px;
     padding-bottom: $bottom-bar-height;
   }
 }
+
+/* ── Theme toggle button ───────────────────────────────────── */
+.theme-toggle {
+  position: fixed;
+  top: 12px;
+  right: 14px;
+  z-index: 1200;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+
+  &:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+}

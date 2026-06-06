@@ -5,11 +5,15 @@ import {
   Input,
   OnChanges,
   OnDestroy,
+  OnInit,
   Output,
   SimpleChanges,
   ViewChild
 } from '@angular/core';
 import { Activity } from '../../types/Activity';
+import { ThemeService } from '../../theme.service';
+import { Subscription } from 'rxjs';
+import { skip } from 'rxjs/operators';
 import moment from 'moment';
 
 declare const Chart: any;
@@ -30,7 +34,7 @@ interface Series {
   styleUrls: ['./trend-chart.component.scss'],
   standalone: false
 })
-export class TrendChartComponent implements OnChanges, OnDestroy {
+export class TrendChartComponent implements OnChanges, OnDestroy, OnInit {
   @Input() activities: Activity[] = [];
   @Input() startDate: moment.Moment | null = null;
   @Input() endDate: moment.Moment | null = null;
@@ -44,12 +48,18 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
   canvasRef!: ElementRef<HTMLCanvasElement>;
 
   private chart: any = null;
+  private themeSub!: Subscription;
   periodLabel = '';
   fullscreen = false;
 
-  toggleFullscreen(): void {
-    this.fullscreen = !this.fullscreen;
-    setTimeout(() => this.chart?.resize(), 0);
+  constructor(private themeService: ThemeService) {}
+
+  ngOnInit(): void {
+    this.themeSub = this.themeService.isDark$.pipe(skip(1)).subscribe(() => {
+      this.chart?.destroy();
+      this.chart = null;
+      this.buildChart();
+    });
   }
 
   readonly series: Series[] = [
@@ -84,12 +94,18 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
     }
   ];
 
+  toggleFullscreen(): void {
+    this.fullscreen = !this.fullscreen;
+    setTimeout(() => this.chart?.resize(), 0);
+  }
+
   ngOnChanges(_: SimpleChanges): void {
     this.buildChart();
   }
 
   ngOnDestroy(): void {
     this.chart?.destroy();
+    this.themeSub?.unsubscribe();
   }
 
   private buildChart(): void {
@@ -102,9 +118,6 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
 
     this.periodLabel = `${start.format('MMM YYYY')} – ${end.format('MMM YYYY')}`;
 
-    // Build weekly labels — each week is labelled by its Sunday (end of week)
-    // so the last tick clearly shows the week containing today rather than the
-    // preceding Monday (e.g. "7 Jun" instead of "1 Jun" when today is Thu 5 Jun).
     const labels: string[] = [];
     const cursor = start.clone().isoWeekday(1);
     if (cursor.isAfter(start)) cursor.subtract(7, 'days');
@@ -113,7 +126,6 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
       cursor.add(7, 'days');
     }
 
-    // Aggregate activities per week bucket
     const weekCount = labels.length;
     const weekStart = start.clone().isoWeekday(1);
     if (weekStart.isAfter(start)) weekStart.subtract(7, 'days');
@@ -136,7 +148,6 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
       });
     }
 
-    // Mean per week
     const datasets = this.series.map((s, si) => ({
       label: s.label,
       data: Array.from({ length: weekCount }, (_, i) => {
@@ -156,6 +167,14 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
       hidden: s.hidden ?? false,
       yAxisID: s.yAxisID ?? 'y'
     }));
+
+    const gridColor = this.themeService.cssVar('--chart-grid');
+    const tickColor = this.themeService.cssVar('--chart-tick');
+    const tooltipBg = this.themeService.cssVar('--chart-tooltip-bg');
+    const tooltipTitle = this.themeService.cssVar('--chart-tooltip-title');
+    const tooltipBody = this.themeService.cssVar('--chart-tooltip-body');
+    const tooltipBorder = this.themeService.cssVar('--chart-tooltip-border');
+    const legendColor = this.themeService.cssVar('--chart-legend');
 
     if (this.chart) {
       const hiddenStates = datasets.map((_: any, i: number) =>
@@ -180,13 +199,13 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
         plugins: {
           legend: {
             position: 'top',
-            labels: { color: '#adb5bd', boxWidth: 12 }
+            labels: { color: legendColor, boxWidth: 12 }
           },
           tooltip: {
-            backgroundColor: '#212529',
-            titleColor: '#ffc107',
-            bodyColor: '#dee2e6',
-            borderColor: '#495057',
+            backgroundColor: tooltipBg,
+            titleColor: tooltipTitle,
+            bodyColor: tooltipBody,
+            borderColor: tooltipBorder,
             borderWidth: 1,
             callbacks: {
               label: (ctx: any) => {
@@ -199,18 +218,18 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
         scales: {
           x: {
             ticks: {
-              color: '#6c757d',
+              color: tickColor,
               maxRotation: 45,
               autoSkip: true,
               maxTicksLimit: 14
             },
-            grid: { color: '#2a2d31' }
+            grid: { color: gridColor }
           },
           y: {
             type: 'linear',
             position: 'left',
-            ticks: { color: '#6c757d' },
-            grid: { color: '#2a2d31' },
+            ticks: { color: tickColor },
+            grid: { color: gridColor },
             beginAtZero: true
           },
           yEffect: {

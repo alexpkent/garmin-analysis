@@ -1,6 +1,6 @@
 .trend-card {
-  background: #1a1d21;
-  border: 1px solid #343a40;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 24px;
@@ -33,12 +33,12 @@
 .trend-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .trend-hint {
   font-size: 0.75rem;
-  color: #6c757d;
+  color: var(--text-dim);
   margin-top: 8px;
   text-align: center;
 }
@@ -51,14 +51,14 @@
 
 .trend-period {
   font-size: 0.78rem;
-  color: #adb5bd;
+  color: var(--text-muted);
 }
 
 .period-nav-btn {
   background: none;
-  border: 1px solid #495057;
+  border: 1px solid var(--muted-border);
   border-radius: 4px;
-  color: #adb5bd;
+  color: var(--text-muted);
   width: 26px;
   height: 26px;
   display: flex;
@@ -69,8 +69,8 @@
   flex-shrink: 0;
 
   &:hover:not(:disabled) {
-    color: #fff;
-    border-color: #ffc107;
+    color: var(--text-primary);
+    border-color: var(--accent);
   }
 
   &:disabled {
@@ -98,13 +98,13 @@
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 1101;
-  background: #1a1d21;
-  border: 1px solid #495057;
+  background: var(--card-bg);
+  border: 1px solid var(--muted-border);
   border-radius: 8px;
   min-width: 300px;
   max-width: 480px;
   width: 90vw;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   overflow: hidden;
 }
 
@@ -113,25 +113,25 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 14px;
-  background: #212529;
-  border-bottom: 1px solid #343a40;
+  background: var(--card-header-bg);
+  border-bottom: 1px solid var(--card-border);
 }
 
 .vol-popup-title {
   font-size: 0.88rem;
   font-weight: 600;
-  color: #ffc107;
+  color: var(--accent);
 }
 
 .vol-popup-close {
   background: none;
   border: none;
-  color: #adb5bd;
+  color: var(--text-muted);
   font-size: 0.9rem;
   cursor: pointer;
   padding: 0 2px;
 
-  &:hover { color: #fff; }
+  &:hover { color: var(--text-primary); }
 }
 
 .vol-popup-body {
@@ -142,7 +142,7 @@
 
 .vol-activity-row {
   padding: 10px 14px;
-  border-bottom: 1px solid #2c2f33;
+  border-bottom: 1px solid var(--row-border);
 
   &:last-child { border-bottom: none; }
 }
@@ -155,7 +155,7 @@
 }
 
 .vol-activity-icon {
-  color: #adb5bd;
+  color: var(--text-muted);
   font-size: 0.85rem;
   flex-shrink: 0;
 }
@@ -163,7 +163,7 @@
 .vol-activity-name {
   font-size: 0.88rem;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .vol-activity-meta {
@@ -175,15 +175,15 @@
 
 .vol-activity-stats {
   font-size: 0.78rem;
-  color: #adb5bd;
+  color: var(--text-muted);
 }
 
 .vol-garmin-link {
   font-size: 0.75rem;
-  color: #adb5bd;
+  color: var(--text-muted);
   text-decoration: none;
 
-  &:hover { color: #ffc107; }
+  &:hover { color: var(--accent); }
 
   i { margin-right: 3px; }
 }

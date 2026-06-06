@@ -1,13 +1,12 @@
 :host {
-  --cell-empty: #2a2d31;
   --cell-size: 14px;
   --cell-gap: 3px;
   --dow-width: 34px;
 }
 
 .heatmap-card {
-  background: #1a1d21;
-  border: 1px solid #343a40;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 24px;
@@ -44,9 +43,9 @@
 
 .period-nav-btn {
   background: none;
-  border: 1px solid #495057;
+  border: 1px solid var(--muted-border);
   border-radius: 4px;
-  color: #adb5bd;
+  color: var(--text-muted);
   width: 26px;
   height: 26px;
   display: flex;
@@ -57,8 +56,8 @@
   flex-shrink: 0;
 
   &:hover:not(:disabled) {
-    color: #fff;
-    border-color: #ffc107;
+    color: var(--text-primary);
+    border-color: var(--accent);
   }
 
   &:disabled {
@@ -71,12 +70,12 @@
 .heatmap-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .heatmap-period {
   font-size: 0.78rem;
-  color: #adb5bd;
+  color: var(--text-muted);
 }
 
 /* Scroll wrapper so the grid can overflow on narrow screens */
@@ -109,7 +108,7 @@
   height: var(--cell-size);
   line-height: var(--cell-size);
   font-size: 0.65rem;
-  color: #adb5bd;
+  color: var(--text-muted);
   text-align: right;
   padding-right: 6px;
 }
@@ -124,7 +123,7 @@
 .month-label {
   height: 18px;
   font-size: 0.65rem;
-  color: #adb5bd;
+  color: var(--text-muted);
   white-space: nowrap;
   line-height: 18px;
 }
@@ -134,6 +133,7 @@
   width: var(--cell-size);
   height: var(--cell-size);
   border-radius: 2px;
+  background: var(--cell-empty);
   cursor: default;
   transition: opacity 0.1s;
 
@@ -142,7 +142,7 @@
 
     &:hover {
       opacity: 0.7;
-      outline: 1px solid rgba(255, 255, 255, 0.4);
+      outline: 1px solid rgba(128, 128, 128, 0.4);
     }
   }
 
@@ -164,7 +164,7 @@
   align-items: center;
   gap: 5px;
   font-size: 0.72rem;
-  color: #adb5bd;
+  color: var(--text-muted);
 }
 
 .legend-swatch {
@@ -174,6 +174,4 @@
   border-radius: 2px;
   flex-shrink: 0;
 }
-
-
 

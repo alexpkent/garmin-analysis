@@ -3,3 +3,9 @@
   <router-outlet></router-outlet>
 </div>
 
+<button class="theme-toggle"
+        (click)="themeService.toggle()"
+        [title]="themeService.isDark ? 'Switch to light theme' : 'Switch to dark theme'">
+  <i [class]="themeService.isDark ? 'fas fa-sun' : 'fas fa-moon'"></i>
+</button>
+

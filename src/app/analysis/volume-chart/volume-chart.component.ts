@@ -6,11 +6,15 @@ import {
   NgZone,
   OnChanges,
   OnDestroy,
+  OnInit,
   Output,
   SimpleChanges,
   ViewChild
 } from '@angular/core';
 import { Activity } from '../../types/Activity';
+import { ThemeService } from '../../theme.service';
+import { Subscription } from 'rxjs';
+import { skip } from 'rxjs/operators';
 import moment from 'moment';
 
 declare const Chart: any;
@@ -21,7 +25,7 @@ declare const Chart: any;
   styleUrls: ['./volume-chart.component.scss'],
   standalone: false
 })
-export class VolumeChartComponent implements OnChanges, OnDestroy {
+export class VolumeChartComponent implements OnChanges, OnDestroy, OnInit {
   @Input() activities: Activity[] = [];
   @Input() startDate: moment.Moment | null = null;
   @Input() endDate: moment.Moment | null = null;
@@ -34,14 +38,23 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
   @ViewChild('canvas', { static: true })
   canvasRef!: ElementRef<HTMLCanvasElement>;
 
-  constructor(private zone: NgZone) {}
-
   private chart: any = null;
+  private themeSub!: Subscription;
   periodLabel = '';
   fullscreen = false;
   popupWeek: { label: string; activities: Activity[] } | null = null;
   private weekActivities: Activity[][] = [];
   private storedWeekLabels: string[] = [];
+
+  constructor(private zone: NgZone, private themeService: ThemeService) {}
+
+  ngOnInit(): void {
+    this.themeSub = this.themeService.isDark$.pipe(skip(1)).subscribe(() => {
+      this.chart?.destroy();
+      this.chart = null;
+      this.buildChart();
+    });
+  }
 
   toggleFullscreen(): void {
     this.fullscreen = !this.fullscreen;
@@ -81,6 +94,7 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     this.chart?.destroy();
+    this.themeSub?.unsubscribe();
   }
 
   private buildChart(): void {
@@ -159,6 +173,14 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
       }
     ];
 
+    const gridColor = this.themeService.cssVar('--chart-grid');
+    const tickColor = this.themeService.cssVar('--chart-tick');
+    const tooltipBg = this.themeService.cssVar('--chart-tooltip-bg');
+    const tooltipTitle = this.themeService.cssVar('--chart-tooltip-title');
+    const tooltipBody = this.themeService.cssVar('--chart-tooltip-body');
+    const tooltipBorder = this.themeService.cssVar('--chart-tooltip-border');
+    const legendColor = this.themeService.cssVar('--chart-legend');
+
     if (this.chart) {
       const hiddenStates = datasets.map(
         (_: any, i: number) => this.chart.getDatasetMeta(i)?.hidden ?? false
@@ -194,13 +216,13 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
         plugins: {
           legend: {
             position: 'top',
-            labels: { color: '#adb5bd', boxWidth: 12 }
+            labels: { color: legendColor, boxWidth: 12 }
           },
           tooltip: {
-            backgroundColor: '#212529',
-            titleColor: '#ffc107',
-            bodyColor: '#dee2e6',
-            borderColor: '#495057',
+            backgroundColor: tooltipBg,
+            titleColor: tooltipTitle,
+            bodyColor: tooltipBody,
+            borderColor: tooltipBorder,
             borderWidth: 1,
             callbacks: {
               label: (ctx: any) => {
@@ -214,22 +236,22 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
           x: {
             stacked: true,
             ticks: {
-              color: '#6c757d',
+              color: tickColor,
               maxRotation: 0,
               autoSkip: true,
               maxTicksLimit: 14
             },
-            grid: { color: '#2a2d31' }
+            grid: { color: gridColor }
           },
           y: {
             stacked: true,
             beginAtZero: true,
-            ticks: { color: '#6c757d' },
-            grid: { color: '#2a2d31' },
+            ticks: { color: tickColor },
+            grid: { color: gridColor },
             title: {
               display: true,
               text: 'Distance (mi)',
-              color: '#6c757d',
+              color: tickColor,
               font: { size: 11 }
             }
           }

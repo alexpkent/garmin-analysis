@@ -1,11 +1,6 @@
-$highlight-color: #ffc107;
 $runs-color: #e63419;
 $rides-color: #2b54d4;
 $mapSwitch-color: #ff0783;
-$card-bg: #1a1d21;
-$card-border: #343a40;
-$muted: #adb5bd;
-$dim: #6c757d;
 
 /* ── Loading overlay ──────────────────────────────────── */
 .loading-overlay {
@@ -21,8 +16,8 @@ $dim: #6c757d;
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  border: 3px solid #2a2d31;
-  border-top-color: $highlight-color;
+  border: 3px solid var(--loading-ring-bg);
+  border-top-color: var(--accent);
   animation: spin 0.8s linear infinite;
 }
 
@@ -33,7 +28,7 @@ $dim: #6c757d;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: $dim;
+  color: var(--text-dim);
 }
 
 /* ── Navbar ───────────────────────────────────────────── */
@@ -59,8 +54,8 @@ $dim: #6c757d;
 .view-selector {
   display: flex;
   align-items: center;
-  background: $card-bg;
-  border-bottom: 1px solid $card-border;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--card-border);
   padding: 6px 12px;
   gap: 4px;
 }
@@ -68,9 +63,9 @@ $dim: #6c757d;
 .view-btn {
   flex: 1;
   background: transparent;
-  border: 1px solid $card-border;
+  border: 1px solid var(--card-border);
   border-radius: 6px;
-  color: $muted;
+  color: var(--text-muted);
   font-size: 0.8rem;
   font-weight: 600;
   padding: 5px 0;
@@ -79,15 +74,15 @@ $dim: #6c757d;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 
   &:hover:not(.view-btn--active) {
-    background: #2a2d31;
-    color: #fff;
-    border-color: #555;
+    background: var(--row-border);
+    color: var(--text-primary);
+    border-color: var(--muted-border);
   }
 }
 
 .view-btn--active {
-  background: $highlight-color;
-  border-color: $highlight-color;
+  background: var(--accent);
+  border-color: var(--accent);
   color: #111;
 }
 

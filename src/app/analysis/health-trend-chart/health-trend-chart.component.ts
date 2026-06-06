@@ -5,12 +5,16 @@ import {
   Input,
   OnChanges,
   OnDestroy,
+  OnInit,
   Output,
   SimpleChanges,
   ViewChild
 } from '@angular/core';
 import { HealthSnapshot } from '../../activity.service';
 import { Activity } from '../../types/Activity';
+import { ThemeService } from '../../theme.service';
+import { Subscription } from 'rxjs';
+import { skip } from 'rxjs/operators';
 import moment from 'moment';
 
 declare const Chart: any;
@@ -41,7 +45,7 @@ const TRAINING_STATUS_COLOR: Record<string, string> = {
   styleUrls: ['./health-trend-chart.component.scss'],
   standalone: false
 })
-export class HealthTrendChartComponent implements OnChanges, OnDestroy {
+export class HealthTrendChartComponent implements OnChanges, OnDestroy, OnInit {
   @Input() snapshots: HealthSnapshot[] = [];
   @Input() activities: Activity[] = [];
   @Input() startDate: moment.Moment | null = null;
@@ -56,13 +60,25 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
   canvasRef!: ElementRef<HTMLCanvasElement>;
 
   private chart: any = null;
+  private themeSub!: Subscription;
   periodLabel = '';
   fullscreen = false;
+
+  constructor(private themeService: ThemeService) {}
+
+  ngOnInit(): void {
+    this.themeSub = this.themeService.isDark$.pipe(skip(1)).subscribe(() => {
+      this.chart?.destroy();
+      this.chart = null;
+      this.buildChart();
+    });
+  }
 
   toggleFullscreen(): void {
     this.fullscreen = !this.fullscreen;
     setTimeout(() => this.chart?.resize(), 0);
   }
+
   private statusLabels: (string | null)[] = [];
 
   ngOnChanges(_: SimpleChanges): void {
@@ -71,6 +87,7 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     this.chart?.destroy();
+    this.themeSub?.unsubscribe();
   }
 
   formatStatus(phrase: string | null): string {
@@ -93,7 +110,6 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
       })
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    // Weekly HR aggregated from activities (same weekly-bucket approach as activity trends)
     const weekLabels: string[] = [];
     const cursor = start.clone().isoWeekday(1);
     if (cursor.isAfter(start)) cursor.subtract(7, 'days');
@@ -130,12 +146,9 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
       if (!vals?.length) return null;
       return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
     });
-    // Bucket filtered snapshots into weekly slots
     const vo2Weekly: (number | null)[] = new Array(weekCount).fill(null);
     const lowAerobicWeekly: (number | null)[] = new Array(weekCount).fill(null);
-    const highAerobicWeekly: (number | null)[] = new Array(weekCount).fill(
-      null
-    );
+    const highAerobicWeekly: (number | null)[] = new Array(weekCount).fill(null);
     const anaerobicWeekly: (number | null)[] = new Array(weekCount).fill(null);
     const lowTargetWeekly: (number | null)[] = new Array(weekCount).fill(null);
     const highTargetWeekly: (number | null)[] = new Array(weekCount).fill(null);
@@ -165,7 +178,6 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
       }
     }
 
-    // Compute status dot colours and labels from weekly status phrases
     this.statusLabels = statusWeekly.map((s) => {
       if (!s) return null;
       const prefix = s.replace(/_\d+$/, '');
@@ -291,6 +303,14 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
       }
     ];
 
+    const gridColor = this.themeService.cssVar('--chart-grid');
+    const tickColor = this.themeService.cssVar('--chart-tick');
+    const tooltipBg = this.themeService.cssVar('--chart-tooltip-bg');
+    const tooltipTitle = this.themeService.cssVar('--chart-tooltip-title');
+    const tooltipBody = this.themeService.cssVar('--chart-tooltip-body');
+    const tooltipBorder = this.themeService.cssVar('--chart-tooltip-border');
+    const legendColor = this.themeService.cssVar('--chart-legend');
+
     if (this.chart) {
       const hiddenStates = datasets.map((_: any, i: number) =>
         this.chart.getDatasetMeta(i)?.hidden ?? false
@@ -314,13 +334,13 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
         plugins: {
           legend: {
             position: 'top',
-            labels: { color: '#adb5bd', boxWidth: 12 }
+            labels: { color: legendColor, boxWidth: 12 }
           },
           tooltip: {
-            backgroundColor: '#212529',
-            titleColor: '#ffc107',
-            bodyColor: '#dee2e6',
-            borderColor: '#495057',
+            backgroundColor: tooltipBg,
+            titleColor: tooltipTitle,
+            bodyColor: tooltipBody,
+            borderColor: tooltipBorder,
             borderWidth: 1,
             callbacks: {
               label: (ctx: any) => {
@@ -337,18 +357,18 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
         scales: {
           x: {
             ticks: {
-              color: '#6c757d',
+              color: tickColor,
               maxRotation: 0,
               autoSkip: true,
               maxTicksLimit: 14
             },
-            grid: { color: '#2a2d31' }
+            grid: { color: gridColor }
           },
           yVo2: {
             type: 'linear',
             position: 'left',
             ticks: { color: '#42a5f5' },
-            grid: { color: '#2a2d31' },
+            grid: { color: gridColor },
             title: {
               display: true,
               text: 'VO₂ Max',
@@ -359,12 +379,12 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
           yLoad: {
             type: 'linear',
             position: 'right',
-            ticks: { color: '#adb5bd' },
+            ticks: { color: tickColor },
             grid: { drawOnChartArea: false },
             title: {
               display: true,
               text: 'Load',
-              color: '#adb5bd',
+              color: tickColor,
               font: { size: 11 }
             }
           },

@@ -1,9 +1,3 @@
-$accent: #ffc107;
-$card-bg: #1a1d21;
-$card-border: #343a40;
-$muted: #adb5bd;
-$dim: #6c757d;
-
 /* ── Loading overlay ──────────────────────────────────── */
 .loading-overlay {
   display: flex;
@@ -18,8 +12,8 @@ $dim: #6c757d;
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  border: 3px solid #2a2d31;
-  border-top-color: $accent;
+  border: 3px solid var(--loading-ring-bg);
+  border-top-color: var(--accent);
   animation: spin 0.8s linear infinite;
 }
 
@@ -30,7 +24,7 @@ $dim: #6c757d;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: $dim;
+  color: var(--text-dim);
 }
 
 .records-content {
@@ -45,20 +39,20 @@ $dim: #6c757d;
   align-items: center;
   justify-content: center;
   padding: 60px 20px;
-  color: $dim;
+  color: var(--text-dim);
   text-align: center;
   gap: 16px;
 }
 
 .empty-icon {
   font-size: 2.5rem;
-  color: $card-border;
+  color: var(--card-border);
 }
 
 /* ── PR Card ─────────────────────────────────────────────── */
 .pr-card {
-  background: $card-bg;
-  border: 1px solid $card-border;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   margin-bottom: 16px;
   overflow: hidden;
@@ -69,24 +63,24 @@ $dim: #6c757d;
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  background: #212529;
-  border-bottom: 1px solid $card-border;
+  background: var(--card-header-bg);
+  border-bottom: 1px solid var(--card-border);
 }
 
 .pr-header-icon {
-  color: $accent;
+  color: var(--accent);
   font-size: 0.95rem;
 }
 
 .pr-card-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .pr-card-subtitle {
   font-size: 0.72rem;
-  color: $dim;
+  color: var(--text-dim);
   margin-left: auto;
 }
 
@@ -101,7 +95,7 @@ $dim: #6c757d;
   column-gap: 16px;
   align-items: baseline;
   padding: 10px 16px;
-  border-bottom: 1px solid #2a2d31;
+  border-bottom: 1px solid var(--row-border);
 
   &:last-child { border-bottom: none; }
 }
@@ -111,14 +105,14 @@ $dim: #6c757d;
   grid-row: 1;
   font-size: 0.88rem;
   font-weight: 600;
-  color: #dee2e6;
+  color: var(--text-body);
 }
 
 .pr-pace {
   grid-column: 2;
   grid-row: 1;
   font-size: 0.75rem;
-  color: $dim;
+  color: var(--text-dim);
   white-space: nowrap;
   text-align: right;
 }
@@ -143,27 +137,27 @@ $dim: #6c757d;
 
 .pr-date {
   font-size: 0.72rem;
-  color: $dim;
+  color: var(--text-dim);
 }
 
 .pr-ago {
   font-size: 0.72rem;
-  color: #495057;
+  color: var(--muted-border);
 }
 
 .pr-link {
   font-size: 0.72rem;
-  color: $dim;
+  color: var(--text-dim);
   text-decoration: none;
   margin-left: auto;
 
-  &:hover { color: $accent; }
+  &:hover { color: var(--accent); }
 }
 
 /* ── Footer ──────────────────────────────────────────────── */
 .records-footer {
   font-size: 0.72rem;
-  color: $dim;
+  color: var(--text-dim);
   padding: 4px 2px 16px;
 }
 

@@ -1,11 +1,8 @@
-$bg: #212529;
-$accent: #ffc107;
-$text-muted: #adb5bd;
-$sidebar-width: 200px;
 $bottom-bar-height: 56px;
+$sidebar-width: 200px;
 
 .app-nav {
-  background: $bg;
+  background: var(--nav-bg);
   z-index: 1000;
 
   .nav-items {
@@ -17,17 +14,17 @@ $bottom-bar-height: 56px;
   .nav-link {
     display: flex;
     align-items: center;
-    color: $text-muted;
+    color: var(--text-muted);
     text-decoration: none;
     transition: color 0.15s, background 0.15s;
 
     &:hover {
-      color: #fff;
-      background: rgba(255, 255, 255, 0.07);
+      color: var(--text-primary);
+      background: var(--nav-hover);
     }
 
     &.active {
-      color: $accent;
+      color: var(--accent);
     }
 
     .nav-icon {
@@ -68,7 +65,7 @@ $bottom-bar-height: 56px;
     width: $sidebar-width;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid #343a40;
+    border-right: 1px solid var(--nav-border);
 
     .nav-items {
       flex: 1;
@@ -101,7 +98,7 @@ $bottom-bar-height: 56px;
     display: flex;
     flex-direction: row;
     align-items: stretch;
-    border-top: 1px solid #343a40;
+    border-top: 1px solid var(--nav-border);
 
     .nav-brand {
       display: none;

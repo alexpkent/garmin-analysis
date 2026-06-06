@@ -5,18 +5,22 @@ import {
   Input,
   OnChanges,
   OnDestroy,
+  OnInit,
   Output,
   SimpleChanges,
   ViewChild
 } from '@angular/core';
 import { Activity } from '../../types/Activity';
+import { ThemeService } from '../../theme.service';
+import { Subscription } from 'rxjs';
+import { skip } from 'rxjs/operators';
 import moment from 'moment';
 
 declare const Chart: any;
 
 // EMA time constants (TrainingPeaks standard exponential decay)
 const K_CTL = 1 - Math.exp(-1 / 42); // Chronic Training Load – fitness (~42 days)
-const K_ATL = 1 - Math.exp(-1 / 7); // Acute Training Load  – fatigue (~7 days)
+const K_ATL = 1 - Math.exp(-1 / 7);  // Acute Training Load  – fatigue (~7 days)
 
 @Component({
   selector: 'app-fitness-chart',
@@ -24,7 +28,7 @@ const K_ATL = 1 - Math.exp(-1 / 7); // Acute Training Load  – fatigue (~7 days
   styleUrls: ['./fitness-chart.component.scss'],
   standalone: false
 })
-export class FitnessChartComponent implements OnChanges, OnDestroy {
+export class FitnessChartComponent implements OnChanges, OnDestroy, OnInit {
   @Input() activities: Activity[] = [];
   @Input() startDate: moment.Moment | null = null;
   @Input() endDate: moment.Moment | null = null;
@@ -38,8 +42,19 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
   canvasRef!: ElementRef<HTMLCanvasElement>;
 
   private chart: any = null;
+  private themeSub!: Subscription;
   periodLabel = '';
   fullscreen = false;
+
+  constructor(private themeService: ThemeService) {}
+
+  ngOnInit(): void {
+    this.themeSub = this.themeService.isDark$.pipe(skip(1)).subscribe(() => {
+      this.chart?.destroy();
+      this.chart = null;
+      this.buildChart();
+    });
+  }
 
   toggleFullscreen(): void {
     this.fullscreen = !this.fullscreen;
@@ -52,6 +67,7 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     this.chart?.destroy();
+    this.themeSub?.unsubscribe();
   }
 
   private buildChart(): void {
@@ -72,7 +88,7 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
       loadMap.set(key, (loadMap.get(key) ?? 0) + a.activityTrainingLoad);
     }
 
-    // Build weekly labels (same week-boundary logic as other charts)
+    // Build weekly labels
     const weekLabels: string[] = [];
     const wCursor = start.clone().isoWeekday(1);
     if (wCursor.isAfter(start)) wCursor.subtract(7, 'days');
@@ -84,26 +100,20 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
     const weekStart = start.clone().isoWeekday(1);
     if (weekStart.isAfter(start)) weekStart.subtract(7, 'days');
 
-    // Map each week-end date string → week index for O(1) lookup during daily walk
     const weekEndToIdx = new Map<string, number>();
     for (let i = 0; i < weekCount; i++) {
       weekEndToIdx.set(
-        weekStart
-          .clone()
-          .add(i * 7 + 6, 'days')
-          .format('YYYY-MM-DD'),
+        weekStart.clone().add(i * 7 + 6, 'days').format('YYYY-MM-DD'),
         i
       );
     }
 
-    // Find earliest activity date so the EMA warms up properly
     let emaStart = end.clone();
     for (const a of this.activities) {
       const d = moment(a.start_date).startOf('day');
       if (d.isBefore(emaStart)) emaStart = d.clone();
     }
 
-    // Walk day by day from emaStart, computing exponential moving averages
     const ctlData: (number | null)[] = new Array(weekCount).fill(null);
     const atlData: (number | null)[] = new Array(weekCount).fill(null);
     const tsbData: (number | null)[] = new Array(weekCount).fill(null);
@@ -165,6 +175,14 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
       }
     ];
 
+    const gridColor = this.themeService.cssVar('--chart-grid');
+    const tickColor = this.themeService.cssVar('--chart-tick');
+    const tooltipBg = this.themeService.cssVar('--chart-tooltip-bg');
+    const tooltipTitle = this.themeService.cssVar('--chart-tooltip-title');
+    const tooltipBody = this.themeService.cssVar('--chart-tooltip-body');
+    const tooltipBorder = this.themeService.cssVar('--chart-tooltip-border');
+    const legendColor = this.themeService.cssVar('--chart-legend');
+
     if (this.chart) {
       const hiddenStates = datasets.map((_: any, i: number) =>
         this.chart.getDatasetMeta(i)?.hidden ?? false
@@ -188,13 +206,13 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
         plugins: {
           legend: {
             position: 'top',
-            labels: { color: '#adb5bd', boxWidth: 12 }
+            labels: { color: legendColor, boxWidth: 12 }
           },
           tooltip: {
-            backgroundColor: '#212529',
-            titleColor: '#ffc107',
-            bodyColor: '#dee2e6',
-            borderColor: '#495057',
+            backgroundColor: tooltipBg,
+            titleColor: tooltipTitle,
+            bodyColor: tooltipBody,
+            borderColor: tooltipBorder,
             borderWidth: 1,
             callbacks: {
               label: (ctx: any) => {
@@ -207,19 +225,19 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
         scales: {
           x: {
             ticks: {
-              color: '#6c757d',
+              color: tickColor,
               maxRotation: 0,
               autoSkip: true,
               maxTicksLimit: 14
             },
-            grid: { color: '#2a2d31' }
+            grid: { color: gridColor }
           },
           y: {
             type: 'linear',
             position: 'left',
             beginAtZero: true,
             ticks: { color: '#42a5f5' },
-            grid: { color: '#2a2d31' },
+            grid: { color: gridColor },
             title: {
               display: true,
               text: 'Load',

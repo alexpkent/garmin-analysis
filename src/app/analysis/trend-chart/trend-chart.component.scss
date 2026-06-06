@@ -1,6 +1,6 @@
 .trend-card {
-  background: #1a1d21;
-  border: 1px solid #343a40;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 24px;
@@ -33,12 +33,12 @@
 .trend-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .trend-hint {
   font-size: 0.75rem;
-  color: #6c757d;
+  color: var(--text-dim);
   margin-top: 8px;
   text-align: center;
 }
@@ -51,14 +51,14 @@
 
 .trend-period {
   font-size: 0.78rem;
-  color: #adb5bd;
+  color: var(--text-muted);
 }
 
 .period-nav-btn {
   background: none;
-  border: 1px solid #495057;
+  border: 1px solid var(--muted-border);
   border-radius: 4px;
-  color: #adb5bd;
+  color: var(--text-muted);
   width: 26px;
   height: 26px;
   display: flex;
@@ -69,8 +69,8 @@
   flex-shrink: 0;
 
   &:hover:not(:disabled) {
-    color: #fff;
-    border-color: #ffc107;
+    color: var(--text-primary);
+    border-color: var(--accent);
   }
 
   &:disabled {

@@ -1,5 +1,79 @@
 /* You can add global styles to this file, and also import other style files */
 
+/* ── Theme custom properties ───────────────────────────────── */
+:root,
+[data-theme='dark'] {
+  --page-bg: #16181a;
+  --nav-bg: #212529;
+  --nav-border: #343a40;
+  --card-bg: #1a1d21;
+  --card-header-bg: #212529;
+  --card-border: #343a40;
+  --row-border: #2a2d31;
+  --muted-border: #495057;
+  --text-primary: #ffffff;
+  --text-body: #dee2e6;
+  --text-muted: #adb5bd;
+  --text-dim: #6c757d;
+  --accent: #ffc107;
+  --input-bg: #1a1d21;
+  --input-color: #ffffff;
+  --input-placeholder: #6c757d;
+  --nav-hover: rgba(255, 255, 255, 0.07);
+  --chip-bg: linear-gradient(180deg, #252a31 0%, #1c2026 100%);
+  --chip-border-color: rgba(255, 255, 255, 0.14);
+  --chip-track-bg: rgba(255, 255, 255, 0.12);
+  --chip-value-color: #f8f9fa;
+  --chip-name-color: #c9ced4;
+  --loading-ring-bg: #2a2d31;
+  --cell-empty: #2a2d31;
+
+  /* Chart.js */
+  --chart-grid: #2a2d31;
+  --chart-tick: #6c757d;
+  --chart-tooltip-bg: #212529;
+  --chart-tooltip-title: #ffc107;
+  --chart-tooltip-body: #dee2e6;
+  --chart-tooltip-border: #495057;
+  --chart-legend: #adb5bd;
+}
+
+[data-theme='light'] {
+  --page-bg: #f1f3f5;
+  --nav-bg: #ffffff;
+  --nav-border: #dee2e6;
+  --card-bg: #ffffff;
+  --card-header-bg: #f8f9fa;
+  --card-border: #dee2e6;
+  --row-border: #e9ecef;
+  --muted-border: #ced4da;
+  --text-primary: #212529;
+  --text-body: #343a40;
+  --text-muted: #495057;
+  --text-dim: #868e96;
+  --accent: #c68400;
+  --input-bg: #ffffff;
+  --input-color: #212529;
+  --input-placeholder: #868e96;
+  --nav-hover: rgba(0, 0, 0, 0.05);
+  --chip-bg: linear-gradient(180deg, #f0f2f5 0%, #e8eaed 100%);
+  --chip-border-color: rgba(0, 0, 0, 0.12);
+  --chip-track-bg: rgba(0, 0, 0, 0.08);
+  --chip-value-color: #212529;
+  --chip-name-color: #495057;
+  --loading-ring-bg: #e9ecef;
+  --cell-empty: #e9ecef;
+
+  /* Chart.js */
+  --chart-grid: #e9ecef;
+  --chart-tick: #6c757d;
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-title: #c68400;
+  --chart-tooltip-body: #343a40;
+  --chart-tooltip-border: #dee2e6;
+  --chart-legend: #495057;
+}
+
 html,
 body {
   height: 100%;
@@ -8,15 +82,17 @@ body {
 body {
   margin: 0;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
+  background: var(--page-bg);
+  color: var(--text-body);
 }
 
 /* ── Heatmap Leaflet popup ─────────────────────────────────── */
 .leaflet-popup-content-wrapper {
-  background: #1a1d21 !important;
-  color: #e9ecef !important;
-  border: 1px solid #343a40 !important;
+  background: var(--card-bg) !important;
+  color: var(--text-body) !important;
+  border: 1px solid var(--card-border) !important;
   border-radius: 8px !important;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4) !important;
   padding: 0 !important;
   overflow: hidden;
 }
@@ -27,7 +103,7 @@ body {
 }
 
 .leaflet-popup-tip {
-  background: #1a1d21 !important;
+  background: var(--card-bg) !important;
 }
 
 .hm-popup {
@@ -58,7 +134,7 @@ body {
 
 .hm-popup__when {
   font-size: 0.75rem;
-  color: #adb5bd;
+  color: var(--text-muted);
   padding: 7px 14px 2px;
 }
 
@@ -73,7 +149,7 @@ body {
   min-width: 58px;
   text-align: center;
   padding: 4px 6px;
-  border-right: 1px solid #343a40;
+  border-right: 1px solid var(--card-border);
 
   &:last-child { border-right: none; }
 }
@@ -81,13 +157,13 @@ body {
 .hm-popup__stat-value {
   font-size: 1rem;
   font-weight: 700;
-  color: #f8f9fa;
+  color: var(--text-primary);
   line-height: 1.2;
 }
 
 .hm-popup__stat-label {
   font-size: 0.65rem;
-  color: #6c757d;
+  color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -97,13 +173,13 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 5px 14px 6px;
-  border-top: 1px solid #343a40;
+  border-top: 1px solid var(--card-border);
   font-size: 0.75rem;
   gap: 12px;
 }
 
 .hm-popup__effect-label {
-  color: #adb5bd;
+  color: var(--text-muted);
   white-space: nowrap;
 }
 
@@ -119,7 +195,7 @@ body {
   font-size: 0.78rem;
   color: #4dabf7 !important;
   text-decoration: none !important;
-  border-top: 1px solid #343a40;
+  border-top: 1px solid var(--card-border);
 
   &:hover { color: #74c0fc !important; }
 
