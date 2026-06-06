@@ -1,4 +1,4 @@
-<div class="trend-card">
+<div class="trend-card" [class.fullscreen]="fullscreen">
   <div class="trend-header">
     <div class="trend-title-group">
       <span class="trend-title">Fitness &amp; Fatigue</span>
@@ -11,6 +11,9 @@
       <span class="trend-period">{{ periodLabel }}</span>
       <button class="period-nav-btn" (click)="periodForward.emit()" [disabled]="!canGoForward" aria-label="Next year">
         <i class="fas fa-chevron-right"></i>
+      </button>
+      <button class="period-nav-btn" (click)="toggleFullscreen()" [attr.aria-label]="fullscreen ? 'Exit fullscreen' : 'Fullscreen'">
+        <i [class]="fullscreen ? 'fas fa-compress' : 'fas fa-expand'"></i>
       </button>
     </div>
   </div>

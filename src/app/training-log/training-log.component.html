@@ -106,11 +106,29 @@
 
           <!-- One row per week -->
           @for (week of filteredWeekGroups; track week.weekKey) {
-            <div class="week-row" [id]="'week-' + week.weekKey">
+            <div class="week-row" [class.week-row--rest]="week.isEmpty" [id]="'week-' + week.weekKey">
               <div class="week-summary-col">
                 <div class="week-range">{{ week.weekLabel }}</div>
-                <div class="week-total-label">Total Distance</div>
-                <div class="week-total-miles">{{ week.totalMiles | number:'1.2-2' }} mi</div>
+                @if (week.isEmpty) {
+                  <div class="week-rest-label">Rest</div>
+                } @else {
+                  <div class="week-totals">
+                    <span class="week-miles">{{ week.totalMiles | number:'1.1-1' }} mi</span>
+                    <span class="week-sep">·</span>
+                    <span class="week-hours">{{ secondsToHours(week.totalSeconds) | number:'1.1-1' }} hr</span>
+                  </div>
+                  <div class="week-type-pills">
+                    @if (week.runCount > 0) {
+                      <span class="badge-pill badge-run">{{ week.runCount }} <i class="fas fa-running"></i></span>
+                    }
+                    @if (week.rideCount > 0) {
+                      <span class="badge-pill badge-ride">{{ week.rideCount }} <i class="fas fa-biking"></i></span>
+                    }
+                    @if (week.otherCount > 0) {
+                      <span class="badge-pill badge-other">{{ week.otherCount }} <i class="fas fa-heartbeat"></i></span>
+                    }
+                  </div>
+                }
               </div>
               @for (day of week.days; track day.date.valueOf()) {
                 <div class="day-col">

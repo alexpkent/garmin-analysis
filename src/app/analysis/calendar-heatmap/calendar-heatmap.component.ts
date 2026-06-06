@@ -75,6 +75,11 @@ export class CalendarHeatmapComponent implements OnInit, OnChanges, OnDestroy {
 
   weeks: WeekColumn[] = [];
   periodLabel = '';
+  fullscreen = false;
+
+  toggleFullscreen(): void {
+    this.fullscreen = !this.fullscreen;
+  }
 
   private syncing = false;
   private subs = new Subscription();

@@ -1,4 +1,4 @@
-<div class="trend-card">
+<div class="trend-card" [class.fullscreen]="fullscreen">
   <div class="trend-header">
     <span class="trend-title">Weekly Volume</span>
     <div class="trend-period-nav">
@@ -9,10 +9,44 @@
       <button class="period-nav-btn" (click)="periodForward.emit()" [disabled]="!canGoForward" aria-label="Next year">
         <i class="fas fa-chevron-right"></i>
       </button>
+      <button class="period-nav-btn" (click)="toggleFullscreen()" [attr.aria-label]="fullscreen ? 'Exit fullscreen' : 'Fullscreen'">
+        <i [class]="fullscreen ? 'fas fa-compress' : 'fas fa-expand'"></i>
+      </button>
     </div>
   </div>
   <div class="trend-chart-wrap">
     <canvas #canvas></canvas>
   </div>
-  <div class="trend-hint">Distance stacked by sport type · Click a legend item to toggle</div>
+  <div class="trend-hint">Distance stacked by sport type · Click a bar to see activities · Click a legend item to toggle</div>
 </div>
+
+@if (popupWeek) {
+  <div class="vol-backdrop" (click)="closePopup()"></div>
+  <div class="vol-popup">
+    <div class="vol-popup-header">
+      <span class="vol-popup-title">Week of {{ popupWeek.label }}</span>
+      <button class="vol-popup-close" (click)="closePopup()" aria-label="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="vol-popup-body">
+      @for (a of popupWeek.activities; track a.id) {
+        <div class="vol-activity-row">
+          <div class="vol-activity-main">
+            <i [class]="activityIcon(a) + ' vol-activity-icon'"></i>
+            <span class="vol-activity-name">{{ a.name }}</span>
+          </div>
+          <div class="vol-activity-meta">
+            <span class="vol-activity-stats">
+              {{ formatDistance(a.distance_meters) }}
+              @if (a.moving_time_seconds) { · {{ formatDuration(a.moving_time_seconds) }} }
+            </span>
+            <a [href]="garminUrl(a)" target="_blank" rel="noopener noreferrer" class="vol-garmin-link">
+              <i class="fas fa-external-link-alt"></i> Garmin Connect
+            </a>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}

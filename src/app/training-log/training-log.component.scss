@@ -236,10 +236,6 @@ $dim: #6c757d;
 .week-header-row {
   padding: 6px 0 8px;
   border-bottom: 1px solid $card-border;
-  position: sticky;
-  top: 0;
-  background: #212529;
-  z-index: 10;
 }
 
 .day-header {
@@ -259,20 +255,49 @@ $dim: #6c757d;
     color: $muted;
     white-space: nowrap;
   }
+}
 
-  .week-total-miles {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: #fff;
-    margin-top: 2px;
-  }
+.week-rest-label {
+  font-size: 0.68rem;
+  color: $dim;
+  font-style: italic;
+  margin-top: 4px;
+}
 
-  .week-total-label {
-    font-size: 0.62rem;
-    color: $dim;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
+.week-totals {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 3px;
+  flex-wrap: wrap;
+}
+
+.week-miles {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.week-sep {
+  font-size: 0.7rem;
+  color: $dim;
+}
+
+.week-hours {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: $muted;
+}
+
+.week-type-pills {
+  display: flex;
+  gap: 4px;
+  margin-top: 5px;
+  flex-wrap: wrap;
+}
+
+.week-row--rest {
+  opacity: 0.38;
 }
 
 /* ── Bubbles ───────────────────────────────────────────── */
