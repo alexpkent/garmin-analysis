@@ -28,7 +28,7 @@ const TRAINING_STATUS_LABEL: Record<string, string> = {
 const TRAINING_STATUS_COLOR: Record<string, string> = {
   PRODUCTIVE: '#1FA87A',
   MAINTAINING: '#42a5f5',
-  PEAKING: '#ffc107',
+  PEAKING: '#e8b84b',
   RECOVERY: '#4caf50',
   UNPRODUCTIVE: '#ff8c00',
   OVERREACHING: '#e63419',
@@ -244,8 +244,8 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
       {
         label: 'High Aerobic Load',
         data: highAerobicWeekly,
-        borderColor: '#ffc107',
-        backgroundColor: '#ffc10722',
+        borderColor: '#e8b84b',
+        backgroundColor: '#e8b84b22',
         pointRadius: 2,
         pointHoverRadius: 5,
         borderWidth: 2,
@@ -256,7 +256,7 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
       {
         label: 'High Aerobic Target',
         data: highTargetWeekly,
-        borderColor: '#ffc107',
+        borderColor: '#e8b84b',
         backgroundColor: 'transparent',
         borderDash: [4, 4],
         pointRadius: 0,
@@ -292,8 +292,8 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
     ];
 
     if (this.chart) {
-      const hiddenStates = datasets.map((_: any, i: number) =>
-        this.chart.getDatasetMeta(i)?.hidden ?? false
+      const hiddenStates = datasets.map(
+        (_: any, i: number) => this.chart.getDatasetMeta(i)?.hidden ?? false
       );
       this.chart.data.labels = weekLabels;
       this.chart.data.datasets = datasets;
@@ -318,7 +318,7 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
           },
           tooltip: {
             backgroundColor: '#212529',
-            titleColor: '#ffc107',
+            titleColor: '#e8b84b',
             bodyColor: '#dee2e6',
             borderColor: '#495057',
             borderWidth: 1,

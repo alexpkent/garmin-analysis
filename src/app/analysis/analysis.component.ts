@@ -21,7 +21,7 @@ const TRAINING_STATUS_LABEL: Record<string, string> = {
 const TRAINING_STATUS_COLOR: Record<string, string> = {
   PRODUCTIVE: '#1FA87A',
   MAINTAINING: '#42a5f5',
-  PEAKING: '#ffc107',
+  PEAKING: '#e8b84b',
   RECOVERY: '#4caf50',
   UNPRODUCTIVE: '#ff8c00',
   OVERREACHING: '#e63419',
@@ -139,7 +139,7 @@ export class AnalysisComponent implements OnInit {
 
   readonly trainingLoadBands: HeatmapBand[] = [
     { label: 'Very easy / recovery (0–50)', min: 0, max: 50, color: '#4caf50' },
-    { label: 'Easy–moderate (50–100)', min: 50, max: 100, color: '#ffc107' },
+    { label: 'Easy–moderate (50–100)', min: 50, max: 100, color: '#e8b84b' },
     { label: 'Moderate–hard (100–200)', min: 100, max: 200, color: '#ff8c00' },
     {
       label: 'Very hard / big stress (200+)',
@@ -267,7 +267,7 @@ export class AnalysisComponent implements OnInit {
 
   readonly distanceBands: HeatmapBand[] = [
     { label: 'Short (< 5 mi)', min: 0, max: 5, color: '#4caf50' },
-    { label: 'Moderate (5–10 mi)', min: 5, max: 10, color: '#ffc107' },
+    { label: 'Moderate (5–10 mi)', min: 5, max: 10, color: '#e8b84b' },
     { label: 'Long (10–15 mi)', min: 10, max: 15, color: '#ff8c00' },
     { label: 'Very long (15+ mi)', min: 15, max: Infinity, color: '#e63419' }
   ];
@@ -282,7 +282,7 @@ export class AnalysisComponent implements OnInit {
 
   readonly durationBands: HeatmapBand[] = [
     { label: 'Short (< 30 min)', min: 0, max: 1800, color: '#4caf50' },
-    { label: 'Moderate (30–60 min)', min: 1800, max: 3600, color: '#ffc107' },
+    { label: 'Moderate (30–60 min)', min: 1800, max: 3600, color: '#e8b84b' },
     { label: 'Long (1–2 hrs)', min: 3600, max: 7200, color: '#ff8c00' },
     { label: 'Very long (2+ hrs)', min: 7200, max: Infinity, color: '#e63419' }
   ];
@@ -638,7 +638,7 @@ export class AnalysisComponent implements OnInit {
             icon: 'fas fa-arrow-up',
             label: 'Load Rising',
             text: `Load up ${pct}% this week — steady progression.`,
-            color: '#ffc107',
+            color: '#e8b84b',
             level: 'info'
           });
         } else if (pct >= -10) {
@@ -702,7 +702,7 @@ export class AnalysisComponent implements OnInit {
           icon: 'fas fa-fire',
           label: 'More Tempo Work',
           text: `High aerobic load (${Math.round(lf.high_aerobic_actual)}) is below target (${Math.round(lf.high_aerobic_low)}–${Math.round(lf.high_aerobic_high ?? 0)}) — add tempo or threshold sessions.`,
-          color: '#ffc107',
+          color: '#e8b84b',
           level: 'warn'
         });
       }

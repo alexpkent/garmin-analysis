@@ -136,24 +136,24 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
       {
         label: 'Running',
         data: runData,
-        backgroundColor: '#4caf5088',
-        borderColor: '#4caf50',
+        backgroundColor: '#FF604088',
+        borderColor: '#FF6040',
         borderWidth: 1,
         stack: 'volume'
       },
       {
         label: 'Cycling',
         data: cycleData,
-        backgroundColor: '#42a5f588',
-        borderColor: '#42a5f5',
+        backgroundColor: '#40C8FF88',
+        borderColor: '#40C8FF',
         borderWidth: 1,
         stack: 'volume'
       },
       {
         label: 'Other',
         data: otherData,
-        backgroundColor: '#ff8c0088',
-        borderColor: '#ff8c00',
+        backgroundColor: '#FFC94088',
+        borderColor: '#FFC940',
         borderWidth: 1,
         stack: 'volume'
       }
@@ -198,7 +198,7 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
           },
           tooltip: {
             backgroundColor: '#212529',
-            titleColor: '#ffc107',
+            titleColor: '#e8b84b',
             bodyColor: '#dee2e6',
             borderColor: '#495057',
             borderWidth: 1,

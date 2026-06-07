@@ -48,13 +48,6 @@
           }
         </div>
 
-        <!-- Filter context -->
-        <div class="legend-bar">
-          <div class="legend-note">
-            Bar length indicates distance
-          </div>
-        </div>
-
         <!-- Filter bar -->
         <div class="filter-bar">
           <div class="filter-search-wrap">
@@ -97,17 +90,24 @@
         <!-- Weekly bubble grid -->
         <div class="week-grid-scroll px-3 pb-4">
           <!-- Day-of-week header -->
-          <div class="week-row week-header-row">
-            <div class="week-summary-col"></div>
-            @for (day of DAY_LABELS; track day) {
-              <div class="day-header">{{ day }}</div>
-            }
+          <div class="week-header-row">
+            <div class="week-days-row">
+              @for (day of DAY_LABELS; track day) {
+                <div class="day-header">{{ day }}</div>
+              }
+            </div>
           </div>
 
           <!-- One row per week -->
           @for (week of filteredWeekGroups; track week.weekKey) {
-            <div class="week-row" [class.week-row--rest]="week.isEmpty" [id]="'week-' + week.weekKey">
+            <div class="week-block" [class.week-block--rest]="week.isEmpty" [id]="'week-' + week.weekKey">
+              <!-- Summary header (full-width on mobile, left column on desktop) -->
               <div class="week-summary-col">
+                <div class="week-type-pills">
+                  <span class="badge-pill badge-run" [class.badge-pill--zero]="week.runCount === 0">{{ week.runCount }} <i class="fas fa-running"></i></span>
+                  <span class="badge-pill badge-ride" [class.badge-pill--zero]="week.rideCount === 0">{{ week.rideCount }} <i class="fas fa-biking"></i></span>
+                  <span class="badge-pill badge-other" [class.badge-pill--zero]="week.otherCount === 0">{{ week.otherCount }} <i class="fas fa-heartbeat"></i></span>
+                </div>
                 <div class="week-range">{{ week.weekLabel }}</div>
                 @if (week.isEmpty) {
                   <div class="week-rest-label">Rest</div>
@@ -117,39 +117,31 @@
                     <span class="week-sep">·</span>
                     <span class="week-hours">{{ secondsToHours(week.totalSeconds) | number:'1.1-1' }} hr</span>
                   </div>
-                  <div class="week-type-pills">
-                    @if (week.runCount > 0) {
-                      <span class="badge-pill badge-run">{{ week.runCount }} <i class="fas fa-running"></i></span>
-                    }
-                    @if (week.rideCount > 0) {
-                      <span class="badge-pill badge-ride">{{ week.rideCount }} <i class="fas fa-biking"></i></span>
-                    }
-                    @if (week.otherCount > 0) {
-                      <span class="badge-pill badge-other">{{ week.otherCount }} <i class="fas fa-heartbeat"></i></span>
+                }
+              </div>
+              <!-- Day columns -->
+              <div class="week-days-row">
+                @for (day of week.days; track day.date.valueOf()) {
+                  <div class="day-col">
+                    @for (activity of day.activities; track activity.id) {
+                      <div class="bubble-wrapper" (click)="onBubbleClick(activity)">
+                        <div class="activity-distance-chip"
+                             [style.--activity-accent]="activityColor(activity)">
+                          <div class="activity-distance-top">
+                            <i [class]="activityIcon(activity) + ' activity-distance-icon'"></i>
+                            <div class="activity-distance-value">{{ distanceToMiles(activity.distance_meters) | number:'1.1-1' }} mi</div>
+                          </div>
+                          <div class="activity-distance-track">
+                            <span class="activity-distance-fill"
+                                  [style.width.%]="distanceFillPercent(activity)"></span>
+                          </div>
+                        </div>
+                        <div class="activity-name">{{ activity.name }}</div>
+                      </div>
                     }
                   </div>
                 }
               </div>
-              @for (day of week.days; track day.date.valueOf()) {
-                <div class="day-col">
-                  @for (activity of day.activities; track activity.id) {
-                    <div class="bubble-wrapper" (click)="onBubbleClick(activity)">
-                      <div class="activity-distance-chip"
-                           [style.--activity-accent]="activityColor(activity)">
-                        <div class="activity-distance-top">
-                          <i [class]="activityIcon(activity) + ' activity-distance-icon'"></i>
-                          <div class="activity-distance-value">{{ distanceToMiles(activity.distance_meters) | number:'1.1-1' }} mi</div>
-                        </div>
-                        <div class="activity-distance-track">
-                          <span class="activity-distance-fill"
-                                [style.width.%]="distanceFillPercent(activity)"></span>
-                        </div>
-                      </div>
-                      <div class="activity-name">{{ activity.name }}</div>
-                    </div>
-                  }
-                </div>
-              }
             </div>
           }
         </div>

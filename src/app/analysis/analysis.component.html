@@ -128,10 +128,10 @@
             @if (latestHealth.load_focus?.high_aerobic_actual != null) {
               <div class="latest-stat">
                 <span class="latest-stat-label">High Aerobic</span>
-                <span class="latest-stat-value" style="color:#ffc107">
+                <span class="latest-stat-value" style="color:#e8b84b">
                   {{ latestHealth.load_focus!.high_aerobic_actual | number:'1.0-0' }}
                 </span>
-                <span class="latest-stat-band" style="color:#ffc107">
+                <span class="latest-stat-band" style="color:#e8b84b">
                   target {{ latestHealth.load_focus!.high_aerobic_low | number:'1.0-0' }}&ndash;{{ latestHealth.load_focus!.high_aerobic_high | number:'1.0-0' }}
                 </span>
                 <div class="load-gauge-track">
@@ -141,7 +141,7 @@
                   </div>
                   <div class="load-gauge-fill"
                        [style.width]="loadGaugeActualPct(latestHealth.load_focus!.high_aerobic_actual, latestHealth.load_focus!.high_aerobic_low, latestHealth.load_focus!.high_aerobic_high)"
-                       style="background:#ffc107">
+                       style="background:#e8b84b">
                   </div>
                 </div>
               </div>

@@ -70,7 +70,7 @@
 
   &:hover:not(:disabled) {
     color: #fff;
-    border-color: #ffc107;
+    border-color: #e8b84b;
   }
 
   &:disabled {
@@ -120,7 +120,7 @@
 .vol-popup-title {
   font-size: 0.88rem;
   font-weight: 600;
-  color: #ffc107;
+  color: #e8b84b;
 }
 
 .vol-popup-close {
@@ -183,7 +183,7 @@
   color: #adb5bd;
   text-decoration: none;
 
-  &:hover { color: #ffc107; }
+  &:hover { color: #e8b84b; }
 
   i { margin-right: 3px; }
 }

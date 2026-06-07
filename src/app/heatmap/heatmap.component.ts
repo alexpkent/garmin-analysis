@@ -34,9 +34,9 @@ export class HeatmapComponent implements OnInit {
   runsLayer: any;
   ridesLayer: any;
   otherActivitiesLayer: any;
-  rideColor = '#2B54D4';
-  runColor = '#E63419';
-  otherActivityColor = '#b316de';
+  rideColor = '#40C8FF';
+  runColor = '#FF6040';
+  otherActivityColor = '#FFC940';
   lastVisibleActivity: Activity;
   view = View;
   currentView = View.All;

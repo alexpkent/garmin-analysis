@@ -166,8 +166,8 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
     ];
 
     if (this.chart) {
-      const hiddenStates = datasets.map((_: any, i: number) =>
-        this.chart.getDatasetMeta(i)?.hidden ?? false
+      const hiddenStates = datasets.map(
+        (_: any, i: number) => this.chart.getDatasetMeta(i)?.hidden ?? false
       );
       this.chart.data.labels = weekLabels;
       this.chart.data.datasets = datasets;
@@ -192,7 +192,7 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
           },
           tooltip: {
             backgroundColor: '#212529',
-            titleColor: '#ffc107',
+            titleColor: '#e8b84b',
             bodyColor: '#dee2e6',
             borderColor: '#495057',
             borderWidth: 1,
