@@ -1,3 +1,5 @@
+@use '../../../styles/variables' as *;
+
 :host {
   --cell-empty: #2a2d31;
   --cell-size: 14px;
@@ -58,7 +60,7 @@
 
   &:hover:not(:disabled) {
     color: #fff;
-    border-color: #ffc107;
+    border-color: $accent;
   }
 
   &:disabled {

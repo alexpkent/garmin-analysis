@@ -1,39 +1,20 @@
-$run-color: #ff7a59;
-$ride-color: #72a7ff;
-$other-color: #d56cff;
-$accent: #ffc107;
-$card-bg: #1a1d21;
-$card-border: #343a40;
-$muted: #adb5bd;
-$dim: #6c757d;
+@use '../../styles/variables' as *;
 
-/* ── Loading overlay ──────────────────────────────────── */
-.loading-overlay {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(100vh - 56px);
-  gap: 20px;
-}
+@include loading-overlay;
 
-.loading-ring {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 3px solid #2a2d31;
-  border-top-color: $accent;
-  animation: spin 0.8s linear infinite;
-}
+/* ── Export button ──────────────────────────────────────── */
+.export-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: $link;
+  font-size: 1.1rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.15s;
+  margin-left: auto;
 
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.loading-text {
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: $dim;
+  &:hover { color: $link-hover; }
 }
 
 /* ── Page layout ────────────────────────────────────────── */
@@ -106,17 +87,8 @@ $dim: #6c757d;
 .badge-ride  { background: rgba($ride-color,  0.15); color: $ride-color;  border: 1px solid rgba($ride-color,  0.3); }
 .badge-other { background: rgba($other-color, 0.15); color: $other-color; border: 1px solid rgba($other-color, 0.3); }
 
-/* ── Legend ────────────────────────────────────────────── */
-.legend-bar {
-  display: flex;
-  justify-content: flex-end;
-  padding: 0 0 12px;
-  flex-wrap: wrap;
-}
-
-.legend-note {
-  font-size: 0.7rem;
-  color: $dim;
+.badge-pill--zero {
+  opacity: 0.25;
 }
 
 /* ── Filter bar ────────────────────────────────────────── */
@@ -216,18 +188,26 @@ $dim: #6c757d;
   -webkit-overflow-scrolling: touch;
 }
 
-.week-row {
-  display: grid;
-  grid-template-columns: 120px repeat(7, 1fr);
-  min-width: 560px;
-  border-bottom: 1px solid #2a2d31;
-  padding: 14px 0;
-  align-items: start;
+.week-header-row {
+  display: block;
+  border-bottom: 1px solid $card-border;
+  padding: 6px 0 8px;
 }
 
-.week-header-row {
-  padding: 6px 0 8px;
-  border-bottom: 1px solid $card-border;
+.week-block {
+  border-bottom: 1px solid #2a2d31;
+  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.week-block--rest {
+  opacity: 0.38;
+}
+
+.week-days-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
 }
 
 .day-header {
@@ -239,10 +219,16 @@ $dim: #6c757d;
 }
 
 .week-summary-col {
-  padding-right: 10px;
+  padding-bottom: 8px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  width: 100%;
 
   .week-range {
-    font-size: 0.75rem;
+    font-size: 0.82rem;
     font-weight: 600;
     color: $muted;
     white-space: nowrap;
@@ -260,23 +246,22 @@ $dim: #6c757d;
   display: flex;
   align-items: baseline;
   gap: 4px;
-  margin-top: 3px;
   flex-wrap: wrap;
 }
 
 .week-miles {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: $muted;
 }
 
 .week-sep {
-  font-size: 0.7rem;
+  font-size: 0.82rem;
   color: $dim;
 }
 
 .week-hours {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: $muted;
 }
@@ -284,12 +269,9 @@ $dim: #6c757d;
 .week-type-pills {
   display: flex;
   gap: 4px;
-  margin-top: 5px;
-  flex-wrap: wrap;
-}
-
-.week-row--rest {
-  opacity: 0.38;
+  flex-wrap: nowrap;
+  min-width: 90px;
+  flex-shrink: 0;
 }
 
 /* ── Bubbles ───────────────────────────────────────────── */
@@ -518,10 +500,10 @@ $dim: #6c757d;
 
 .latest-garmin-link {
   font-size: 0.78rem;
-  color: $muted;
+  color: $link;
   text-decoration: none;
 
-  &:hover { color: $accent; }
+  &:hover { color: $link-hover; }
 }
 
 .latest-card-body {

@@ -1,0 +1,45 @@
+// ── Activity colours ───────────────────────────────────────────────────────
+$run-color:   #ff6040;
+$ride-color:  #40c8ff;
+$other-color: #ffc940;
+
+// ── UI accent & surface colours ───────────────────────────────────────────
+$accent:      #e8b84b;
+$link:        #4dabf7;
+$link-hover:  #74c0fc;
+$card-bg:     #1a1d21;
+$card-border: #343a40;
+$muted:       #adb5bd;
+$dim:         #6c757d;
+$bg:          #212529;
+
+// ── Loading overlay ───────────────────────────────────────────────────────
+@mixin loading-overlay {
+  .loading-overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 56px);
+    gap: 20px;
+  }
+
+  .loading-ring {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 3px solid #2a2d31;
+    border-top-color: $accent;
+    animation: loading-spin 0.8s linear infinite;
+  }
+
+  @keyframes loading-spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: $dim;
+  }
+}

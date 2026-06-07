@@ -4,7 +4,33 @@ import { ActivityService } from '../activity.service';
 import { Activity, formatTrainingEffectLabel } from '../types/Activity';
 import { HeatmapBand } from '../analysis/calendar-heatmap/calendar-heatmap.component';
 import { environment } from '../../environments/environment';
-import moment from 'moment';
+import dayjs, { Dayjs } from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import relativeTime from 'dayjs/plugin/relativeTime';
+dayjs.extend(isoWeek);
+dayjs.extend(isSameOrBefore);
+dayjs.extend(isSameOrAfter);
+dayjs.extend(relativeTime);
+import { ACTIVITY_COLORS } from '../constants/colors';
+import {
+  DISTANCE_BANDS,
+  DURATION_BANDS,
+  TRAINING_LOAD_BANDS,
+  TRAINING_EFFECT_BANDS,
+  computeMaxHr,
+  makeMaxHrBands
+} from '../constants/heatmap-bands';
+import {
+  isRun,
+  isRide,
+  isOtherActivity,
+  distanceToMiles,
+  getDuration,
+  METERS_PER_MILE,
+  SECONDS_PER_HOUR
+} from '../utils/activity.utils';
 
 interface NavMonth {
   month: number;
@@ -28,7 +54,7 @@ interface Summary {
 }
 
 interface DayData {
-  date: moment.Moment;
+  date: Dayjs;
   activities: Activity[];
 }
 
@@ -129,95 +155,17 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
 
   readonly DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  private readonly METERS_PER_MILE = 1609;
-  private readonly SECONDS_PER_HOUR = 3600;
+  readonly runColor = ACTIVITY_COLORS.run;
+  readonly rideColor = ACTIVITY_COLORS.ride;
+  readonly otherColor = ACTIVITY_COLORS.other;
 
-  readonly runColor = '#FF7A59';
-  readonly rideColor = '#72A7FF';
-  readonly otherColor = '#D56CFF';
+  private readonly tanakaMaxHr: number = computeMaxHr();
 
-  private readonly tanakaMaxHr: number = (() => {
-    const dob = new Date(environment.userDob);
-    const now = new Date();
-    const age =
-      now.getFullYear() -
-      dob.getFullYear() -
-      (now < new Date(now.getFullYear(), dob.getMonth(), dob.getDate())
-        ? 1
-        : 0);
-    return 220 - age;
-  })();
-
-  readonly distanceBands: HeatmapBand[] = [
-    { label: 'Short (< 5 mi)', min: 0, max: 5, color: '#4caf50' },
-    { label: 'Moderate (5–10 mi)', min: 5, max: 10, color: '#ffc107' },
-    { label: 'Long (10–15 mi)', min: 10, max: 15, color: '#ff8c00' },
-    { label: 'Very long (15+ mi)', min: 15, max: Infinity, color: '#e63419' }
-  ];
-
-  readonly durationBands: HeatmapBand[] = [
-    { label: 'Short (< 30 min)', min: 0, max: 1800, color: '#4caf50' },
-    { label: 'Moderate (30–60 min)', min: 1800, max: 3600, color: '#ffc107' },
-    { label: 'Long (1–2 hrs)', min: 3600, max: 7200, color: '#ff8c00' },
-    { label: 'Very long (2+ hrs)', min: 7200, max: Infinity, color: '#e63419' }
-  ];
-
-  readonly trainingLoadBands: HeatmapBand[] = [
-    { label: 'Very easy / recovery (0–50)', min: 0, max: 50, color: '#4caf50' },
-    { label: 'Easy–moderate (50–100)', min: 50, max: 100, color: '#ffc107' },
-    { label: 'Moderate–hard (100–200)', min: 100, max: 200, color: '#ff8c00' },
-    {
-      label: 'Very hard / big stress (200+)',
-      min: 200,
-      max: Infinity,
-      color: '#e63419'
-    }
-  ];
-
-  readonly trainingEffectBands: HeatmapBand[] = [
-    { label: 'Recovery', min: 0, max: 0, color: '#1FA87A' },
-    { label: 'Base (Low Aerobic)', min: 0, max: 0, color: '#1FA87A' },
-    { label: 'Tempo (Low/Med Aerobic)', min: 0, max: 0, color: '#F57C00' },
-    { label: 'Threshold', min: 0, max: 0, color: '#F57C00' },
-    { label: 'VO₂ Max (High Aerobic)', min: 0, max: 0, color: '#F57C00' },
-    { label: 'High Aerobic / Mixed', min: 0, max: 0, color: '#F57C00' },
-    { label: 'Anaerobic Capacity', min: 0, max: 0, color: '#6A1B9A' },
-    { label: 'Sprint (Anaerobic)', min: 0, max: 0, color: '#6A1B9A' },
-    { label: 'Anaerobic (Overreaching)', min: 0, max: 0, color: '#6A1B9A' }
-  ];
-
-  readonly maxHrBands: HeatmapBand[] = [
-    {
-      label: 'Zone 1 – Warm-Up (50–60%)',
-      min: Math.round(this.tanakaMaxHr * 0.5),
-      max: Math.round(this.tanakaMaxHr * 0.6),
-      color: '#9e9e9e'
-    },
-    {
-      label: 'Zone 2 – Easy (60–70%)',
-      min: Math.round(this.tanakaMaxHr * 0.6),
-      max: Math.round(this.tanakaMaxHr * 0.7),
-      color: '#42a5f5'
-    },
-    {
-      label: 'Zone 3 – Aerobic (70–80%)',
-      min: Math.round(this.tanakaMaxHr * 0.7),
-      max: Math.round(this.tanakaMaxHr * 0.8),
-      color: '#66bb6a'
-    },
-    {
-      label: 'Zone 4 – Threshold (80–90%)',
-      min: Math.round(this.tanakaMaxHr * 0.8),
-      max: Math.round(this.tanakaMaxHr * 0.9),
-      color: '#ffa726'
-    },
-    {
-      label: 'Zone 5 – Maximum (90–100%)',
-      min: Math.round(this.tanakaMaxHr * 0.9),
-      max: Infinity,
-      color: '#ef5350'
-    }
-  ];
+  readonly distanceBands = DISTANCE_BANDS;
+  readonly durationBands = DURATION_BANDS;
+  readonly trainingLoadBands = TRAINING_LOAD_BANDS;
+  readonly trainingEffectBands = TRAINING_EFFECT_BANDS;
+  readonly maxHrBands = makeMaxHrBands(this.tanakaMaxHr);
 
   constructor(
     private activityService: ActivityService,
@@ -225,6 +173,18 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     private datePipe: DatePipe,
     private zone: NgZone
   ) {}
+
+  async exportActivities(): Promise<void> {
+    const { activities } = await this.activityService.getActivities();
+    const json = JSON.stringify(activities, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `activities-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   ngOnInit(): void {
     this.load();
@@ -275,7 +235,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
 
     const weekMap = new Map<string, Activity[]>();
     for (const activity of this.activities) {
-      const weekKey = moment(activity.start_date)
+      const weekKey = dayjs(activity.start_date)
         .startOf('isoWeek')
         .format('YYYY-MM-DD');
       if (!weekMap.has(weekKey)) {
@@ -287,32 +247,32 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     // Fill gaps so rest/recovery weeks appear as empty rows in the grid
     const allSortedKeys = Array.from(weekMap.keys()).sort();
     if (allSortedKeys.length > 1) {
-      const cursor = moment(allSortedKeys[0]);
-      const last = moment(allSortedKeys[allSortedKeys.length - 1]);
+      let cursor = dayjs(allSortedKeys[0]);
+      const last = dayjs(allSortedKeys[allSortedKeys.length - 1]);
       while (cursor.isSameOrBefore(last)) {
         const k = cursor.format('YYYY-MM-DD');
         if (!weekMap.has(k)) {
           weekMap.set(k, []);
         }
-        cursor.add(1, 'week');
+        cursor = cursor.add(1, 'week');
       }
     }
 
     const weekKeys = Array.from(weekMap.keys()).sort().reverse();
 
     this.weekGroups = weekKeys.map((weekKey) => {
-      const weekStart = moment(weekKey);
-      const weekEnd = weekStart.clone().endOf('isoWeek');
+      const weekStart = dayjs(weekKey);
+      const weekEnd = weekStart.endOf('isoWeek');
       const weekActivities = weekMap.get(weekKey)!;
 
       const days: DayData[] = [];
       for (let i = 0; i < 7; i++) {
-        const dayDate = weekStart.clone().add(i, 'days');
+        const dayDate = weekStart.add(i, 'days');
         const dayActivities = weekActivities
-          .filter((a) => moment(a.start_date).isSame(dayDate, 'day'))
+          .filter((a) => dayjs(a.start_date).isSame(dayDate, 'day'))
           .sort(
             (a, b) =>
-              moment(b.start_date).valueOf() - moment(a.start_date).valueOf()
+              dayjs(b.start_date).valueOf() - dayjs(a.start_date).valueOf()
           );
         days.push({ date: dayDate, activities: dayActivities });
       }
@@ -340,7 +300,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     });
   }
 
-  private formatWeekLabel(start: moment.Moment, end: moment.Moment): string {
+  private formatWeekLabel(start: Dayjs, end: Dayjs): string {
     if (start.month() === end.month()) {
       return start.format('MMM D') + ' – ' + end.format('D');
     }
@@ -348,19 +308,19 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
   }
 
   private buildSummaries() {
-    const now = moment();
+    const now = dayjs();
     const ranges = [
-      { label: 'This Week', from: moment().startOf('isoWeek') },
-      { label: 'This Month', from: moment().startOf('month') },
-      { label: 'This Year', from: moment().startOf('year') },
-      { label: 'All Time', from: moment(0) }
+      { label: 'This Week', from: dayjs().startOf('isoWeek') },
+      { label: 'This Month', from: dayjs().startOf('month') },
+      { label: 'This Year', from: dayjs().startOf('year') },
+      { label: 'All Time', from: dayjs(0) }
     ];
 
     this.summaries = ranges.map(({ label, from }) => {
       const filtered = this.activities.filter(
         (a) =>
-          moment(a.start_date).isSameOrAfter(from) &&
-          moment(a.start_date).isSameOrBefore(now)
+          dayjs(a.start_date).isSameOrAfter(from) &&
+          dayjs(a.start_date).isSameOrBefore(now)
       );
       return {
         label,
@@ -384,9 +344,9 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     const monthBestWeek = new Map<string, string>(); // "YYYY-M" -> weekKey
 
     for (const activity of this.activities) {
-      const d = moment(activity.start_date);
+      const d = dayjs(activity.start_date);
       const mapKey = `${d.year()}-${d.month()}`; // month is 0-indexed
-      const weekKey = d.clone().startOf('isoWeek').format('YYYY-MM-DD');
+      const weekKey = d.startOf('isoWeek').format('YYYY-MM-DD');
       const current = monthBestWeek.get(mapKey);
       if (!current || weekKey > current) {
         monthBestWeek.set(mapKey, weekKey);
@@ -405,7 +365,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
       yearMap.get(year)!.set(month, weekKey);
     }
 
-    const currentYear = moment().year();
+    const currentYear = dayjs().year();
     const years = Array.from(yearMap.keys()).sort().reverse();
     this.yearMonthNav = years.map((year) => {
       const monthMap = yearMap.get(year)!;
@@ -414,7 +374,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
         .reverse()
         .map((month) => ({
           month,
-          monthName: moment().month(month).format('MMM'),
+          monthName: dayjs().month(month).format('MMM'),
           weekKey: monthMap.get(month)!
         }));
       return { year, expanded: year === currentYear, months };
@@ -430,11 +390,11 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     // Build weekKey -> navMonth.weekKey lookup for scroll-spy
     this.weekToNavKey.clear();
     for (const week of this.weekGroups) {
-      const d = moment(week.weekKey);
+      const d = dayjs(week.weekKey);
       let navKey = this.findNavKey(d.year(), d.month());
       if (!navKey) {
         // Week spans two months; try the end date's month
-        const endD = d.clone().add(6, 'days');
+        const endD = d.add(6, 'days');
         navKey = this.findNavKey(endD.year(), endD.month());
       }
       if (navKey) {
@@ -598,14 +558,14 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     return '🏋️';
   }
 
-  isRun(activity: Activity) {
-    return activity.activity_type === 'run';
+  isRun(activity: Activity): boolean {
+    return isRun(activity);
   }
-  isRide(activity: Activity) {
-    return activity.activity_type === 'ride';
+  isRide(activity: Activity): boolean {
+    return isRide(activity);
   }
-  isOtherActivity(activity: Activity) {
-    return !this.isRun(activity) && !this.isRide(activity);
+  isOtherActivity(activity: Activity): boolean {
+    return isOtherActivity(activity);
   }
 
   formatActivityType(type: string): string {
@@ -619,29 +579,18 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     return labels[type] ?? type.charAt(0).toUpperCase() + type.slice(1);
   }
 
-  distanceToMiles(meters: number) {
-    return meters / this.METERS_PER_MILE;
+  distanceToMiles(meters: number): number {
+    return distanceToMiles(meters);
   }
-  secondsToHours(seconds: number) {
-    return seconds / this.SECONDS_PER_HOUR;
+  secondsToHours(seconds: number): number {
+    return seconds / SECONDS_PER_HOUR;
   }
-
   getDuration(durationInSeconds: number): string {
-    try {
-      const hours = Math.floor(durationInSeconds / this.SECONDS_PER_HOUR);
-      const minutes = Math.round(
-        (durationInSeconds % this.SECONDS_PER_HOUR) / 60
-      );
-      if (hours > 0 && minutes > 0) return `${hours} hr ${minutes} mins`;
-      if (hours > 0) return `${hours} hr`;
-      return `${minutes} mins`;
-    } catch {
-      return '';
-    }
+    return getDuration(durationInSeconds);
   }
 
   getTimeSince(startDate: string): string {
-    return moment(startDate).fromNow();
+    return dayjs(startDate).fromNow();
   }
 
   formatTrainingEffectLabel(label: string | undefined | null): string {
@@ -661,7 +610,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
   }
 
   latestDistanceBand(a: Activity): HeatmapBand | null {
-    const miles = (a.distance_meters ?? 0) / this.METERS_PER_MILE;
+    const miles = distanceToMiles(a.distance_meters ?? 0);
     if (miles === 0) return null;
     return (
       this.distanceBands.find((b) => miles >= b.min && miles < b.max) ?? null

@@ -4,6 +4,7 @@ from threading import Thread
 
 from garminconnect import GarminConnectConnectionError
 
+from geocoder import fill_countries
 from normalizer import Normalizer
 
 _GARMIN_BLOB = "garmin/activities.json"
@@ -75,6 +76,16 @@ class ActivityService:
 
         except GarminConnectConnectionError:
             sync_failed = True
+
+        # Enrich any activities missing the country field (fast batch KD-tree lookup).
+        # Done synchronously so every response includes country data; persistence
+        # happens in the background so it doesn't delay the HTTP response.
+        if fill_countries(stored):
+            Thread(
+                target=self._blob_store.write_json,
+                args=(_GARMIN_BLOB, stored),
+                daemon=True,
+            ).start()
 
         # stored is already sorted newest-first (blob is always written sorted,
         # and any new merge is sorted above before assignment).

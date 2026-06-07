@@ -5,7 +5,9 @@ import {
   RacePredictions,
   RecordsData
 } from '../activity.service';
-import moment from 'moment';
+import { Activity } from '../types/Activity';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
 
 @Component({
   selector: 'app-records',
@@ -17,12 +19,19 @@ export class RecordsComponent implements OnInit {
   loading = true;
   loaded = false;
   data: RecordsData | null = null;
+  activities: Activity[] = [];
 
-  constructor(private activityService: ActivityService) {}
+  constructor(private activityService: ActivityService) {
+    dayjs.extend(relativeTime);
+  }
 
   ngOnInit(): void {
-    this.activityService.getRecords().then((data) => {
-      this.data = data;
+    Promise.all([
+      this.activityService.getRecords(),
+      this.activityService.getActivities()
+    ]).then(([records, { activities }]) => {
+      this.data = records;
+      this.activities = activities;
       this.loading = false;
       this.loaded = true;
     });
@@ -56,6 +65,33 @@ export class RecordsComponent implements OnInit {
     return this.data?.race_predictions ?? null;
   }
 
+  get countryRankings(): { code: string; name: string; count: number }[] {
+    const counts = new Map<string, number>();
+    for (const act of this.activities) {
+      if (act.country) {
+        counts.set(act.country, (counts.get(act.country) ?? 0) + 1);
+      }
+    }
+    return Array.from(counts.entries())
+      .map(([code, count]) => ({ code, name: this.countryName(code), count }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  flagEmoji(code: string): string {
+    return [...code.toUpperCase()]
+      .map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
+      .join('');
+  }
+
+  private countryName(code: string): string {
+    try {
+      const names = new Intl.DisplayNames(['en'], { type: 'region' });
+      return names.of(code) ?? code;
+    } catch {
+      return code;
+    }
+  }
+
   formatTime(seconds: number | null | undefined): string {
     if (seconds == null) return '—';
     const s = Math.round(seconds);
@@ -84,12 +120,12 @@ export class RecordsComponent implements OnInit {
 
   formatDate(dateStr: string | null): string {
     if (!dateStr) return '';
-    return moment(dateStr).format('D MMM YYYY');
+    return dayjs(dateStr).format('D MMM YYYY');
   }
 
   timeSince(dateStr: string | null): string {
     if (!dateStr) return '';
-    return moment(dateStr).fromNow();
+    return dayjs(dateStr).fromNow();
   }
 
   garminUrl(activityId: string | null): string | null {

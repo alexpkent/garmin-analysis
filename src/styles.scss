@@ -44,9 +44,9 @@ body {
   padding: 10px 14px 9px;
   color: #fff;
 
-  &--run   { background: #e63419; }
-  &--ride  { background: #2b54d4; }
-  &--other { background: #b316de; }
+  &--run   { background: #ff6040; }
+  &--ride  { background: #40c8ff; }
+  &--other { background: #ffc940; }
 }
 
 .hm-popup__name {
@@ -108,7 +108,7 @@ body {
 }
 
 .hm-popup__effect-value {
-  color: #ffc107;
+  color: #e8b84b;
   font-weight: 600;
   text-align: right;
 }

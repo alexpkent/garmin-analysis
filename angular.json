@@ -28,6 +28,13 @@
             ],
             "tsConfig": "tsconfig.app.json",
             "aot": true,
+            "allowedCommonJsDependencies": [
+              "dayjs",
+              "dayjs/plugin/relativeTime",
+              "dayjs/plugin/isoWeek",
+              "dayjs/plugin/isSameOrBefore",
+              "dayjs/plugin/isSameOrAfter"
+            ],
             "assets": [
               "src/favicon.ico",
               "src/favicon.svg",
@@ -36,9 +43,7 @@
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": [
-              "node_modules/moment/min/moment.min.js"
-            ],
+            "scripts": [],
             "browser": "src/main.ts"
           },
           "configurations": {
@@ -69,8 +74,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "6kb",
-                  "maximumError": "10kb"
+                  "maximumWarning": "10kb",
+                  "maximumError": "15kb"
                 }
               ]
             }

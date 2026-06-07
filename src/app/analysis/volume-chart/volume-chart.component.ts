@@ -11,7 +11,13 @@ import {
   ViewChild
 } from '@angular/core';
 import { Activity } from '../../types/Activity';
-import moment from 'moment';
+import dayjs, { Dayjs } from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+dayjs.extend(isoWeek);
+dayjs.extend(isSameOrBefore);
+import { ACTIVITY_COLORS, UI_COLORS } from '../../constants/colors';
+import { isRun, isRide, activityIcon, formatDistance, getDuration } from '../../utils/activity.utils';
 
 declare const Chart: any;
 
@@ -23,8 +29,8 @@ declare const Chart: any;
 })
 export class VolumeChartComponent implements OnChanges, OnDestroy {
   @Input() activities: Activity[] = [];
-  @Input() startDate: moment.Moment | null = null;
-  @Input() endDate: moment.Moment | null = null;
+  @Input() startDate: Dayjs | null = null;
+  @Input() endDate: Dayjs | null = null;
   @Input() canGoBack = false;
   @Input() canGoForward = false;
 
@@ -56,24 +62,11 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
     return `https://connect.garmin.com/app/activity/${a.id}`;
   }
 
-  formatDistance(m: number): string {
-    return `${(m / 1609.344).toFixed(1)} mi`;
-  }
+  formatDistance(m: number): string { return formatDistance(m); }
 
-  formatDuration(s: number): string {
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
-  }
+  formatDuration(s: number): string { return getDuration(s); }
 
-  activityIcon(a: Activity): string {
-    const t = a.activity_type?.toLowerCase() ?? '';
-    if (t.includes('run')) return 'fas fa-running';
-    if (t.includes('cycl') || t.includes('ride') || t.includes('bike'))
-      return 'fas fa-bicycle';
-    if (t.includes('swim')) return 'fas fa-swimmer';
-    return 'fas fa-dumbbell';
-  }
+  activityIcon(a: Activity): string { return activityIcon(a); }
 
   ngOnChanges(_: SimpleChanges): void {
     this.buildChart();
@@ -85,25 +78,25 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
 
   private buildChart(): void {
     const end = this.endDate
-      ? this.endDate.clone().startOf('day')
-      : moment().startOf('day');
+      ? this.endDate.startOf('day')
+      : dayjs().startOf('day');
     const start = this.startDate
-      ? this.startDate.clone().startOf('day')
-      : end.clone().subtract(364, 'days');
+      ? this.startDate.startOf('day')
+      : end.subtract(364, 'days');
 
     this.periodLabel = `${start.format('MMM YYYY')} – ${end.format('MMM YYYY')}`;
 
     // Build weekly labels
     const weekLabels: string[] = [];
-    const cursor = start.clone().isoWeekday(1);
-    if (cursor.isAfter(start)) cursor.subtract(7, 'days');
+    let cursor = start.isoWeekday(1);
+    if (cursor.isAfter(start)) cursor = cursor.subtract(7, 'days');
     while (cursor.isSameOrBefore(end, 'day')) {
-      weekLabels.push(cursor.clone().add(6, 'days').format('D MMM'));
-      cursor.add(7, 'days');
+      weekLabels.push(cursor.add(6, 'days').format('D MMM'));
+      cursor = cursor.add(7, 'days');
     }
     const weekCount = weekLabels.length;
-    const weekStart = start.clone().isoWeekday(1);
-    if (weekStart.isAfter(start)) weekStart.subtract(7, 'days');
+    let weekStart = start.isoWeekday(1);
+    if (weekStart.isAfter(start)) weekStart = weekStart.subtract(7, 'days');
 
     this.storedWeekLabels = weekLabels;
     this.weekActivities = Array.from({ length: weekCount }, () => []);
@@ -113,14 +106,13 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
     const otherData = new Array(weekCount).fill(0);
 
     for (const a of this.activities) {
-      const d = moment(a.start_date).startOf('day');
+      const d = dayjs(a.start_date).startOf('day');
       if (d.isBefore(start) || d.isAfter(end)) continue;
       const idx = Math.floor(d.diff(weekStart, 'days') / 7);
       if (idx < 0 || idx >= weekCount) continue;
       const miles = (a.distance_meters ?? 0) / 1609.344;
-      const t = a.activity_type?.toLowerCase() ?? '';
-      if (t.includes('run')) runData[idx] += miles;
-      else if (t.includes('cycl') || t.includes('ride') || t.includes('bike'))
+      if (isRun(a)) runData[idx] += miles;
+      else if (isRide(a))
         cycleData[idx] += miles;
       else otherData[idx] += miles;
       this.weekActivities[idx].push(a);
@@ -136,24 +128,24 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
       {
         label: 'Running',
         data: runData,
-        backgroundColor: '#4caf5088',
-        borderColor: '#4caf50',
+        backgroundColor: ACTIVITY_COLORS.run + '88',
+        borderColor: ACTIVITY_COLORS.run,
         borderWidth: 1,
         stack: 'volume'
       },
       {
         label: 'Cycling',
         data: cycleData,
-        backgroundColor: '#42a5f588',
-        borderColor: '#42a5f5',
+        backgroundColor: ACTIVITY_COLORS.ride + '88',
+        borderColor: ACTIVITY_COLORS.ride,
         borderWidth: 1,
         stack: 'volume'
       },
       {
         label: 'Other',
         data: otherData,
-        backgroundColor: '#ff8c0088',
-        borderColor: '#ff8c00',
+        backgroundColor: ACTIVITY_COLORS.other + '88',
+        borderColor: ACTIVITY_COLORS.other,
         borderWidth: 1,
         stack: 'volume'
       }
@@ -198,7 +190,7 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
           },
           tooltip: {
             backgroundColor: '#212529',
-            titleColor: '#ffc107',
+            titleColor: UI_COLORS.accent,
             bodyColor: '#dee2e6',
             borderColor: '#495057',
             borderWidth: 1,

@@ -1,3 +1,5 @@
+@use '../../../styles/variables' as *;
+
 .trend-card {
   background: #1a1d21;
   border: 1px solid #343a40;
@@ -81,7 +83,7 @@
 
   &:hover:not(:disabled) {
     color: #fff;
-    border-color: #ffc107;
+    border-color: $accent;
   }
 
   &:disabled {

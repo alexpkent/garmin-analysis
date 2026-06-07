@@ -10,7 +10,12 @@ import {
   ViewChild
 } from '@angular/core';
 import { Activity } from '../../types/Activity';
-import moment from 'moment';
+import dayjs, { Dayjs } from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+dayjs.extend(isoWeek);
+dayjs.extend(isSameOrBefore);
+import { UI_COLORS, STATUS_COLORS } from '../../constants/colors';
 
 declare const Chart: any;
 
@@ -32,8 +37,8 @@ interface Series {
 })
 export class TrendChartComponent implements OnChanges, OnDestroy {
   @Input() activities: Activity[] = [];
-  @Input() startDate: moment.Moment | null = null;
-  @Input() endDate: moment.Moment | null = null;
+  @Input() startDate: Dayjs | null = null;
+  @Input() endDate: Dayjs | null = null;
   @Input() canGoBack = false;
   @Input() canGoForward = false;
 
@@ -56,7 +61,7 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
     {
       label: 'Training Load',
       valueKey: 'activityTrainingLoad',
-      color: '#ffc107'
+      color: UI_COLORS.accent
     },
     {
       label: 'Training Effect',
@@ -94,11 +99,11 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
 
   private buildChart(): void {
     const end = this.endDate
-      ? this.endDate.clone().startOf('day')
-      : moment().startOf('day');
+      ? this.endDate.startOf('day')
+      : dayjs().startOf('day');
     const start = this.startDate
-      ? this.startDate.clone().startOf('day')
-      : end.clone().subtract(364, 'days');
+      ? this.startDate.startOf('day')
+      : end.subtract(364, 'days');
 
     this.periodLabel = `${start.format('MMM YYYY')} – ${end.format('MMM YYYY')}`;
 
@@ -106,22 +111,22 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
     // so the last tick clearly shows the week containing today rather than the
     // preceding Monday (e.g. "7 Jun" instead of "1 Jun" when today is Thu 5 Jun).
     const labels: string[] = [];
-    const cursor = start.clone().isoWeekday(1);
-    if (cursor.isAfter(start)) cursor.subtract(7, 'days');
+    let cursor = start.isoWeekday(1);
+    if (cursor.isAfter(start)) cursor = cursor.subtract(7, 'days');
     while (cursor.isSameOrBefore(end, 'day')) {
-      labels.push(cursor.clone().add(6, 'days').format('D MMM'));
-      cursor.add(7, 'days');
+      labels.push(cursor.add(6, 'days').format('D MMM'));
+      cursor = cursor.add(7, 'days');
     }
 
     // Aggregate activities per week bucket
     const weekCount = labels.length;
-    const weekStart = start.clone().isoWeekday(1);
-    if (weekStart.isAfter(start)) weekStart.subtract(7, 'days');
+    let weekStart = start.isoWeekday(1);
+    if (weekStart.isAfter(start)) weekStart = weekStart.subtract(7, 'days');
 
     const buckets: Map<number, number[]>[] = this.series.map(() => new Map());
 
     for (const a of this.activities) {
-      const date = moment(a.start_date).startOf('day');
+      const date = dayjs(a.start_date).startOf('day');
       if (date.isBefore(start) || date.isAfter(end)) continue;
       const weekIdx = Math.floor(date.diff(weekStart, 'days') / 7);
       if (weekIdx < 0 || weekIdx >= weekCount) continue;
@@ -158,8 +163,8 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
     }));
 
     if (this.chart) {
-      const hiddenStates = datasets.map((_: any, i: number) =>
-        this.chart.getDatasetMeta(i)?.hidden ?? false
+      const hiddenStates = datasets.map(
+        (_: any, i: number) => this.chart.getDatasetMeta(i)?.hidden ?? false
       );
       this.chart.data.labels = labels;
       this.chart.data.datasets = datasets;
@@ -184,7 +189,7 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
           },
           tooltip: {
             backgroundColor: '#212529',
-            titleColor: '#ffc107',
+            titleColor: UI_COLORS.accent,
             bodyColor: '#dee2e6',
             borderColor: '#495057',
             borderWidth: 1,

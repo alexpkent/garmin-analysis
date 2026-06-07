@@ -1,6 +1,6 @@
-$bg: #212529;
-$accent: #ffc107;
-$text-muted: #adb5bd;
+@use '../../styles/variables' as *;
+
+$text-muted: $muted;
 $sidebar-width: 200px;
 $bottom-bar-height: 56px;
 

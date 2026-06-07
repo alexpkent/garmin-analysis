@@ -11,29 +11,17 @@ import {
 } from '@angular/core';
 import { HealthSnapshot } from '../../activity.service';
 import { Activity } from '../../types/Activity';
-import moment from 'moment';
+import dayjs, { Dayjs } from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+dayjs.extend(isoWeek);
+dayjs.extend(isSameOrBefore);
+dayjs.extend(isSameOrAfter);
+import { TRAINING_STATUS_LABEL, TRAINING_STATUS_COLOR } from '../../constants/heatmap-bands';
+import { UI_COLORS } from '../../constants/colors';
 
 declare const Chart: any;
-
-const TRAINING_STATUS_LABEL: Record<string, string> = {
-  PRODUCTIVE: 'Productive',
-  MAINTAINING: 'Maintaining',
-  PEAKING: 'Peaking',
-  RECOVERY: 'Recovery',
-  UNPRODUCTIVE: 'Unproductive',
-  OVERREACHING: 'Overreaching',
-  DETRAINING: 'Detraining'
-};
-
-const TRAINING_STATUS_COLOR: Record<string, string> = {
-  PRODUCTIVE: '#1FA87A',
-  MAINTAINING: '#42a5f5',
-  PEAKING: '#ffc107',
-  RECOVERY: '#4caf50',
-  UNPRODUCTIVE: '#ff8c00',
-  OVERREACHING: '#e63419',
-  DETRAINING: '#6c757d'
-};
 
 @Component({
   selector: 'app-health-trend-chart',
@@ -44,8 +32,8 @@ const TRAINING_STATUS_COLOR: Record<string, string> = {
 export class HealthTrendChartComponent implements OnChanges, OnDestroy {
   @Input() snapshots: HealthSnapshot[] = [];
   @Input() activities: Activity[] = [];
-  @Input() startDate: moment.Moment | null = null;
-  @Input() endDate: moment.Moment | null = null;
+  @Input() startDate: Dayjs | null = null;
+  @Input() endDate: Dayjs | null = null;
   @Input() canGoBack = false;
   @Input() canGoForward = false;
 
@@ -80,34 +68,34 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
   }
 
   private buildChart(): void {
-    const end = this.endDate ?? moment().startOf('day');
+    const end = this.endDate ?? dayjs().startOf('day');
     const start =
-      this.startDate ?? end.clone().subtract(364, 'days').startOf('day');
+      this.startDate ?? end.subtract(364, 'days').startOf('day');
 
     this.periodLabel = `${start.format('MMM YYYY')} – ${end.format('MMM YYYY')}`;
 
     const filtered = this.snapshots
       .filter((s) => {
-        const d = moment(s.date);
+        const d = dayjs(s.date);
         return d.isSameOrAfter(start, 'day') && d.isSameOrBefore(end, 'day');
       })
       .sort((a, b) => a.date.localeCompare(b.date));
 
     // Weekly HR aggregated from activities (same weekly-bucket approach as activity trends)
     const weekLabels: string[] = [];
-    const cursor = start.clone().isoWeekday(1);
-    if (cursor.isAfter(start)) cursor.subtract(7, 'days');
+    let cursor = start.isoWeekday(1);
+    if (cursor.isAfter(start)) cursor = cursor.subtract(7, 'days');
     while (cursor.isSameOrBefore(end, 'day')) {
-      weekLabels.push(cursor.clone().add(6, 'days').format('D MMM'));
-      cursor.add(7, 'days');
+      weekLabels.push(cursor.add(6, 'days').format('D MMM'));
+      cursor = cursor.add(7, 'days');
     }
     const weekCount = weekLabels.length;
-    const weekStart = start.clone().isoWeekday(1);
-    if (weekStart.isAfter(start)) weekStart.subtract(7, 'days');
+    let weekStart = start.isoWeekday(1);
+    if (weekStart.isAfter(start)) weekStart = weekStart.subtract(7, 'days');
     const avgHrBuckets: Map<number, number[]> = new Map();
     const maxHrBuckets: Map<number, number[]> = new Map();
     for (const a of this.activities) {
-      const d = moment(a.start_date).startOf('day');
+      const d = dayjs(a.start_date).startOf('day');
       if (d.isBefore(start) || d.isAfter(end)) continue;
       const idx = Math.floor(d.diff(weekStart, 'days') / 7);
       if (idx < 0 || idx >= weekCount) continue;
@@ -142,7 +130,7 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
     const statusWeekly: (string | null)[] = new Array(weekCount).fill(null);
 
     for (const s of filtered) {
-      const d = moment(s.date).startOf('day');
+      const d = dayjs(s.date).startOf('day');
       const idx = Math.floor(d.diff(weekStart, 'days') / 7);
       if (idx < 0 || idx >= weekCount) continue;
       if (s.vo2max_running != null) vo2Weekly[idx] = s.vo2max_running;
@@ -244,8 +232,8 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
       {
         label: 'High Aerobic Load',
         data: highAerobicWeekly,
-        borderColor: '#ffc107',
-        backgroundColor: '#ffc10722',
+        borderColor: UI_COLORS.accent,
+        backgroundColor: UI_COLORS.accent + '22',
         pointRadius: 2,
         pointHoverRadius: 5,
         borderWidth: 2,
@@ -256,7 +244,7 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
       {
         label: 'High Aerobic Target',
         data: highTargetWeekly,
-        borderColor: '#ffc107',
+        borderColor: UI_COLORS.accent,
         backgroundColor: 'transparent',
         borderDash: [4, 4],
         pointRadius: 0,
@@ -292,8 +280,8 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
     ];
 
     if (this.chart) {
-      const hiddenStates = datasets.map((_: any, i: number) =>
-        this.chart.getDatasetMeta(i)?.hidden ?? false
+      const hiddenStates = datasets.map(
+        (_: any, i: number) => this.chart.getDatasetMeta(i)?.hidden ?? false
       );
       this.chart.data.labels = weekLabels;
       this.chart.data.datasets = datasets;
@@ -318,7 +306,7 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
           },
           tooltip: {
             backgroundColor: '#212529',
-            titleColor: '#ffc107',
+            titleColor: UI_COLORS.accent,
             bodyColor: '#dee2e6',
             borderColor: '#495057',
             borderWidth: 1,

@@ -2,10 +2,17 @@ import { Component, OnInit } from '@angular/core';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { ActivityService } from '../activity.service';
 import { environment } from '../../environments/environment';
-import moment from 'moment';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+dayjs.extend(relativeTime);
 import { View } from '../types/View';
 import { Activity, formatTrainingEffectLabel } from '../types/Activity';
 import { Polyline } from '../types/Polyline';
+import { ACTIVITY_COLORS } from '../constants/colors';
+import {
+  isRun, isRide, isOtherActivity,
+  distanceToMiles, getDuration
+} from '../utils/activity.utils';
 declare var L: any;
 
 @Component({
@@ -34,9 +41,9 @@ export class HeatmapComponent implements OnInit {
   runsLayer: any;
   ridesLayer: any;
   otherActivitiesLayer: any;
-  rideColor = '#2B54D4';
-  runColor = '#E63419';
-  otherActivityColor = '#b316de';
+  readonly rideColor = ACTIVITY_COLORS.ride;
+  readonly runColor = ACTIVITY_COLORS.run;
+  readonly otherActivityColor = ACTIVITY_COLORS.other;
   lastVisibleActivity: Activity;
   view = View;
   currentView = View.All;
@@ -77,10 +84,10 @@ export class HeatmapComponent implements OnInit {
     this.rideCount = 0;
     this.otherActivityCount = 0;
 
-    const startOfToday = moment().startOf('day');
-    const lastWeek = moment().subtract(1, 'weeks');
-    const lastMonth = moment().subtract(1, 'months');
-    const lastYear = moment().subtract(1, 'years');
+    const startOfToday = dayjs().startOf('day');
+    const lastWeek = dayjs().subtract(1, 'week');
+    const lastMonth = dayjs().subtract(1, 'month');
+    const lastYear = dayjs().subtract(1, 'year');
 
     this.polylines.forEach((polyline: Polyline) => {
       let show = false;
@@ -91,25 +98,25 @@ export class HeatmapComponent implements OnInit {
           break;
         }
         case View.Year: {
-          if (moment(polyline.activity.start_date).isAfter(lastYear)) {
+          if (dayjs(polyline.activity.start_date).isAfter(lastYear)) {
             show = true;
           }
           break;
         }
         case View.Month: {
-          if (moment(polyline.activity.start_date).isAfter(lastMonth)) {
+          if (dayjs(polyline.activity.start_date).isAfter(lastMonth)) {
             show = true;
           }
           break;
         }
         case View.Week: {
-          if (moment(polyline.activity.start_date).isAfter(lastWeek)) {
+          if (dayjs(polyline.activity.start_date).isAfter(lastWeek)) {
             show = true;
           }
           break;
         }
         case View.Day: {
-          if (moment(polyline.activity.start_date).isAfter(startOfToday)) {
+          if (dayjs(polyline.activity.start_date).isAfter(startOfToday)) {
             show = true;
           }
           break;
@@ -133,19 +140,19 @@ export class HeatmapComponent implements OnInit {
             break;
           }
           case View.Year: {
-            include = moment(activity.start_date).isAfter(lastYear);
+            include = dayjs(activity.start_date).isAfter(lastYear);
             break;
           }
           case View.Month: {
-            include = moment(activity.start_date).isAfter(lastMonth);
+            include = dayjs(activity.start_date).isAfter(lastMonth);
             break;
           }
           case View.Week: {
-            include = moment(activity.start_date).isAfter(lastWeek);
+            include = dayjs(activity.start_date).isAfter(lastWeek);
             break;
           }
           case View.Day: {
-            include = moment(activity.start_date).isAfter(startOfToday);
+            include = dayjs(activity.start_date).isAfter(startOfToday);
             break;
           }
         }
@@ -331,7 +338,7 @@ export class HeatmapComponent implements OnInit {
         stream.encoded_route!
       ).getLatLngs();
 
-      let color = this.otherActivityColor;
+      let color: string = this.otherActivityColor;
       if (this.isRun(stream)) {
         color = this.runColor;
       } else if (this.isRide(stream)) {
@@ -359,17 +366,9 @@ export class HeatmapComponent implements OnInit {
     });
   }
 
-  isRun(activity: Activity) {
-    return activity.activity_type === 'run';
-  }
-
-  isRide(activity: Activity) {
-    return activity.activity_type === 'ride';
-  }
-
-  isOtherActivity(activity: Activity) {
-    return !this.isRun(activity) && !this.isRide(activity);
-  }
+  isRun(activity: Activity): boolean { return isRun(activity); }
+  isRide(activity: Activity): boolean { return isRide(activity); }
+  isOtherActivity(activity: Activity): boolean { return isOtherActivity(activity); }
 
   private createPolylinePopup(activity: Activity) {
     let iconClass = 'fas fa-heartbeat';
@@ -454,7 +453,7 @@ export class HeatmapComponent implements OnInit {
         </div>
         ${tEffectHtml}
         <a class="hm-popup__link" href="https://connect.garmin.com/app/activity/${activity.id}" target="_blank" rel="noopener noreferrer">
-          View on Garmin Connect <i class="fas fa-external-link-alt"></i>
+          <i class="fas fa-external-link-alt"></i> Garmin Connect
         </a>
       </div>`;
   }
@@ -468,27 +467,15 @@ export class HeatmapComponent implements OnInit {
     });
   }
 
-  distanceToMiles(meters: number) {
-    return meters / 1609;
-  }
+  distanceToMiles(meters: number): number { return distanceToMiles(meters); }
 
   secondsToHours(time: number) {
     return time / 60 / 60;
   }
 
   getTimeSince(startDate: string) {
-    return moment(startDate).fromNow();
+    return dayjs(startDate).fromNow();
   }
 
-  private getDuration(durationInSeconds: number) {
-    try {
-      const hours = Math.floor(durationInSeconds / 3600);
-      const minutes = Math.round((durationInSeconds % 3600) / 60);
-      if (hours > 0 && minutes > 0) return `${hours} hr ${minutes} mins`;
-      if (hours > 0) return `${hours} hr`;
-      return `${minutes} mins`;
-    } catch (error) {
-      return '';
-    }
-  }
+  private getDuration(durationInSeconds: number): string { return getDuration(durationInSeconds); }
 }

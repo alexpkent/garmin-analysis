@@ -9,6 +9,7 @@ export interface Activity {
   encoded_route: string | null;
   start_latitude: number | null;
   start_longitude: number | null;
+  country: string | null;
   duration?: number;
   averageHR?: number;
   maxHR?: number;

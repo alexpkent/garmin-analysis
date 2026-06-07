@@ -1,37 +1,6 @@
-$accent: #ffc107;
-$card-bg: #1a1d21;
-$card-border: #343a40;
-$muted: #adb5bd;
-$dim: #6c757d;
+@use '../../styles/variables' as *;
 
-/* ── Loading overlay ──────────────────────────────────── */
-.loading-overlay {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(100vh - 56px);
-  gap: 20px;
-}
-
-.loading-ring {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 3px solid #2a2d31;
-  border-top-color: $accent;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.loading-text {
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: $dim;
-}
+@include loading-overlay;
 
 .records-content {
   max-width: 680px;
@@ -153,11 +122,11 @@ $dim: #6c757d;
 
 .pr-link {
   font-size: 0.72rem;
-  color: $dim;
+  color: $link;
   text-decoration: none;
   margin-left: auto;
 
-  &:hover { color: $accent; }
+  &:hover { color: $link-hover; }
 }
 
 /* ── Footer ──────────────────────────────────────────────── */
@@ -165,6 +134,43 @@ $dim: #6c757d;
   font-size: 0.72rem;
   color: $dim;
   padding: 4px 2px 16px;
+}
+
+/* ── Country table ───────────────────────────────────────── */
+.country-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.country-flag {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.country-rank {
+  width: 24px;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: $dim;
+  font-weight: 600;
+  text-align: right;
+}
+
+.country-name {
+  flex: 1;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #dee2e6;
+}
+
+.country-count {
+  flex-shrink: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #66bb6a;
+  white-space: nowrap;
 }
 
 /* ── Mobile ──────────────────────────────────────────────── */

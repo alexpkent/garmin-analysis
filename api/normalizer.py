@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from geocoder import country_code
+
 
 _STRAVA_TYPE_MAP = {
     "run": {"Run", "TrailRun", "VirtualRun"},
@@ -43,6 +45,8 @@ class Normalizer:
             "encoded_route": polyline,
             "start_latitude": latlng[0] if len(latlng) >= 2 else None,
             "start_longitude": latlng[1] if len(latlng) >= 2 else None,
+            "country": country_code(latlng[0] if len(latlng) >= 2 else None,
+                                    latlng[1] if len(latlng) >= 2 else None),
         }
 
     @staticmethod
@@ -74,6 +78,7 @@ class Normalizer:
             "encoded_route": encoded_route,
             "start_latitude": lat,
             "start_longitude": lon,
+            "country": country_code(lat, lon),
             "averageHR": raw.get("averageHR"),
             "maxHR": raw.get("maxHR"),
             "trainingEffect": raw.get("aerobicTrainingEffect"),
