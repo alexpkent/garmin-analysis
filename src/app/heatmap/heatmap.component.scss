@@ -14,11 +14,12 @@
 
 .garmin-link {
   font-size: 0.75rem;
-  opacity: 0.75;
+  color: $link !important;
   vertical-align: middle;
   margin-left: 5px;
+  text-decoration: none;
 
-  &:hover { opacity: 1; }
+  &:hover { color: $link-hover !important; }
 }
 
 /* ── View selector (segmented control) ───────────────── */

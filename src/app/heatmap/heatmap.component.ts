@@ -451,7 +451,7 @@ export class HeatmapComponent implements OnInit {
         </div>
         ${tEffectHtml}
         <a class="hm-popup__link" href="https://connect.garmin.com/app/activity/${activity.id}" target="_blank" rel="noopener noreferrer">
-          View on Garmin Connect <i class="fas fa-external-link-alt"></i>
+          <i class="fas fa-external-link-alt"></i> Garmin Connect
         </a>
       </div>`;
   }
