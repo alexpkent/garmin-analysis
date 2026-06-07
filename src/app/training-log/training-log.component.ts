@@ -7,13 +7,21 @@ import { environment } from '../../environments/environment';
 import moment from 'moment';
 import { ACTIVITY_COLORS } from '../constants/colors';
 import {
-  DISTANCE_BANDS, DURATION_BANDS, TRAINING_LOAD_BANDS,
-  TRAINING_EFFECT_BANDS, computeMaxHr, makeMaxHrBands
+  DISTANCE_BANDS,
+  DURATION_BANDS,
+  TRAINING_LOAD_BANDS,
+  TRAINING_EFFECT_BANDS,
+  computeMaxHr,
+  makeMaxHrBands
 } from '../constants/heatmap-bands';
 import {
-  isRun, isRide, isOtherActivity,
-  distanceToMiles, getDuration,
-  METERS_PER_MILE, SECONDS_PER_HOUR
+  isRun,
+  isRide,
+  isOtherActivity,
+  distanceToMiles,
+  getDuration,
+  METERS_PER_MILE,
+  SECONDS_PER_HOUR
 } from '../utils/activity.utils';
 
 interface NavMonth {
@@ -157,6 +165,18 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     private datePipe: DatePipe,
     private zone: NgZone
   ) {}
+
+  async exportActivities(): Promise<void> {
+    const { activities } = await this.activityService.getActivities();
+    const json = JSON.stringify(activities, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `activities-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   ngOnInit(): void {
     this.load();
@@ -530,9 +550,15 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     return '🏋️';
   }
 
-  isRun(activity: Activity): boolean { return isRun(activity); }
-  isRide(activity: Activity): boolean { return isRide(activity); }
-  isOtherActivity(activity: Activity): boolean { return isOtherActivity(activity); }
+  isRun(activity: Activity): boolean {
+    return isRun(activity);
+  }
+  isRide(activity: Activity): boolean {
+    return isRide(activity);
+  }
+  isOtherActivity(activity: Activity): boolean {
+    return isOtherActivity(activity);
+  }
 
   formatActivityType(type: string): string {
     const labels: Record<string, string> = {
@@ -545,9 +571,15 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     return labels[type] ?? type.charAt(0).toUpperCase() + type.slice(1);
   }
 
-  distanceToMiles(meters: number): number { return distanceToMiles(meters); }
-  secondsToHours(seconds: number): number { return seconds / SECONDS_PER_HOUR; }
-  getDuration(durationInSeconds: number): string { return getDuration(durationInSeconds); }
+  distanceToMiles(meters: number): number {
+    return distanceToMiles(meters);
+  }
+  secondsToHours(seconds: number): number {
+    return seconds / SECONDS_PER_HOUR;
+  }
+  getDuration(durationInSeconds: number): string {
+    return getDuration(durationInSeconds);
+  }
 
   getTimeSince(startDate: string): string {
     return moment(startDate).fromNow();
