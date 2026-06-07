@@ -10,7 +10,11 @@ import {
   ViewChild
 } from '@angular/core';
 import { Activity } from '../../types/Activity';
-import moment from 'moment';
+import dayjs, { Dayjs } from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+dayjs.extend(isoWeek);
+dayjs.extend(isSameOrBefore);
 import { UI_COLORS } from '../../constants/colors';
 
 declare const Chart: any;
@@ -27,8 +31,8 @@ const K_ATL = 1 - Math.exp(-1 / 7); // Acute Training Load  – fatigue (~7 days
 })
 export class FitnessChartComponent implements OnChanges, OnDestroy {
   @Input() activities: Activity[] = [];
-  @Input() startDate: moment.Moment | null = null;
-  @Input() endDate: moment.Moment | null = null;
+  @Input() startDate: Dayjs | null = null;
+  @Input() endDate: Dayjs | null = null;
   @Input() canGoBack = false;
   @Input() canGoForward = false;
 
@@ -57,11 +61,11 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
 
   private buildChart(): void {
     const end = this.endDate
-      ? this.endDate.clone().startOf('day')
-      : moment().startOf('day');
+      ? this.endDate.startOf('day')
+      : dayjs().startOf('day');
     const start = this.startDate
-      ? this.startDate.clone().startOf('day')
-      : end.clone().subtract(364, 'days');
+      ? this.startDate.startOf('day')
+      : end.subtract(364, 'days');
 
     this.periodLabel = `${start.format('MMM YYYY')} – ${end.format('MMM YYYY')}`;
 
@@ -69,28 +73,27 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
     const loadMap = new Map<string, number>();
     for (const a of this.activities) {
       if (a.activityTrainingLoad == null) continue;
-      const key = moment(a.start_date).format('YYYY-MM-DD');
+      const key = dayjs(a.start_date).format('YYYY-MM-DD');
       loadMap.set(key, (loadMap.get(key) ?? 0) + a.activityTrainingLoad);
     }
 
     // Build weekly labels (same week-boundary logic as other charts)
     const weekLabels: string[] = [];
-    const wCursor = start.clone().isoWeekday(1);
-    if (wCursor.isAfter(start)) wCursor.subtract(7, 'days');
-    while (wCursor.isSameOrBefore(end, 'day')) {
-      weekLabels.push(wCursor.clone().add(6, 'days').format('D MMM'));
-      wCursor.add(7, 'days');
+    const wCursor = { d: start.isoWeekday(1) };
+    if (wCursor.d.isAfter(start)) wCursor.d = wCursor.d.subtract(7, 'days');
+    while (wCursor.d.isSameOrBefore(end, 'day')) {
+      weekLabels.push(wCursor.d.add(6, 'days').format('D MMM'));
+      wCursor.d = wCursor.d.add(7, 'days');
     }
     const weekCount = weekLabels.length;
-    const weekStart = start.clone().isoWeekday(1);
-    if (weekStart.isAfter(start)) weekStart.subtract(7, 'days');
+    let weekStart = start.isoWeekday(1);
+    if (weekStart.isAfter(start)) weekStart = weekStart.subtract(7, 'days');
 
     // Map each week-end date string → week index for O(1) lookup during daily walk
     const weekEndToIdx = new Map<string, number>();
     for (let i = 0; i < weekCount; i++) {
       weekEndToIdx.set(
         weekStart
-          .clone()
           .add(i * 7 + 6, 'days')
           .format('YYYY-MM-DD'),
         i
@@ -98,10 +101,10 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
     }
 
     // Find earliest activity date so the EMA warms up properly
-    let emaStart = end.clone();
+    let emaStart = end;
     for (const a of this.activities) {
-      const d = moment(a.start_date).startOf('day');
-      if (d.isBefore(emaStart)) emaStart = d.clone();
+      const d = dayjs(a.start_date).startOf('day');
+      if (d.isBefore(emaStart)) emaStart = d;
     }
 
     // Walk day by day from emaStart, computing exponential moving averages
@@ -111,7 +114,7 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
 
     let ctl = 0;
     let atl = 0;
-    const dayCursor = emaStart.clone();
+    let dayCursor = emaStart;
     while (dayCursor.isSameOrBefore(end, 'day')) {
       const key = dayCursor.format('YYYY-MM-DD');
       const load = loadMap.get(key) ?? 0;
@@ -124,7 +127,7 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
         atlData[weekIdx] = Math.round(atl * 10) / 10;
         tsbData[weekIdx] = Math.round((ctl - atl) * 10) / 10;
       }
-      dayCursor.add(1, 'day');
+      dayCursor = dayCursor.add(1, 'day');
     }
 
     const datasets = [

@@ -2,7 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { ActivityService } from '../activity.service';
 import { environment } from '../../environments/environment';
-import moment from 'moment';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+dayjs.extend(relativeTime);
 import { View } from '../types/View';
 import { Activity, formatTrainingEffectLabel } from '../types/Activity';
 import { Polyline } from '../types/Polyline';
@@ -82,10 +84,10 @@ export class HeatmapComponent implements OnInit {
     this.rideCount = 0;
     this.otherActivityCount = 0;
 
-    const startOfToday = moment().startOf('day');
-    const lastWeek = moment().subtract(1, 'weeks');
-    const lastMonth = moment().subtract(1, 'months');
-    const lastYear = moment().subtract(1, 'years');
+    const startOfToday = dayjs().startOf('day');
+    const lastWeek = dayjs().subtract(1, 'week');
+    const lastMonth = dayjs().subtract(1, 'month');
+    const lastYear = dayjs().subtract(1, 'year');
 
     this.polylines.forEach((polyline: Polyline) => {
       let show = false;
@@ -96,25 +98,25 @@ export class HeatmapComponent implements OnInit {
           break;
         }
         case View.Year: {
-          if (moment(polyline.activity.start_date).isAfter(lastYear)) {
+          if (dayjs(polyline.activity.start_date).isAfter(lastYear)) {
             show = true;
           }
           break;
         }
         case View.Month: {
-          if (moment(polyline.activity.start_date).isAfter(lastMonth)) {
+          if (dayjs(polyline.activity.start_date).isAfter(lastMonth)) {
             show = true;
           }
           break;
         }
         case View.Week: {
-          if (moment(polyline.activity.start_date).isAfter(lastWeek)) {
+          if (dayjs(polyline.activity.start_date).isAfter(lastWeek)) {
             show = true;
           }
           break;
         }
         case View.Day: {
-          if (moment(polyline.activity.start_date).isAfter(startOfToday)) {
+          if (dayjs(polyline.activity.start_date).isAfter(startOfToday)) {
             show = true;
           }
           break;
@@ -138,19 +140,19 @@ export class HeatmapComponent implements OnInit {
             break;
           }
           case View.Year: {
-            include = moment(activity.start_date).isAfter(lastYear);
+            include = dayjs(activity.start_date).isAfter(lastYear);
             break;
           }
           case View.Month: {
-            include = moment(activity.start_date).isAfter(lastMonth);
+            include = dayjs(activity.start_date).isAfter(lastMonth);
             break;
           }
           case View.Week: {
-            include = moment(activity.start_date).isAfter(lastWeek);
+            include = dayjs(activity.start_date).isAfter(lastWeek);
             break;
           }
           case View.Day: {
-            include = moment(activity.start_date).isAfter(startOfToday);
+            include = dayjs(activity.start_date).isAfter(startOfToday);
             break;
           }
         }
@@ -472,7 +474,7 @@ export class HeatmapComponent implements OnInit {
   }
 
   getTimeSince(startDate: string) {
-    return moment(startDate).fromNow();
+    return dayjs(startDate).fromNow();
   }
 
   private getDuration(durationInSeconds: number): string { return getDuration(durationInSeconds); }

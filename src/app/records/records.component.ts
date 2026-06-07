@@ -6,7 +6,8 @@ import {
   RecordsData
 } from '../activity.service';
 import { Activity } from '../types/Activity';
-import moment from 'moment';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
 
 @Component({
   selector: 'app-records',
@@ -20,7 +21,9 @@ export class RecordsComponent implements OnInit {
   data: RecordsData | null = null;
   activities: Activity[] = [];
 
-  constructor(private activityService: ActivityService) {}
+  constructor(private activityService: ActivityService) {
+    dayjs.extend(relativeTime);
+  }
 
   ngOnInit(): void {
     Promise.all([
@@ -117,12 +120,12 @@ export class RecordsComponent implements OnInit {
 
   formatDate(dateStr: string | null): string {
     if (!dateStr) return '';
-    return moment(dateStr).format('D MMM YYYY');
+    return dayjs(dateStr).format('D MMM YYYY');
   }
 
   timeSince(dateStr: string | null): string {
     if (!dateStr) return '';
-    return moment(dateStr).fromNow();
+    return dayjs(dateStr).fromNow();
   }
 
   garminUrl(activityId: string | null): string | null {

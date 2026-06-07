@@ -4,7 +4,15 @@ import { ActivityService } from '../activity.service';
 import { Activity, formatTrainingEffectLabel } from '../types/Activity';
 import { HeatmapBand } from '../analysis/calendar-heatmap/calendar-heatmap.component';
 import { environment } from '../../environments/environment';
-import moment from 'moment';
+import dayjs, { Dayjs } from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import relativeTime from 'dayjs/plugin/relativeTime';
+dayjs.extend(isoWeek);
+dayjs.extend(isSameOrBefore);
+dayjs.extend(isSameOrAfter);
+dayjs.extend(relativeTime);
 import { ACTIVITY_COLORS } from '../constants/colors';
 import {
   DISTANCE_BANDS,
@@ -46,7 +54,7 @@ interface Summary {
 }
 
 interface DayData {
-  date: moment.Moment;
+  date: Dayjs;
   activities: Activity[];
 }
 
@@ -227,7 +235,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
 
     const weekMap = new Map<string, Activity[]>();
     for (const activity of this.activities) {
-      const weekKey = moment(activity.start_date)
+      const weekKey = dayjs(activity.start_date)
         .startOf('isoWeek')
         .format('YYYY-MM-DD');
       if (!weekMap.has(weekKey)) {
@@ -239,32 +247,32 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     // Fill gaps so rest/recovery weeks appear as empty rows in the grid
     const allSortedKeys = Array.from(weekMap.keys()).sort();
     if (allSortedKeys.length > 1) {
-      const cursor = moment(allSortedKeys[0]);
-      const last = moment(allSortedKeys[allSortedKeys.length - 1]);
+      let cursor = dayjs(allSortedKeys[0]);
+      const last = dayjs(allSortedKeys[allSortedKeys.length - 1]);
       while (cursor.isSameOrBefore(last)) {
         const k = cursor.format('YYYY-MM-DD');
         if (!weekMap.has(k)) {
           weekMap.set(k, []);
         }
-        cursor.add(1, 'week');
+        cursor = cursor.add(1, 'week');
       }
     }
 
     const weekKeys = Array.from(weekMap.keys()).sort().reverse();
 
     this.weekGroups = weekKeys.map((weekKey) => {
-      const weekStart = moment(weekKey);
-      const weekEnd = weekStart.clone().endOf('isoWeek');
+      const weekStart = dayjs(weekKey);
+      const weekEnd = weekStart.endOf('isoWeek');
       const weekActivities = weekMap.get(weekKey)!;
 
       const days: DayData[] = [];
       for (let i = 0; i < 7; i++) {
-        const dayDate = weekStart.clone().add(i, 'days');
+        const dayDate = weekStart.add(i, 'days');
         const dayActivities = weekActivities
-          .filter((a) => moment(a.start_date).isSame(dayDate, 'day'))
+          .filter((a) => dayjs(a.start_date).isSame(dayDate, 'day'))
           .sort(
             (a, b) =>
-              moment(b.start_date).valueOf() - moment(a.start_date).valueOf()
+              dayjs(b.start_date).valueOf() - dayjs(a.start_date).valueOf()
           );
         days.push({ date: dayDate, activities: dayActivities });
       }
@@ -292,7 +300,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     });
   }
 
-  private formatWeekLabel(start: moment.Moment, end: moment.Moment): string {
+  private formatWeekLabel(start: Dayjs, end: Dayjs): string {
     if (start.month() === end.month()) {
       return start.format('MMM D') + ' – ' + end.format('D');
     }
@@ -300,19 +308,19 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
   }
 
   private buildSummaries() {
-    const now = moment();
+    const now = dayjs();
     const ranges = [
-      { label: 'This Week', from: moment().startOf('isoWeek') },
-      { label: 'This Month', from: moment().startOf('month') },
-      { label: 'This Year', from: moment().startOf('year') },
-      { label: 'All Time', from: moment(0) }
+      { label: 'This Week', from: dayjs().startOf('isoWeek') },
+      { label: 'This Month', from: dayjs().startOf('month') },
+      { label: 'This Year', from: dayjs().startOf('year') },
+      { label: 'All Time', from: dayjs(0) }
     ];
 
     this.summaries = ranges.map(({ label, from }) => {
       const filtered = this.activities.filter(
         (a) =>
-          moment(a.start_date).isSameOrAfter(from) &&
-          moment(a.start_date).isSameOrBefore(now)
+          dayjs(a.start_date).isSameOrAfter(from) &&
+          dayjs(a.start_date).isSameOrBefore(now)
       );
       return {
         label,
@@ -336,9 +344,9 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     const monthBestWeek = new Map<string, string>(); // "YYYY-M" -> weekKey
 
     for (const activity of this.activities) {
-      const d = moment(activity.start_date);
+      const d = dayjs(activity.start_date);
       const mapKey = `${d.year()}-${d.month()}`; // month is 0-indexed
-      const weekKey = d.clone().startOf('isoWeek').format('YYYY-MM-DD');
+      const weekKey = d.startOf('isoWeek').format('YYYY-MM-DD');
       const current = monthBestWeek.get(mapKey);
       if (!current || weekKey > current) {
         monthBestWeek.set(mapKey, weekKey);
@@ -357,7 +365,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
       yearMap.get(year)!.set(month, weekKey);
     }
 
-    const currentYear = moment().year();
+    const currentYear = dayjs().year();
     const years = Array.from(yearMap.keys()).sort().reverse();
     this.yearMonthNav = years.map((year) => {
       const monthMap = yearMap.get(year)!;
@@ -366,7 +374,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
         .reverse()
         .map((month) => ({
           month,
-          monthName: moment().month(month).format('MMM'),
+          monthName: dayjs().month(month).format('MMM'),
           weekKey: monthMap.get(month)!
         }));
       return { year, expanded: year === currentYear, months };
@@ -382,11 +390,11 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     // Build weekKey -> navMonth.weekKey lookup for scroll-spy
     this.weekToNavKey.clear();
     for (const week of this.weekGroups) {
-      const d = moment(week.weekKey);
+      const d = dayjs(week.weekKey);
       let navKey = this.findNavKey(d.year(), d.month());
       if (!navKey) {
         // Week spans two months; try the end date's month
-        const endD = d.clone().add(6, 'days');
+        const endD = d.add(6, 'days');
         navKey = this.findNavKey(endD.year(), endD.month());
       }
       if (navKey) {
@@ -582,7 +590,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
   }
 
   getTimeSince(startDate: string): string {
-    return moment(startDate).fromNow();
+    return dayjs(startDate).fromNow();
   }
 
   formatTrainingEffectLabel(label: string | undefined | null): string {

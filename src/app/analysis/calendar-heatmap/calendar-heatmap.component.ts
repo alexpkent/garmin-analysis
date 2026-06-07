@@ -14,7 +14,11 @@ import { Subscription, fromEvent } from 'rxjs';
 
 import { Activity } from '../../types/Activity';
 import { ScrollSyncService } from '../scroll-sync.service';
-import moment from 'moment';
+import dayjs, { Dayjs } from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+dayjs.extend(isoWeek);
+dayjs.extend(isSameOrBefore);
 
 export interface DaySelection {
   dateLabel: string;
@@ -33,7 +37,7 @@ export interface HeatmapBand {
 }
 
 interface DayCell {
-  date: moment.Moment;
+  date: Dayjs;
   value: number | null;
   band: HeatmapBand | null;
   tooltip: string;
@@ -59,8 +63,8 @@ export class CalendarHeatmapComponent implements OnInit, OnChanges, OnDestroy {
   @Input() bands: HeatmapBand[] = [];
   @Input() activityClassifier: ((a: Activity) => HeatmapBand | null) | null =
     null;
-  @Input() startDate: moment.Moment | null = null;
-  @Input() endDate: moment.Moment | null = null;
+  @Input() startDate: Dayjs | null = null;
+  @Input() endDate: Dayjs | null = null;
   @Input() canGoBack = false;
   @Input() canGoForward = false;
 
@@ -118,11 +122,11 @@ export class CalendarHeatmapComponent implements OnInit, OnChanges, OnDestroy {
 
   private build(): void {
     const today = this.endDate
-      ? this.endDate.clone().startOf('day')
-      : moment().startOf('day');
+      ? this.endDate.startOf('day')
+      : dayjs().startOf('day');
     const start = this.startDate
-      ? this.startDate.clone().startOf('day')
-      : today.clone().subtract(364, 'days');
+      ? this.startDate.startOf('day')
+      : today.subtract(364, 'days');
 
     this.periodLabel = `${start.format('MMM YYYY')} – ${today.format('MMM YYYY')}`;
 
@@ -136,7 +140,7 @@ export class CalendarHeatmapComponent implements OnInit, OnChanges, OnDestroy {
       for (const a of this.activities) {
         const band = this.activityClassifier(a);
         if (!band) continue;
-        const key = moment(a.start_date).format('YYYY-MM-DD');
+        const key = dayjs(a.start_date).format('YYYY-MM-DD');
         const entry = dayMap.get(key) ?? { total: 0, maxBandIdx: -1, acts: [] };
         entry.acts.push(a);
         const idx = this.bands.indexOf(band);
@@ -147,7 +151,7 @@ export class CalendarHeatmapComponent implements OnInit, OnChanges, OnDestroy {
       for (const a of this.activities) {
         const raw = a[this.valueKey];
         if (raw == null || typeof raw !== 'number') continue;
-        const key = moment(a.start_date).format('YYYY-MM-DD');
+        const key = dayjs(a.start_date).format('YYYY-MM-DD');
         const entry = dayMap.get(key) ?? { total: 0, maxBandIdx: -1, acts: [] };
         entry.total += raw;
         entry.acts.push(a);
@@ -156,8 +160,8 @@ export class CalendarHeatmapComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     // Walk from Monday on/before start to today
-    const cursor = start.clone().isoWeekday(1);
-    if (cursor.isAfter(start)) cursor.subtract(7, 'days');
+    let cursor = start.isoWeekday(1);
+    if (cursor.isAfter(start)) cursor = cursor.subtract(7, 'days');
 
     const columns: WeekColumn[] = [];
     let lastMonth = -1;
@@ -166,7 +170,7 @@ export class CalendarHeatmapComponent implements OnInit, OnChanges, OnDestroy {
       const col: WeekColumn = { days: [], monthLabel: null };
 
       for (let dow = 0; dow < 7; dow++) {
-        const day = cursor.clone().add(dow, 'days');
+        const day = cursor.add(dow, 'days');
         if (day.isBefore(start) || day.isAfter(today)) {
           col.days.push(null);
         } else {
@@ -203,7 +207,7 @@ export class CalendarHeatmapComponent implements OnInit, OnChanges, OnDestroy {
       }
 
       columns.push(col);
-      cursor.add(7, 'days');
+      cursor = cursor.add(7, 'days');
     }
 
     this.weeks = columns;
@@ -268,7 +272,7 @@ export class CalendarHeatmapComponent implements OnInit, OnChanges, OnDestroy {
     return parts.join(' – ');
   }
 
-  private makeTooltip(day: moment.Moment, acts: Activity[]): string {
+  private makeTooltip(day: Dayjs, acts: Activity[]): string {
     const dateStr = day.format('ddd D MMM YYYY');
     if (!acts.length) return `${dateStr}: no activity`;
     return [dateStr, ...acts.map((a) => this.activityLine(a))].join('\n');

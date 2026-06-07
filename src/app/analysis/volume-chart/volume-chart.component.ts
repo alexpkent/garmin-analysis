@@ -11,7 +11,11 @@ import {
   ViewChild
 } from '@angular/core';
 import { Activity } from '../../types/Activity';
-import moment from 'moment';
+import dayjs, { Dayjs } from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+dayjs.extend(isoWeek);
+dayjs.extend(isSameOrBefore);
 import { ACTIVITY_COLORS, UI_COLORS } from '../../constants/colors';
 import { isRun, isRide, activityIcon, formatDistance, getDuration } from '../../utils/activity.utils';
 
@@ -25,8 +29,8 @@ declare const Chart: any;
 })
 export class VolumeChartComponent implements OnChanges, OnDestroy {
   @Input() activities: Activity[] = [];
-  @Input() startDate: moment.Moment | null = null;
-  @Input() endDate: moment.Moment | null = null;
+  @Input() startDate: Dayjs | null = null;
+  @Input() endDate: Dayjs | null = null;
   @Input() canGoBack = false;
   @Input() canGoForward = false;
 
@@ -74,25 +78,25 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
 
   private buildChart(): void {
     const end = this.endDate
-      ? this.endDate.clone().startOf('day')
-      : moment().startOf('day');
+      ? this.endDate.startOf('day')
+      : dayjs().startOf('day');
     const start = this.startDate
-      ? this.startDate.clone().startOf('day')
-      : end.clone().subtract(364, 'days');
+      ? this.startDate.startOf('day')
+      : end.subtract(364, 'days');
 
     this.periodLabel = `${start.format('MMM YYYY')} – ${end.format('MMM YYYY')}`;
 
     // Build weekly labels
     const weekLabels: string[] = [];
-    const cursor = start.clone().isoWeekday(1);
-    if (cursor.isAfter(start)) cursor.subtract(7, 'days');
+    let cursor = start.isoWeekday(1);
+    if (cursor.isAfter(start)) cursor = cursor.subtract(7, 'days');
     while (cursor.isSameOrBefore(end, 'day')) {
-      weekLabels.push(cursor.clone().add(6, 'days').format('D MMM'));
-      cursor.add(7, 'days');
+      weekLabels.push(cursor.add(6, 'days').format('D MMM'));
+      cursor = cursor.add(7, 'days');
     }
     const weekCount = weekLabels.length;
-    const weekStart = start.clone().isoWeekday(1);
-    if (weekStart.isAfter(start)) weekStart.subtract(7, 'days');
+    let weekStart = start.isoWeekday(1);
+    if (weekStart.isAfter(start)) weekStart = weekStart.subtract(7, 'days');
 
     this.storedWeekLabels = weekLabels;
     this.weekActivities = Array.from({ length: weekCount }, () => []);
@@ -102,7 +106,7 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
     const otherData = new Array(weekCount).fill(0);
 
     for (const a of this.activities) {
-      const d = moment(a.start_date).startOf('day');
+      const d = dayjs(a.start_date).startOf('day');
       if (d.isBefore(start) || d.isAfter(end)) continue;
       const idx = Math.floor(d.diff(weekStart, 'days') / 7);
       if (idx < 0 || idx >= weekCount) continue;

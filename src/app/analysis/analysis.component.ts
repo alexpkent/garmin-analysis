@@ -6,7 +6,12 @@ import {
   HeatmapBand
 } from './calendar-heatmap/calendar-heatmap.component';
 import { environment } from '../../environments/environment';
-import moment from 'moment';
+import dayjs, { Dayjs } from 'dayjs';
+import type { ManipulateType } from 'dayjs';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 import {
   TRAINING_STATUS_LABEL,
   TRAINING_STATUS_COLOR,
@@ -49,13 +54,13 @@ export class AnalysisComponent implements OnInit {
   // Period navigation
   periodSize: 'week' | 'month' | 'quarter' | 'year' = 'year';
   private periodsBack = 0;
-  periodEnd: moment.Moment = moment().startOf('day');
-  periodStart: moment.Moment = moment().startOf('day').subtract(364, 'days');
-  minActivityDate: moment.Moment | null = null;
+  periodEnd: Dayjs = dayjs().startOf('day');
+  periodStart: Dayjs = dayjs().startOf('day').subtract(364, 'days');
+  minActivityDate: Dayjs | null = null;
 
   private get periodDuration(): {
     amount: number;
-    unit: moment.unitOfTime.DurationConstructor;
+    unit: ManipulateType;
   } {
     switch (this.periodSize) {
       case 'week':
@@ -89,7 +94,6 @@ export class AnalysisComponent implements OnInit {
   get canGoBack(): boolean {
     return this.minActivityDate
       ? this.periodStart
-          .clone()
           .subtract(1, 'day')
           .isSameOrAfter(this.minActivityDate, 'day')
       : false;
@@ -97,10 +101,10 @@ export class AnalysisComponent implements OnInit {
 
   private updatePeriod(): void {
     const { amount, unit } = this.periodDuration;
-    this.periodEnd = moment()
+    this.periodEnd = dayjs()
       .startOf('day')
-      .subtract(this.periodsBack * amount, unit as any);
-    this.periodStart = this.periodEnd.clone().subtract(amount, unit as any);
+      .subtract(this.periodsBack * amount, unit as ManipulateType);
+    this.periodStart = this.periodEnd.subtract(amount, unit as ManipulateType);
   }
 
   setPeriodSize(size: 'week' | 'month' | 'quarter' | 'year'): void {
@@ -220,9 +224,9 @@ export class AnalysisComponent implements OnInit {
             new Date(a.start_date) > new Date(latest.start_date) ? a : latest
           );
           this.minActivityDate = activities.reduce((earliest, a) => {
-            const d = moment(a.start_date);
+            const d = dayjs(a.start_date);
             return d.isBefore(earliest) ? d : earliest;
-          }, moment(activities[0].start_date));
+          }, dayjs(activities[0].start_date));
         }
         this.updateAlertCount();
       })
@@ -471,7 +475,7 @@ export class AnalysisComponent implements OnInit {
 
   private computeTrainingInsights(): TrainingInsight[] {
     const insights: TrainingInsight[] = [];
-    const now = moment();
+    const now = dayjs();
 
     // 1. Garmin training status
     if (this.latestHealth?.training_status) {
@@ -507,15 +511,15 @@ export class AnalysisComponent implements OnInit {
     // 2. Weekly load trend (last 7d vs prior 7d)
     const last7 = this.activities
       .filter((a) =>
-        moment(a.start_date).isAfter(now.clone().subtract(7, 'days'))
+      dayjs(a.start_date).isAfter(now.subtract(7, 'days'))
       )
       .reduce((sum, a) => sum + (a.activityTrainingLoad ?? 0), 0);
     const prior7 = this.activities
       .filter((a) => {
-        const d = moment(a.start_date);
+        const d = dayjs(a.start_date);
         return (
-          d.isAfter(now.clone().subtract(14, 'days')) &&
-          d.isSameOrBefore(now.clone().subtract(7, 'days'))
+          d.isAfter(now.subtract(14, 'days')) &&
+          d.isSameOrBefore(now.subtract(7, 'days'))
         );
       })
       .reduce((sum, a) => sum + (a.activityTrainingLoad ?? 0), 0);
@@ -639,7 +643,7 @@ export class AnalysisComponent implements OnInit {
 
     // 4. Intensity distribution (last 28 days)
     const last28 = this.activities.filter((a) =>
-      moment(a.start_date).isAfter(now.clone().subtract(28, 'days'))
+      dayjs(a.start_date).isAfter(now.subtract(28, 'days'))
     );
     const withTE = last28.filter(
       (a) => a.trainingEffect != null && a.trainingEffect > 0
@@ -691,7 +695,7 @@ export class AnalysisComponent implements OnInit {
     // 5. Days since last activity
     if (this.latestActivity) {
       const daysSince = now.diff(
-        moment(this.latestActivity.start_date),
+        dayjs(this.latestActivity.start_date),
         'days'
       );
       if (daysSince >= 7) {
