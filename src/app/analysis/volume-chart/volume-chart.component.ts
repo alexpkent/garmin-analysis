@@ -12,6 +12,8 @@ import {
 } from '@angular/core';
 import { Activity } from '../../types/Activity';
 import moment from 'moment';
+import { ACTIVITY_COLORS, UI_COLORS } from '../../constants/colors';
+import { isRun, isRide, activityIcon, formatDistance, getDuration } from '../../utils/activity.utils';
 
 declare const Chart: any;
 
@@ -56,24 +58,11 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
     return `https://connect.garmin.com/app/activity/${a.id}`;
   }
 
-  formatDistance(m: number): string {
-    return `${(m / 1609.344).toFixed(1)} mi`;
-  }
+  formatDistance(m: number): string { return formatDistance(m); }
 
-  formatDuration(s: number): string {
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
-  }
+  formatDuration(s: number): string { return getDuration(s); }
 
-  activityIcon(a: Activity): string {
-    const t = a.activity_type?.toLowerCase() ?? '';
-    if (t.includes('run')) return 'fas fa-running';
-    if (t.includes('cycl') || t.includes('ride') || t.includes('bike'))
-      return 'fas fa-bicycle';
-    if (t.includes('swim')) return 'fas fa-swimmer';
-    return 'fas fa-dumbbell';
-  }
+  activityIcon(a: Activity): string { return activityIcon(a); }
 
   ngOnChanges(_: SimpleChanges): void {
     this.buildChart();
@@ -118,9 +107,8 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
       const idx = Math.floor(d.diff(weekStart, 'days') / 7);
       if (idx < 0 || idx >= weekCount) continue;
       const miles = (a.distance_meters ?? 0) / 1609.344;
-      const t = a.activity_type?.toLowerCase() ?? '';
-      if (t.includes('run')) runData[idx] += miles;
-      else if (t.includes('cycl') || t.includes('ride') || t.includes('bike'))
+      if (isRun(a)) runData[idx] += miles;
+      else if (isRide(a))
         cycleData[idx] += miles;
       else otherData[idx] += miles;
       this.weekActivities[idx].push(a);
@@ -136,24 +124,24 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
       {
         label: 'Running',
         data: runData,
-        backgroundColor: '#FF604088',
-        borderColor: '#FF6040',
+        backgroundColor: ACTIVITY_COLORS.run + '88',
+        borderColor: ACTIVITY_COLORS.run,
         borderWidth: 1,
         stack: 'volume'
       },
       {
         label: 'Cycling',
         data: cycleData,
-        backgroundColor: '#40C8FF88',
-        borderColor: '#40C8FF',
+        backgroundColor: ACTIVITY_COLORS.ride + '88',
+        borderColor: ACTIVITY_COLORS.ride,
         borderWidth: 1,
         stack: 'volume'
       },
       {
         label: 'Other',
         data: otherData,
-        backgroundColor: '#FFC94088',
-        borderColor: '#FFC940',
+        backgroundColor: ACTIVITY_COLORS.other + '88',
+        borderColor: ACTIVITY_COLORS.other,
         borderWidth: 1,
         stack: 'volume'
       }
@@ -198,7 +186,7 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
           },
           tooltip: {
             backgroundColor: '#212529',
-            titleColor: '#e8b84b',
+            titleColor: UI_COLORS.accent,
             bodyColor: '#dee2e6',
             borderColor: '#495057',
             borderWidth: 1,

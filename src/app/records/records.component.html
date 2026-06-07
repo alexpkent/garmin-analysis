@@ -145,6 +145,26 @@
         <div class="records-footer">Last updated: {{ formatDate(data!.date) }}</div>
       }
 
+      <!-- Countries -->
+      @if (countryRankings.length > 0) {
+        <div class="pr-card">
+          <div class="pr-card-header">
+            <i class="fas fa-globe pr-header-icon" style="color:#66bb6a"></i>
+            <span class="pr-card-title">Countries</span>
+          </div>
+          <div class="pr-table">
+            @for (row of countryRankings; track row.code; let rank = $index) {
+              <div class="pr-row country-row">
+                <span class="country-flag">{{ flagEmoji(row.code) }}</span>
+                <span class="country-rank">{{ rank + 1 }}</span>
+                <span class="country-name">{{ row.name }}</span>
+                <span class="country-count">{{ row.count }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
       <!-- Race Predictions -->
       @if (predictions && (predictions.time_5k_seconds || predictions.time_10k_seconds || predictions.time_half_marathon_seconds || predictions.time_marathon_seconds)) {
         <div class="pr-card">

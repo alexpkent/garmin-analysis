@@ -12,28 +12,10 @@ import {
 import { HealthSnapshot } from '../../activity.service';
 import { Activity } from '../../types/Activity';
 import moment from 'moment';
+import { TRAINING_STATUS_LABEL, TRAINING_STATUS_COLOR } from '../../constants/heatmap-bands';
+import { UI_COLORS } from '../../constants/colors';
 
 declare const Chart: any;
-
-const TRAINING_STATUS_LABEL: Record<string, string> = {
-  PRODUCTIVE: 'Productive',
-  MAINTAINING: 'Maintaining',
-  PEAKING: 'Peaking',
-  RECOVERY: 'Recovery',
-  UNPRODUCTIVE: 'Unproductive',
-  OVERREACHING: 'Overreaching',
-  DETRAINING: 'Detraining'
-};
-
-const TRAINING_STATUS_COLOR: Record<string, string> = {
-  PRODUCTIVE: '#1FA87A',
-  MAINTAINING: '#42a5f5',
-  PEAKING: '#e8b84b',
-  RECOVERY: '#4caf50',
-  UNPRODUCTIVE: '#ff8c00',
-  OVERREACHING: '#e63419',
-  DETRAINING: '#6c757d'
-};
 
 @Component({
   selector: 'app-health-trend-chart',
@@ -244,8 +226,8 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
       {
         label: 'High Aerobic Load',
         data: highAerobicWeekly,
-        borderColor: '#e8b84b',
-        backgroundColor: '#e8b84b22',
+        borderColor: UI_COLORS.accent,
+        backgroundColor: UI_COLORS.accent + '22',
         pointRadius: 2,
         pointHoverRadius: 5,
         borderWidth: 2,
@@ -256,7 +238,7 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
       {
         label: 'High Aerobic Target',
         data: highTargetWeekly,
-        borderColor: '#e8b84b',
+        borderColor: UI_COLORS.accent,
         backgroundColor: 'transparent',
         borderDash: [4, 4],
         pointRadius: 0,
@@ -318,7 +300,7 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
           },
           tooltip: {
             backgroundColor: '#212529',
-            titleColor: '#e8b84b',
+            titleColor: UI_COLORS.accent,
             bodyColor: '#dee2e6',
             borderColor: '#495057',
             borderWidth: 1,

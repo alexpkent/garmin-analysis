@@ -5,6 +5,16 @@ import { Activity, formatTrainingEffectLabel } from '../types/Activity';
 import { HeatmapBand } from '../analysis/calendar-heatmap/calendar-heatmap.component';
 import { environment } from '../../environments/environment';
 import moment from 'moment';
+import { ACTIVITY_COLORS } from '../constants/colors';
+import {
+  DISTANCE_BANDS, DURATION_BANDS, TRAINING_LOAD_BANDS,
+  TRAINING_EFFECT_BANDS, computeMaxHr, makeMaxHrBands
+} from '../constants/heatmap-bands';
+import {
+  isRun, isRide, isOtherActivity,
+  distanceToMiles, getDuration,
+  METERS_PER_MILE, SECONDS_PER_HOUR
+} from '../utils/activity.utils';
 
 interface NavMonth {
   month: number;
@@ -129,95 +139,17 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
 
   readonly DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  private readonly METERS_PER_MILE = 1609;
-  private readonly SECONDS_PER_HOUR = 3600;
+  readonly runColor = ACTIVITY_COLORS.run;
+  readonly rideColor = ACTIVITY_COLORS.ride;
+  readonly otherColor = ACTIVITY_COLORS.other;
 
-  readonly runColor = '#FF6040';
-  readonly rideColor = '#40C8FF';
-  readonly otherColor = '#FFC940';
+  private readonly tanakaMaxHr: number = computeMaxHr();
 
-  private readonly tanakaMaxHr: number = (() => {
-    const dob = new Date(environment.userDob);
-    const now = new Date();
-    const age =
-      now.getFullYear() -
-      dob.getFullYear() -
-      (now < new Date(now.getFullYear(), dob.getMonth(), dob.getDate())
-        ? 1
-        : 0);
-    return 220 - age;
-  })();
-
-  readonly distanceBands: HeatmapBand[] = [
-    { label: 'Short (< 5 mi)', min: 0, max: 5, color: '#4caf50' },
-    { label: 'Moderate (5–10 mi)', min: 5, max: 10, color: '#e8b84b' },
-    { label: 'Long (10–15 mi)', min: 10, max: 15, color: '#ff8c00' },
-    { label: 'Very long (15+ mi)', min: 15, max: Infinity, color: '#e63419' }
-  ];
-
-  readonly durationBands: HeatmapBand[] = [
-    { label: 'Short (< 30 min)', min: 0, max: 1800, color: '#4caf50' },
-    { label: 'Moderate (30–60 min)', min: 1800, max: 3600, color: '#e8b84b' },
-    { label: 'Long (1–2 hrs)', min: 3600, max: 7200, color: '#ff8c00' },
-    { label: 'Very long (2+ hrs)', min: 7200, max: Infinity, color: '#e63419' }
-  ];
-
-  readonly trainingLoadBands: HeatmapBand[] = [
-    { label: 'Very easy / recovery (0–50)', min: 0, max: 50, color: '#4caf50' },
-    { label: 'Easy–moderate (50–100)', min: 50, max: 100, color: '#e8b84b' },
-    { label: 'Moderate–hard (100–200)', min: 100, max: 200, color: '#ff8c00' },
-    {
-      label: 'Very hard / big stress (200+)',
-      min: 200,
-      max: Infinity,
-      color: '#e63419'
-    }
-  ];
-
-  readonly trainingEffectBands: HeatmapBand[] = [
-    { label: 'Recovery', min: 0, max: 0, color: '#1FA87A' },
-    { label: 'Base (Low Aerobic)', min: 0, max: 0, color: '#1FA87A' },
-    { label: 'Tempo (Low/Med Aerobic)', min: 0, max: 0, color: '#F57C00' },
-    { label: 'Threshold', min: 0, max: 0, color: '#F57C00' },
-    { label: 'VO₂ Max (High Aerobic)', min: 0, max: 0, color: '#F57C00' },
-    { label: 'High Aerobic / Mixed', min: 0, max: 0, color: '#F57C00' },
-    { label: 'Anaerobic Capacity', min: 0, max: 0, color: '#6A1B9A' },
-    { label: 'Sprint (Anaerobic)', min: 0, max: 0, color: '#6A1B9A' },
-    { label: 'Anaerobic (Overreaching)', min: 0, max: 0, color: '#6A1B9A' }
-  ];
-
-  readonly maxHrBands: HeatmapBand[] = [
-    {
-      label: 'Zone 1 – Warm-Up (50–60%)',
-      min: Math.round(this.tanakaMaxHr * 0.5),
-      max: Math.round(this.tanakaMaxHr * 0.6),
-      color: '#9e9e9e'
-    },
-    {
-      label: 'Zone 2 – Easy (60–70%)',
-      min: Math.round(this.tanakaMaxHr * 0.6),
-      max: Math.round(this.tanakaMaxHr * 0.7),
-      color: '#42a5f5'
-    },
-    {
-      label: 'Zone 3 – Aerobic (70–80%)',
-      min: Math.round(this.tanakaMaxHr * 0.7),
-      max: Math.round(this.tanakaMaxHr * 0.8),
-      color: '#66bb6a'
-    },
-    {
-      label: 'Zone 4 – Threshold (80–90%)',
-      min: Math.round(this.tanakaMaxHr * 0.8),
-      max: Math.round(this.tanakaMaxHr * 0.9),
-      color: '#ffa726'
-    },
-    {
-      label: 'Zone 5 – Maximum (90–100%)',
-      min: Math.round(this.tanakaMaxHr * 0.9),
-      max: Infinity,
-      color: '#ef5350'
-    }
-  ];
+  readonly distanceBands = DISTANCE_BANDS;
+  readonly durationBands = DURATION_BANDS;
+  readonly trainingLoadBands = TRAINING_LOAD_BANDS;
+  readonly trainingEffectBands = TRAINING_EFFECT_BANDS;
+  readonly maxHrBands = makeMaxHrBands(this.tanakaMaxHr);
 
   constructor(
     private activityService: ActivityService,
@@ -598,15 +530,9 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     return '🏋️';
   }
 
-  isRun(activity: Activity) {
-    return activity.activity_type === 'run';
-  }
-  isRide(activity: Activity) {
-    return activity.activity_type === 'ride';
-  }
-  isOtherActivity(activity: Activity) {
-    return !this.isRun(activity) && !this.isRide(activity);
-  }
+  isRun(activity: Activity): boolean { return isRun(activity); }
+  isRide(activity: Activity): boolean { return isRide(activity); }
+  isOtherActivity(activity: Activity): boolean { return isOtherActivity(activity); }
 
   formatActivityType(type: string): string {
     const labels: Record<string, string> = {
@@ -619,26 +545,9 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     return labels[type] ?? type.charAt(0).toUpperCase() + type.slice(1);
   }
 
-  distanceToMiles(meters: number) {
-    return meters / this.METERS_PER_MILE;
-  }
-  secondsToHours(seconds: number) {
-    return seconds / this.SECONDS_PER_HOUR;
-  }
-
-  getDuration(durationInSeconds: number): string {
-    try {
-      const hours = Math.floor(durationInSeconds / this.SECONDS_PER_HOUR);
-      const minutes = Math.round(
-        (durationInSeconds % this.SECONDS_PER_HOUR) / 60
-      );
-      if (hours > 0 && minutes > 0) return `${hours} hr ${minutes} mins`;
-      if (hours > 0) return `${hours} hr`;
-      return `${minutes} mins`;
-    } catch {
-      return '';
-    }
-  }
+  distanceToMiles(meters: number): number { return distanceToMiles(meters); }
+  secondsToHours(seconds: number): number { return seconds / SECONDS_PER_HOUR; }
+  getDuration(durationInSeconds: number): string { return getDuration(durationInSeconds); }
 
   getTimeSince(startDate: string): string {
     return moment(startDate).fromNow();
@@ -661,7 +570,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
   }
 
   latestDistanceBand(a: Activity): HeatmapBand | null {
-    const miles = (a.distance_meters ?? 0) / this.METERS_PER_MILE;
+    const miles = distanceToMiles(a.distance_meters ?? 0);
     if (miles === 0) return null;
     return (
       this.distanceBands.find((b) => miles >= b.min && miles < b.max) ?? null

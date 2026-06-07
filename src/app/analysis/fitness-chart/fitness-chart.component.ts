@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { Activity } from '../../types/Activity';
 import moment from 'moment';
+import { UI_COLORS } from '../../constants/colors';
 
 declare const Chart: any;
 
@@ -192,7 +193,7 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
           },
           tooltip: {
             backgroundColor: '#212529',
-            titleColor: '#e8b84b',
+            titleColor: UI_COLORS.accent,
             bodyColor: '#dee2e6',
             borderColor: '#495057',
             borderWidth: 1,

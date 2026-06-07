@@ -7,35 +7,19 @@ import {
 } from './calendar-heatmap/calendar-heatmap.component';
 import { environment } from '../../environments/environment';
 import moment from 'moment';
-
-const TRAINING_STATUS_LABEL: Record<string, string> = {
-  PRODUCTIVE: 'Productive',
-  MAINTAINING: 'Maintaining',
-  PEAKING: 'Peaking',
-  RECOVERY: 'Recovery',
-  UNPRODUCTIVE: 'Unproductive',
-  OVERREACHING: 'Overreaching',
-  DETRAINING: 'Detraining'
-};
-
-const TRAINING_STATUS_COLOR: Record<string, string> = {
-  PRODUCTIVE: '#1FA87A',
-  MAINTAINING: '#42a5f5',
-  PEAKING: '#e8b84b',
-  RECOVERY: '#4caf50',
-  UNPRODUCTIVE: '#ff8c00',
-  OVERREACHING: '#e63419',
-  DETRAINING: '#6c757d'
-};
-
-const LOAD_BALANCE_LABEL: Record<string, string> = {
-  AEROBIC_HIGH_FOCUS: 'Aerobic High Focus',
-  AEROBIC_LOW_FOCUS: 'Aerobic Low Focus',
-  ANAEROBIC_FOCUS: 'Anaerobic Focus',
-  BALANCED: 'Balanced',
-  LOAD_BALANCED: 'Balanced',
-  LOW_LOAD: 'Low Load'
-};
+import {
+  TRAINING_STATUS_LABEL,
+  TRAINING_STATUS_COLOR,
+  LOAD_BALANCE_LABEL,
+  DISTANCE_BANDS,
+  DURATION_BANDS,
+  TRAINING_LOAD_BANDS,
+  TRAINING_EFFECT_BANDS,
+  computeMaxHr,
+  makeMaxHrBands
+} from '../constants/heatmap-bands';
+import { activityIcon } from '../utils/activity.utils';
+import { UI_COLORS } from '../constants/colors';
 
 export interface TrainingInsight {
   icon: string;
@@ -137,30 +121,8 @@ export class AnalysisComponent implements OnInit {
     }
   }
 
-  readonly trainingLoadBands: HeatmapBand[] = [
-    { label: 'Very easy / recovery (0–50)', min: 0, max: 50, color: '#4caf50' },
-    { label: 'Easy–moderate (50–100)', min: 50, max: 100, color: '#e8b84b' },
-    { label: 'Moderate–hard (100–200)', min: 100, max: 200, color: '#ff8c00' },
-    {
-      label: 'Very hard / big stress (200+)',
-      min: 200,
-      max: Infinity,
-      color: '#e63419'
-    }
-  ];
-
-  // Bands ordered by intensity (index = priority for cell colour)
-  readonly trainingEffectBands: HeatmapBand[] = [
-    { label: 'Recovery', min: 0, max: 0, color: '#1FA87A' },
-    { label: 'Base (Low Aerobic)', min: 0, max: 0, color: '#1FA87A' },
-    { label: 'Tempo (Low/Med Aerobic)', min: 0, max: 0, color: '#F57C00' },
-    { label: 'Threshold', min: 0, max: 0, color: '#F57C00' },
-    { label: 'VO₂ Max (High Aerobic)', min: 0, max: 0, color: '#F57C00' },
-    { label: 'High Aerobic / Mixed', min: 0, max: 0, color: '#F57C00' },
-    { label: 'Anaerobic Capacity', min: 0, max: 0, color: '#6A1B9A' },
-    { label: 'Sprint (Anaerobic)', min: 0, max: 0, color: '#6A1B9A' },
-    { label: 'Anaerobic (Overreaching)', min: 0, max: 0, color: '#6A1B9A' }
-  ];
+  readonly trainingLoadBands = TRAINING_LOAD_BANDS;
+  readonly trainingEffectBands = TRAINING_EFFECT_BANDS;
 
   readonly trainingEffectClassifier = (a: Activity): HeatmapBand | null => {
     const ae = a.trainingEffect ?? 0;
@@ -207,51 +169,9 @@ export class AnalysisComponent implements OnInit {
     return this.trainingEffectBands[1];
   };
 
-  // Max HR = 220 − age. Bands by % of expected max HR.
-  private readonly tanakaMaxHr: number = (() => {
-    const dob = new Date(environment.userDob);
-    const now = new Date();
-    const age =
-      now.getFullYear() -
-      dob.getFullYear() -
-      (now < new Date(now.getFullYear(), dob.getMonth(), dob.getDate())
-        ? 1
-        : 0);
-    return 220 - age;
-  })();
+  private readonly tanakaMaxHr: number = computeMaxHr();
 
-  readonly maxHrBands: HeatmapBand[] = [
-    {
-      label: 'Zone 1 – Warm-Up (50–60%)',
-      min: Math.round(this.tanakaMaxHr * 0.5),
-      max: Math.round(this.tanakaMaxHr * 0.6),
-      color: '#9e9e9e'
-    },
-    {
-      label: 'Zone 2 – Easy (60–70%)',
-      min: Math.round(this.tanakaMaxHr * 0.6),
-      max: Math.round(this.tanakaMaxHr * 0.7),
-      color: '#42a5f5'
-    },
-    {
-      label: 'Zone 3 – Aerobic (70–80%)',
-      min: Math.round(this.tanakaMaxHr * 0.7),
-      max: Math.round(this.tanakaMaxHr * 0.8),
-      color: '#66bb6a'
-    },
-    {
-      label: 'Zone 4 – Threshold (80–90%)',
-      min: Math.round(this.tanakaMaxHr * 0.8),
-      max: Math.round(this.tanakaMaxHr * 0.9),
-      color: '#ffa726'
-    },
-    {
-      label: 'Zone 5 – Maximum (90–100%)',
-      min: Math.round(this.tanakaMaxHr * 0.9),
-      max: Infinity,
-      color: '#ef5350'
-    }
-  ];
+  readonly maxHrBands = makeMaxHrBands(this.tanakaMaxHr);
 
   readonly maxHrClassifier = (a: Activity): HeatmapBand | null => {
     const hr = a.maxHR;
@@ -265,12 +185,7 @@ export class AnalysisComponent implements OnInit {
     return this.maxHrBands.find((b) => hr >= b.min && hr < b.max) ?? null;
   };
 
-  readonly distanceBands: HeatmapBand[] = [
-    { label: 'Short (< 5 mi)', min: 0, max: 5, color: '#4caf50' },
-    { label: 'Moderate (5–10 mi)', min: 5, max: 10, color: '#e8b84b' },
-    { label: 'Long (10–15 mi)', min: 10, max: 15, color: '#ff8c00' },
-    { label: 'Very long (15+ mi)', min: 15, max: Infinity, color: '#e63419' }
-  ];
+  readonly distanceBands = DISTANCE_BANDS;
 
   readonly distanceClassifier = (a: Activity): HeatmapBand | null => {
     const miles = (a.distance_meters ?? 0) * 0.000621371;
@@ -280,12 +195,7 @@ export class AnalysisComponent implements OnInit {
     );
   };
 
-  readonly durationBands: HeatmapBand[] = [
-    { label: 'Short (< 30 min)', min: 0, max: 1800, color: '#4caf50' },
-    { label: 'Moderate (30–60 min)', min: 1800, max: 3600, color: '#e8b84b' },
-    { label: 'Long (1–2 hrs)', min: 3600, max: 7200, color: '#ff8c00' },
-    { label: 'Very long (2+ hrs)', min: 7200, max: Infinity, color: '#e63419' }
-  ];
+  readonly durationBands = DURATION_BANDS;
 
   readonly durationClassifier = (a: Activity): HeatmapBand | null => {
     const secs = a.duration ?? a.moving_time_seconds ?? 0;
@@ -364,13 +274,7 @@ export class AnalysisComponent implements OnInit {
     );
   }
 
-  latestActivityIcon(a: Activity): string {
-    const t = (a.activity_type ?? '').toLowerCase();
-    if (t.includes('run')) return 'fas fa-running';
-    if (t.includes('ride') || t.includes('cycl') || t.includes('bike'))
-      return 'fas fa-biking';
-    return 'fas fa-heartbeat';
-  }
+  latestActivityIcon(a: Activity): string { return activityIcon(a); }
 
   latestDuration(a: Activity): string {
     const secs = a.duration ?? a.moving_time_seconds;
@@ -556,13 +460,7 @@ export class AnalysisComponent implements OnInit {
     return this.selectedDay.bands.find((b) => v >= b.min && v < b.max) ?? null;
   }
 
-  activityIcon(activity: Activity): string {
-    const t = activity.activity_type?.toLowerCase() ?? '';
-    if (t.includes('run')) return 'fas fa-running';
-    if (t.includes('cycling') || t.includes('ride') || t.includes('bike'))
-      return 'fas fa-biking';
-    return 'fas fa-heartbeat';
-  }
+  activityIcon(activity: Activity): string { return activityIcon(activity); }
 
   // ── Training Assessment ─────────────────────────────────
   private _trainingInsightsCache: TrainingInsight[] | null = null;
@@ -638,7 +536,7 @@ export class AnalysisComponent implements OnInit {
             icon: 'fas fa-arrow-up',
             label: 'Load Rising',
             text: `Load up ${pct}% this week — steady progression.`,
-            color: '#e8b84b',
+            color: UI_COLORS.accent,
             level: 'info'
           });
         } else if (pct >= -10) {
@@ -702,7 +600,7 @@ export class AnalysisComponent implements OnInit {
           icon: 'fas fa-fire',
           label: 'More Tempo Work',
           text: `High aerobic load (${Math.round(lf.high_aerobic_actual)}) is below target (${Math.round(lf.high_aerobic_low)}–${Math.round(lf.high_aerobic_high ?? 0)}) — add tempo or threshold sessions.`,
-          color: '#e8b84b',
+          color: UI_COLORS.accent,
           level: 'warn'
         });
       }

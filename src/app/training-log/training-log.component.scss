@@ -1,40 +1,6 @@
-$run-color: #ff6040;
-$ride-color: #40c8ff;
-$other-color: #ffc940;
-$accent: #e8b84b;
-$card-bg: #1a1d21;
-$card-border: #343a40;
-$muted: #adb5bd;
-$dim: #6c757d;
+@use '../../styles/variables' as *;
 
-/* ── Loading overlay ──────────────────────────────────── */
-.loading-overlay {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(100vh - 56px);
-  gap: 20px;
-}
-
-.loading-ring {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 3px solid #2a2d31;
-  border-top-color: $accent;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.loading-text {
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: $dim;
-}
+@include loading-overlay;
 
 /* ── Page layout ────────────────────────────────────────── */
 .log-layout {
@@ -519,10 +485,10 @@ $dim: #6c757d;
 
 .latest-garmin-link {
   font-size: 0.78rem;
-  color: $muted;
+  color: $link;
   text-decoration: none;
 
-  &:hover { color: $accent; }
+  &:hover { color: $link-hover; }
 }
 
 .latest-card-body {

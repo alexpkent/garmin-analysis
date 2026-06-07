@@ -1,3 +1,7 @@
+@use '../../styles/variables' as *;
+
+@include loading-overlay;
+
 /* ── Period size toggle ───────────────────────────────── */
 .period-size-toggle {
   display: flex;
@@ -8,49 +12,18 @@
 .period-size-btn {
   font-size: 0.72rem;
   padding: 2px 10px;
-  color: #adb5bd;
+  color: $muted;
   background: transparent;
   border: 1px solid #495057;
   border-radius: 4px;
 
-  &:hover { color: #fff; border-color: #6c757d; }
+  &:hover { color: #fff; border-color: $dim; }
 
   &.active {
-    color: #1a1d21;
-    background: #e8b84b;
-    border-color: #e8b84b;
+    color: $card-bg;
+    background: $accent;
+    border-color: $accent;
   }
-}
-
-/* ── Loading overlay ──────────────────────────────────── */
-.loading-overlay {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(100vh - 56px);
-  gap: 20px;
-}
-
-.loading-ring {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 3px solid #2a2d31;
-  border-top-color: #e8b84b;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.loading-text {
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #6c757d;
 }
 
 .analysis-content {
@@ -83,7 +56,7 @@
 }
 
 .latest-icon {
-  color: #e8b84b;
+  color: $accent;
   font-size: 0.95rem;
 }
 
@@ -106,9 +79,9 @@
 
 .latest-garmin-link {
   font-size: 0.78rem;
-  color: #adb5bd;
+  color: $link;
   text-decoration: none;
-  &:hover { color: #e8b84b; }
+  &:hover { color: $link-hover; }
 }
 
 .latest-card-body {
@@ -261,7 +234,7 @@
 .day-popup-date {
   font-size: 0.88rem;
   font-weight: 600;
-  color: #e8b84b;
+  color: $accent;
 }
 
 .day-popup-close {
@@ -325,10 +298,10 @@
 
 .day-garmin-link {
   font-size: 0.75rem;
-  color: #adb5bd;
+  color: $link;
   text-decoration: none;
 
-  &:hover { color: #e8b84b; }
+  &:hover { color: $link-hover; }
 
   i { margin-right: 3px; }
 }

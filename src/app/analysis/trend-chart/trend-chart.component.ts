@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { Activity } from '../../types/Activity';
 import moment from 'moment';
+import { UI_COLORS, STATUS_COLORS } from '../../constants/colors';
 
 declare const Chart: any;
 
@@ -56,7 +57,7 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
     {
       label: 'Training Load',
       valueKey: 'activityTrainingLoad',
-      color: '#e8b84b'
+      color: UI_COLORS.accent
     },
     {
       label: 'Training Effect',
@@ -184,7 +185,7 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
           },
           tooltip: {
             backgroundColor: '#212529',
-            titleColor: '#e8b84b',
+            titleColor: UI_COLORS.accent,
             bodyColor: '#dee2e6',
             borderColor: '#495057',
             borderWidth: 1,

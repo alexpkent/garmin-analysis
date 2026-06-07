@@ -1,3 +1,5 @@
+@use '../../../styles/variables' as *;
+
 .trend-card {
   background: #1a1d21;
   border: 1px solid #343a40;
@@ -70,7 +72,7 @@
 
   &:hover:not(:disabled) {
     color: #fff;
-    border-color: #e8b84b;
+    border-color: $accent;
   }
 
   &:disabled {
@@ -120,7 +122,7 @@
 .vol-popup-title {
   font-size: 0.88rem;
   font-weight: 600;
-  color: #e8b84b;
+  color: $accent;
 }
 
 .vol-popup-close {
@@ -180,10 +182,10 @@
 
 .vol-garmin-link {
   font-size: 0.75rem;
-  color: #adb5bd;
+  color: $link;
   text-decoration: none;
 
-  &:hover { color: #e8b84b; }
+  &:hover { color: $link-hover; }
 
   i { margin-right: 3px; }
 }
