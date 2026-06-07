@@ -36,9 +36,7 @@
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": [
-              "node_modules/moment/min/moment.min.js"
-            ],
+            "scripts": [],
             "browser": "src/main.ts"
           },
           "configurations": {
