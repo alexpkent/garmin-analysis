@@ -236,9 +236,18 @@ export class AnalysisComponent implements OnInit {
 
     this.activityService.getHealth().then((snapshots) => {
       this.healthSnapshots = snapshots;
+      // Prefer the most recent entry that has at least some non-null data so
+      // that an all-null placeholder for today doesn't blank out the display.
+      const withData = snapshots.filter(
+        (s) =>
+          s.vo2max_running != null ||
+          s.training_status != null ||
+          s.load_focus != null
+      );
+      const pool = withData.length > 0 ? withData : snapshots;
       this.latestHealth =
-        snapshots.length > 0
-          ? snapshots.reduce((a, b) => (a.date > b.date ? a : b))
+        pool.length > 0
+          ? pool.reduce((a, b) => (a.date > b.date ? a : b))
           : null;
       this.updateAlertCount();
     });
@@ -278,7 +287,9 @@ export class AnalysisComponent implements OnInit {
     );
   }
 
-  latestActivityIcon(a: Activity): string { return activityIcon(a); }
+  latestActivityIcon(a: Activity): string {
+    return activityIcon(a);
+  }
 
   latestDuration(a: Activity): string {
     const secs = a.duration ?? a.moving_time_seconds;
@@ -464,7 +475,9 @@ export class AnalysisComponent implements OnInit {
     return this.selectedDay.bands.find((b) => v >= b.min && v < b.max) ?? null;
   }
 
-  activityIcon(activity: Activity): string { return activityIcon(activity); }
+  activityIcon(activity: Activity): string {
+    return activityIcon(activity);
+  }
 
   // ── Training Assessment ─────────────────────────────────
   private _trainingInsightsCache: TrainingInsight[] | null = null;
@@ -510,9 +523,7 @@ export class AnalysisComponent implements OnInit {
 
     // 2. Weekly load trend (last 7d vs prior 7d)
     const last7 = this.activities
-      .filter((a) =>
-      dayjs(a.start_date).isAfter(now.subtract(7, 'days'))
-      )
+      .filter((a) => dayjs(a.start_date).isAfter(now.subtract(7, 'days')))
       .reduce((sum, a) => sum + (a.activityTrainingLoad ?? 0), 0);
     const prior7 = this.activities
       .filter((a) => {
@@ -694,10 +705,7 @@ export class AnalysisComponent implements OnInit {
 
     // 5. Days since last activity
     if (this.latestActivity) {
-      const daysSince = now.diff(
-        dayjs(this.latestActivity.start_date),
-        'days'
-      );
+      const daysSince = now.diff(dayjs(this.latestActivity.start_date), 'days');
       if (daysSince >= 7) {
         insights.push({
           icon: 'fas fa-bed',
