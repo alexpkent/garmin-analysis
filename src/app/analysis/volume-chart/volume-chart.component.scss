@@ -1,8 +1,8 @@
 @use '../../../styles/variables' as *;
 
 .trend-card {
-  background: #1a1d21;
-  border: 1px solid #343a40;
+  background: $card-bg;
+  border: 1px solid $card-border;
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 24px;
@@ -40,7 +40,7 @@
 
 .trend-hint {
   font-size: 0.75rem;
-  color: #6c757d;
+  color: $dim;
   margin-top: 8px;
   text-align: center;
 }
@@ -53,14 +53,14 @@
 
 .trend-period {
   font-size: 0.78rem;
-  color: #adb5bd;
+  color: $muted;
 }
 
 .period-nav-btn {
   background: none;
-  border: 1px solid #495057;
+  border: 1px solid $border-mid;
   border-radius: 4px;
-  color: #adb5bd;
+  color: $muted;
   width: 26px;
   height: 26px;
   display: flex;
@@ -100,8 +100,8 @@
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 1101;
-  background: #1a1d21;
-  border: 1px solid #495057;
+  background: $card-bg;
+  border: 1px solid $border-mid;
   border-radius: 8px;
   min-width: 300px;
   max-width: 480px;
@@ -115,8 +115,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 14px;
-  background: #212529;
-  border-bottom: 1px solid #343a40;
+  background: $bg;
+  border-bottom: 1px solid $card-border;
 }
 
 .vol-popup-title {
@@ -128,7 +128,7 @@
 .vol-popup-close {
   background: none;
   border: none;
-  color: #adb5bd;
+  color: $muted;
   font-size: 0.9rem;
   cursor: pointer;
   padding: 0 2px;
@@ -144,7 +144,7 @@
 
 .vol-activity-row {
   padding: 10px 14px;
-  border-bottom: 1px solid #2c2f33;
+  border-bottom: 1px solid $surface-hover;
 
   &:last-child { border-bottom: none; }
 }
@@ -157,7 +157,7 @@
 }
 
 .vol-activity-icon {
-  color: #adb5bd;
+  color: $muted;
   font-size: 0.85rem;
   flex-shrink: 0;
 }
@@ -177,7 +177,7 @@
 
 .vol-activity-stats {
   font-size: 0.78rem;
-  color: #adb5bd;
+  color: $muted;
 }
 
 .vol-garmin-link {

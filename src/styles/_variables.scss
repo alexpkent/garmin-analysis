@@ -5,14 +5,18 @@ $football-color: #4caf50;
 $other-color:    #ffc940;
 
 // ── UI accent & surface colours ───────────────────────────────────────────
-$accent:      #e8b84b;
-$link:        #4dabf7;
-$link-hover:  #74c0fc;
-$card-bg:     #1a1d21;
-$card-border: #343a40;
-$muted:       #adb5bd;
-$dim:         #6c757d;
-$bg:          #212529;
+$accent:       #e8b84b;
+$link:         #4dabf7;
+$link-hover:   #74c0fc;
+$card-bg:      #1a1d21;
+$card-border:  #343a40;
+$border-mid:   #495057;
+$surface-hover:#2a2d31;
+$muted:        #adb5bd;
+$dim:          #6c757d;
+$text-light:   #dee2e6;
+$text-bright:  #f8f9fa;
+$bg:           #212529;
 
 // ── Loading overlay ───────────────────────────────────────────────────────
 @mixin loading-overlay {
@@ -29,7 +33,7 @@ $bg:          #212529;
     width: 56px;
     height: 56px;
     border-radius: 50%;
-    border: 3px solid #2a2d31;
+    border: 3px solid $surface-hover;
     border-top-color: $accent;
     animation: loading-spin 0.8s linear infinite;
   }

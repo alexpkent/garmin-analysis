@@ -80,7 +80,7 @@
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 
   &:hover:not(.view-btn--active) {
-    background: #2a2d31;
+    background: $surface-hover;
     color: #fff;
     border-color: #555;
   }

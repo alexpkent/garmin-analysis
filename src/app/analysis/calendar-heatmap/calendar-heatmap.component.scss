@@ -1,15 +1,15 @@
 @use '../../../styles/variables' as *;
 
 :host {
-  --cell-empty: #2a2d31;
+  --cell-empty: #{$surface-hover};
   --cell-size: 14px;
   --cell-gap: 3px;
   --dow-width: 34px;
 }
 
 .heatmap-card {
-  background: #1a1d21;
-  border: 1px solid #343a40;
+  background: $card-bg;
+  border: 1px solid $card-border;
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 24px;
@@ -46,9 +46,9 @@
 
 .period-nav-btn {
   background: none;
-  border: 1px solid #495057;
+  border: 1px solid $border-mid;
   border-radius: 4px;
-  color: #adb5bd;
+  color: $muted;
   width: 26px;
   height: 26px;
   display: flex;
@@ -78,7 +78,7 @@
 
 .heatmap-period {
   font-size: 0.78rem;
-  color: #adb5bd;
+  color: $muted;
 }
 
 /* Scroll wrapper so the grid can overflow on narrow screens */
@@ -111,7 +111,7 @@
   height: var(--cell-size);
   line-height: var(--cell-size);
   font-size: 0.65rem;
-  color: #adb5bd;
+  color: $muted;
   text-align: right;
   padding-right: 6px;
 }
@@ -126,7 +126,7 @@
 .month-label {
   height: 18px;
   font-size: 0.65rem;
-  color: #adb5bd;
+  color: $muted;
   white-space: nowrap;
   line-height: 18px;
 }
@@ -166,7 +166,7 @@
   align-items: center;
   gap: 5px;
   font-size: 0.72rem;
-  color: #adb5bd;
+  color: $muted;
 }
 
 .legend-swatch {

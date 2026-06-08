@@ -12,9 +12,9 @@ body {
 
 /* ── Heatmap Leaflet popup ─────────────────────────────────── */
 .leaflet-popup-content-wrapper {
-  background: #1a1d21 !important;
+  background: $card-bg !important;
   color: #e9ecef !important;
-  border: 1px solid #343a40 !important;
+  border: 1px solid $card-border !important;
   border-radius: 8px !important;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6) !important;
   padding: 0 !important;
@@ -27,7 +27,7 @@ body {
 }
 
 .leaflet-popup-tip {
-  background: #1a1d21 !important;
+  background: $card-bg !important;
 }
 
 .hm-popup {
@@ -44,9 +44,9 @@ body {
   padding: 10px 14px 9px;
   color: #fff;
 
-  &--run   { background: #ff6040; }
-  &--ride  { background: #40c8ff; }
-  &--other { background: #ffc940; }
+  &--run   { background: $run-color; }
+  &--ride  { background: $ride-color; }
+  &--other { background: $other-color; }
 }
 
 .hm-popup__name {
@@ -58,7 +58,7 @@ body {
 
 .hm-popup__when {
   font-size: 0.75rem;
-  color: #adb5bd;
+  color: $muted;
   padding: 7px 14px 2px;
 }
 
@@ -73,7 +73,7 @@ body {
   min-width: 58px;
   text-align: center;
   padding: 4px 6px;
-  border-right: 1px solid #343a40;
+  border-right: 1px solid $card-border;
 
   &:last-child { border-right: none; }
 }
@@ -81,13 +81,13 @@ body {
 .hm-popup__stat-value {
   font-size: 1rem;
   font-weight: 700;
-  color: #f8f9fa;
+  color: $text-bright;
   line-height: 1.2;
 }
 
 .hm-popup__stat-label {
   font-size: 0.65rem;
-  color: #6c757d;
+  color: $dim;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -97,18 +97,18 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 5px 14px 6px;
-  border-top: 1px solid #343a40;
+  border-top: 1px solid $card-border;
   font-size: 0.75rem;
   gap: 12px;
 }
 
 .hm-popup__effect-label {
-  color: #adb5bd;
+  color: $muted;
   white-space: nowrap;
 }
 
 .hm-popup__effect-value {
-  color: #e8b84b;
+  color: $accent;
   font-weight: 600;
   text-align: right;
 }
@@ -117,11 +117,11 @@ body {
   display: block;
   padding: 8px 14px;
   font-size: 0.78rem;
-  color: #4dabf7 !important;
+  color: $link !important;
   text-decoration: none !important;
-  border-top: 1px solid #343a40;
+  border-top: 1px solid $card-border;
 
-  &:hover { color: #74c0fc !important; }
+  &:hover { color: $link-hover !important; }
 
   i { font-size: 0.7rem; margin-left: 3px; }
 }

@@ -38,7 +38,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  background: #212529;
+  background: $bg;
   border-bottom: 1px solid $card-border;
 }
 
@@ -70,7 +70,7 @@
   column-gap: 16px;
   align-items: baseline;
   padding: 10px 16px;
-  border-bottom: 1px solid #2a2d31;
+  border-bottom: 1px solid $surface-hover;
 
   &:last-child { border-bottom: none; }
 }
@@ -80,7 +80,7 @@
   grid-row: 1;
   font-size: 0.88rem;
   font-weight: 600;
-  color: #dee2e6;
+  color: $text-light;
 }
 
 .pr-pace {
@@ -117,7 +117,7 @@
 
 .pr-ago {
   font-size: 0.72rem;
-  color: #495057;
+  color: $border-mid;
 }
 
 .pr-link {
@@ -162,7 +162,7 @@
   flex: 1;
   font-size: 0.88rem;
   font-weight: 600;
-  color: #dee2e6;
+  color: $text-light;
 }
 
 .country-count {
