@@ -18,7 +18,10 @@ import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 dayjs.extend(isoWeek);
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
-import { TRAINING_STATUS_LABEL, TRAINING_STATUS_COLOR } from '../../constants/heatmap-bands';
+import {
+  TRAINING_STATUS_LABEL,
+  TRAINING_STATUS_COLOR
+} from '../../constants/heatmap-bands';
 import { UI_COLORS } from '../../constants/colors';
 
 declare const Chart: any;
@@ -69,8 +72,7 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
 
   private buildChart(): void {
     const end = this.endDate ?? dayjs().startOf('day');
-    const start =
-      this.startDate ?? end.subtract(364, 'days').startOf('day');
+    const start = this.startDate ?? end.subtract(364, 'days').startOf('day');
 
     this.periodLabel = `${start.format('MMM YYYY')} – ${end.format('MMM YYYY')}`;
 
@@ -116,7 +118,7 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
     const maxHrWeekly = Array.from({ length: weekCount }, (_, i) => {
       const vals = maxHrBuckets.get(i);
       if (!vals?.length) return null;
-      return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+      return Math.max(...vals);
     });
     // Bucket filtered snapshots into weekly slots
     const vo2Weekly: (number | null)[] = new Array(weekCount).fill(null);

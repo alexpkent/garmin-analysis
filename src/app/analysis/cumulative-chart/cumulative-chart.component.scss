@@ -1,0 +1,85 @@
+@use '../../../styles/variables' as *;
+
+.trend-card {
+  background: $card-bg;
+  border: 1px solid $card-border;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+
+  &.fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    border-radius: 0;
+    margin: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+
+    .trend-chart-wrap {
+      flex: 1;
+      height: auto;
+    }
+  }
+}
+
+.trend-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 12px;
+  justify-content: space-between;
+}
+
+.trend-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.trend-hint {
+  font-size: 0.75rem;
+  color: $dim;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.trend-period-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.period-nav-btn {
+  background: none;
+  border: 1px solid $border-mid;
+  color: $muted;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  &:not(:disabled):hover {
+    background: $surface-hover;
+    color: #fff;
+  }
+}
+
+.trend-period {
+  font-size: 0.8rem;
+  color: $muted;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.trend-chart-wrap {
+  position: relative;
+  height: 260px;
+}

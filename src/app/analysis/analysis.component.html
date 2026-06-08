@@ -283,6 +283,16 @@
         (periodForward)="goForward()">
       </app-volume-chart>
 
+      <app-cumulative-chart
+        [activities]="activities"
+        [startDate]="periodStart"
+        [endDate]="periodEnd"
+        [canGoBack]="canGoBack"
+        [canGoForward]="canGoForward"
+        (periodBack)="goBack()"
+        (periodForward)="goForward()">
+      </app-cumulative-chart>
+
       <app-health-trend-chart
         [snapshots]="healthSnapshots"
         [activities]="activities"

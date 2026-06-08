@@ -1,12 +1,12 @@
 <div class="trend-card" [class.fullscreen]="fullscreen">
   <div class="trend-header">
-    <span class="trend-title">Training Quality</span>
+    <span class="trend-title">Cumulative Distance</span>
     <div class="trend-period-nav">
-      <button class="period-nav-btn" (click)="periodBack.emit()" [disabled]="!canGoBack" aria-label="Previous year">
+      <button class="period-nav-btn" (click)="periodBack.emit()" [disabled]="!canGoBack" aria-label="Previous period">
         <i class="fas fa-chevron-left"></i>
       </button>
       <span class="trend-period">{{ periodLabel }}</span>
-      <button class="period-nav-btn" (click)="periodForward.emit()" [disabled]="!canGoForward" aria-label="Next year">
+      <button class="period-nav-btn" (click)="periodForward.emit()" [disabled]="!canGoForward" aria-label="Next period">
         <i class="fas fa-chevron-right"></i>
       </button>
       <button class="period-nav-btn" (click)="toggleFullscreen()" [attr.aria-label]="fullscreen ? 'Exit fullscreen' : 'Fullscreen'">

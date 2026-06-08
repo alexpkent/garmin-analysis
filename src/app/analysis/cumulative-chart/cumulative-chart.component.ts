@@ -15,29 +15,18 @@ import isoWeek from 'dayjs/plugin/isoWeek';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 dayjs.extend(isoWeek);
 dayjs.extend(isSameOrBefore);
-import { UI_COLORS, STATUS_COLORS } from '../../constants/colors';
+import { ACTIVITY_COLORS } from '../../constants/colors';
+import { isRun, isRide, isFootball } from '../../utils/activity.utils';
 
 declare const Chart: any;
 
-interface Series {
-  label: string;
-  valueKey: keyof Activity;
-  color: string;
-  yAxisID?: string;
-  /** Optional transform applied before aggregating (e.g. metres → miles) */
-  transform?: (v: number) => number;
-  /** How to aggregate values in a week bucket — defaults to 'mean' */
-  aggregate?: 'mean' | 'sum';
-  hidden?: boolean;
-}
-
 @Component({
-  selector: 'app-trend-chart',
-  templateUrl: './trend-chart.component.html',
-  styleUrls: ['./trend-chart.component.scss'],
+  selector: 'app-cumulative-chart',
+  templateUrl: './cumulative-chart.component.html',
+  styleUrls: ['./cumulative-chart.component.scss'],
   standalone: false
 })
-export class TrendChartComponent implements OnChanges, OnDestroy {
+export class CumulativeChartComponent implements OnChanges, OnDestroy {
   @Input() activities: Activity[] = [];
   @Input() startDate: Dayjs | null = null;
   @Input() endDate: Dayjs | null = null;
@@ -59,27 +48,6 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
     setTimeout(() => this.chart?.resize(), 0);
   }
 
-  readonly series: Series[] = [
-    {
-      label: 'Training Load',
-      valueKey: 'activityTrainingLoad',
-      color: UI_COLORS.accent,
-      aggregate: 'sum'
-    },
-    {
-      label: 'Training Effect',
-      valueKey: 'trainingEffect',
-      color: '#1FA87A',
-      yAxisID: 'yEffect'
-    },
-    {
-      label: 'Anaerobic Effect',
-      valueKey: 'anaerobicTrainingEffect',
-      color: '#6A1B9A',
-      yAxisID: 'yEffect'
-    }
-  ];
-
   ngOnChanges(_: SimpleChanges): void {
     this.buildChart();
   }
@@ -98,9 +66,7 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
 
     this.periodLabel = `${start.format('MMM YYYY')} – ${end.format('MMM YYYY')}`;
 
-    // Build weekly labels — each week is labelled by its Sunday (end of week)
-    // so the last tick clearly shows the week containing today rather than the
-    // preceding Monday (e.g. "7 Jun" instead of "1 Jun" when today is Thu 5 Jun).
+    // Build weekly tick labels (week ending Sunday)
     const labels: string[] = [];
     let cursor = start.isoWeekday(1);
     if (cursor.isAfter(start)) cursor = cursor.subtract(7, 'days');
@@ -108,50 +74,107 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
       labels.push(cursor.add(6, 'days').format('D MMM'));
       cursor = cursor.add(7, 'days');
     }
-
-    // Aggregate activities per week bucket
     const weekCount = labels.length;
     let weekStart = start.isoWeekday(1);
     if (weekStart.isAfter(start)) weekStart = weekStart.subtract(7, 'days');
 
-    const buckets: Map<number, number[]>[] = this.series.map(() => new Map());
+    // Weekly distance per sport bucket (miles)
+    const runWeekly = new Array(weekCount).fill(0);
+    const rideWeekly = new Array(weekCount).fill(0);
+    const footballWeekly = new Array(weekCount).fill(0);
+    const otherWeekly = new Array(weekCount).fill(0);
 
     for (const a of this.activities) {
-      const date = dayjs(a.start_date).startOf('day');
-      if (date.isBefore(start) || date.isAfter(end)) continue;
-      const weekIdx = Math.floor(date.diff(weekStart, 'days') / 7);
-      if (weekIdx < 0 || weekIdx >= weekCount) continue;
-
-      this.series.forEach((s, si) => {
-        const raw = a[s.valueKey];
-        if (raw == null || typeof raw !== 'number') return;
-        const val = s.transform ? s.transform(raw) : raw;
-        const bucket = buckets[si];
-        if (!bucket.has(weekIdx)) bucket.set(weekIdx, []);
-        bucket.get(weekIdx)!.push(val);
-      });
+      const d = dayjs(a.start_date).startOf('day');
+      if (d.isBefore(start) || d.isAfter(end)) continue;
+      const idx = Math.floor(d.diff(weekStart, 'days') / 7);
+      if (idx < 0 || idx >= weekCount) continue;
+      const miles = (a.distance_meters ?? 0) * 0.000621371;
+      if (isRun(a)) runWeekly[idx] += miles;
+      else if (isRide(a)) rideWeekly[idx] += miles;
+      else if (isFootball(a)) footballWeekly[idx] += miles;
+      else otherWeekly[idx] += miles;
     }
 
-    // Mean or sum per week depending on series aggregate setting
-    const datasets = this.series.map((s, si) => ({
-      label: s.label,
-      data: Array.from({ length: weekCount }, (_, i) => {
-        const vals = buckets[si].get(i);
-        if (!vals || vals.length === 0) return null;
-        const total = vals.reduce((a, b) => a + b, 0);
-        if (s.aggregate === 'sum') return Math.round(total * 10) / 10;
-        return Math.round((total / vals.length) * 10) / 10;
-      }),
-      borderColor: s.color,
-      backgroundColor: s.color + '22',
-      pointRadius: 2,
-      pointHoverRadius: 5,
-      borderWidth: 2,
-      tension: 0.3,
-      spanGaps: true,
-      hidden: s.hidden ?? false,
-      yAxisID: s.yAxisID ?? 'y'
-    }));
+    // Convert weekly buckets to cumulative totals
+    const toCumulative = (weekly: number[]): number[] => {
+      const cum: number[] = [];
+      let total = 0;
+      for (const v of weekly) {
+        total += v;
+        cum.push(Math.round(total * 10) / 10);
+      }
+      return cum;
+    };
+
+    const runCum = toCumulative(runWeekly);
+    const rideCum = toCumulative(rideWeekly);
+    const footballCum = toCumulative(footballWeekly);
+    const otherCum = toCumulative(otherWeekly);
+    const totalCum = runCum.map(
+      (_, i) =>
+        Math.round(
+          (runCum[i] + rideCum[i] + footballCum[i] + otherCum[i]) * 10
+        ) / 10
+    );
+
+    const datasets = [
+      {
+        label: 'Total',
+        data: totalCum,
+        borderColor: '#ffffff',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.3,
+        fill: false
+      },
+      {
+        label: 'Cycling',
+        data: rideCum,
+        borderColor: ACTIVITY_COLORS.ride,
+        backgroundColor: ACTIVITY_COLORS.ride + '22',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.3,
+        fill: false
+      },
+      {
+        label: 'Running',
+        data: runCum,
+        borderColor: ACTIVITY_COLORS.run,
+        backgroundColor: ACTIVITY_COLORS.run + '22',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.3,
+        fill: false
+      },
+      {
+        label: 'Football',
+        data: footballCum,
+        borderColor: ACTIVITY_COLORS.football,
+        backgroundColor: ACTIVITY_COLORS.football + '22',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.3,
+        fill: false
+      },
+      {
+        label: 'Other',
+        data: otherCum,
+        borderColor: ACTIVITY_COLORS.other,
+        backgroundColor: ACTIVITY_COLORS.other + '22',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.3,
+        fill: false
+      }
+    ];
 
     if (this.chart) {
       const hiddenStates = datasets.map(
@@ -180,14 +203,14 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
           },
           tooltip: {
             backgroundColor: '#212529',
-            titleColor: UI_COLORS.accent,
+            titleColor: '#e8b84b',
             bodyColor: '#dee2e6',
             borderColor: '#495057',
             borderWidth: 1,
             callbacks: {
               label: (ctx: any) => {
                 if (ctx.parsed.y == null) return '';
-                return ` ${ctx.dataset.label}: ${ctx.parsed.y}`;
+                return ` ${ctx.dataset.label}: ${ctx.parsed.y} mi`;
               }
             }
           }
@@ -207,22 +230,11 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
             position: 'left',
             ticks: { color: '#6c757d' },
             grid: { color: '#2a2d31' },
-            beginAtZero: true
-          },
-          yEffect: {
-            type: 'linear',
-            position: 'right',
-            min: 0,
-            max: 5,
-            ticks: {
-              color: '#1FA87A',
-              stepSize: 1
-            },
-            grid: { drawOnChartArea: false },
+            beginAtZero: true,
             title: {
               display: true,
-              text: 'Effect (0–5)',
-              color: '#1FA87A',
+              text: 'Cumulative miles',
+              color: '#6c757d',
               font: { size: 11 }
             }
           }
