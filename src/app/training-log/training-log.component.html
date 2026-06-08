@@ -42,6 +42,10 @@
                   <span>{{ summary.rideCount }}</span>
                   <i class="fas fa-biking" aria-hidden="true"></i>
                 </span>
+                <span class="badge-pill badge-football" aria-label="Football" title="Football">
+                  <span>{{ summary.footballCount }}</span>
+                  <i class="fas fa-futbol" aria-hidden="true"></i>
+                </span>
                 <span class="badge-pill badge-other" aria-label="Other activities" title="Other activities">
                   <span>{{ summary.otherCount }}</span>
                   <i class="fas fa-heartbeat" aria-hidden="true"></i>
@@ -51,8 +55,10 @@
           }
         </div>
 
-        <!-- Filter bar -->
-        <div class="filter-bar">
+        <!-- Filter bar + mobile month strip (sticky on mobile) -->
+        <div class="sticky-controls">
+          <!-- Filter bar -->
+          <div class="filter-bar">
           <div class="filter-search-wrap">
             <i class="fas fa-search filter-search-icon"></i>
             <input class="filter-search"
@@ -78,6 +84,11 @@
               <i class="fas fa-biking"></i> Ride
             </button>
             <button class="filter-type-btn"
+                    [class.active-football]="filterTypes.has('football')"
+                    (click)="toggleTypeFilter('football')">
+              <i class="fas fa-futbol"></i> Football
+            </button>
+            <button class="filter-type-btn"
                     [class.active-other]="filterTypes.has('other')"
                     (click)="toggleTypeFilter('other')">
               <i class="fas fa-heartbeat"></i> Other
@@ -89,6 +100,20 @@
             </button>
           }
         </div>
+
+        <!-- Mobile month/year strip (hidden on desktop) -->
+        <div class="mobile-month-strip">
+          @for (navYear of yearMonthNav; track navYear.year) {
+            @for (navMonth of navYear.months; track navMonth.weekKey) {
+              <button class="mobile-month-chip"
+                      [class.mobile-month-chip--active]="activeNavKey === navMonth.weekKey"
+                      (click)="scrollToMonth(navMonth.weekKey)">
+                {{ navMonth.monthName }} <span class="mobile-month-year">{{ navYear.year }}</span>
+              </button>
+            }
+          }
+        </div>
+        </div><!-- /sticky-controls -->
 
         <!-- Weekly bubble grid -->
         <div class="week-grid-scroll px-3 pb-4">
@@ -109,6 +134,7 @@
                 <div class="week-type-pills">
                   <span class="badge-pill badge-run" [class.badge-pill--zero]="week.runCount === 0">{{ week.runCount }} <i class="fas fa-running"></i></span>
                   <span class="badge-pill badge-ride" [class.badge-pill--zero]="week.rideCount === 0">{{ week.rideCount }} <i class="fas fa-biking"></i></span>
+                  <span class="badge-pill badge-football" [class.badge-pill--zero]="week.footballCount === 0">{{ week.footballCount }} <i class="fas fa-futbol"></i></span>
                   <span class="badge-pill badge-other" [class.badge-pill--zero]="week.otherCount === 0">{{ week.otherCount }} <i class="fas fa-heartbeat"></i></span>
                 </div>
                 <div class="week-range">{{ week.weekLabel }}</div>

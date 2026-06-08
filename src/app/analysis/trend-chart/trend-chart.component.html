@@ -1,6 +1,6 @@
 <div class="trend-card" [class.fullscreen]="fullscreen">
   <div class="trend-header">
-    <span class="trend-title">Activity Trends</span>
+    <span class="trend-title">Training Load</span>
     <div class="trend-period-nav">
       <button class="period-nav-btn" (click)="periodBack.emit()" [disabled]="!canGoBack" aria-label="Previous year">
         <i class="fas fa-chevron-left"></i>
@@ -17,5 +17,5 @@
   <div class="trend-chart-wrap">
     <canvas #canvas></canvas>
   </div>
-  <div class="trend-hint">Click a legend item to toggle a series</div>
+  <div class="trend-hint">Click a legend item to toggle · Dashed = target midpoint · Load Focus series hidden by default</div>
 </div>

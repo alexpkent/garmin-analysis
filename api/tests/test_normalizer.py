@@ -149,6 +149,8 @@ def test_normalize_garmin_type_mapping():
         "pool_swimming": "swim",
         "walking": "walk",
         "hiking": "walk",
+        "soccer": "football",
+        "football": "football",
         "yoga": "other",
     }
     raw = _garmin_run_raw()

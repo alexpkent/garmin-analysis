@@ -15,12 +15,19 @@ export interface LoadFocus {
   load_balance_phrase: string | null;
 }
 
+export interface TrainingReadiness {
+  score: number | null;
+  feedback: string | null;
+}
+
 export interface HealthSnapshot {
   date: string;
   vo2max_running: number | null;
   vo2max_cycling: number | null;
   training_status: string | null;
   load_focus: LoadFocus | null;
+  resting_hr: number | null;
+  training_readiness: TrainingReadiness | null;
 }
 
 export interface PersonalRecord {

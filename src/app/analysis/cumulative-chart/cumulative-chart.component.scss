@@ -48,40 +48,38 @@
 .trend-period-nav {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.trend-period {
-  font-size: 0.78rem;
-  color: $muted;
+  gap: 4px;
 }
 
 .period-nav-btn {
   background: none;
   border: 1px solid $border-mid;
-  border-radius: 4px;
   color: $muted;
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 0.75rem;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-  flex-shrink: 0;
-
-  &:hover:not(:disabled) {
-    color: #fff;
-    border-color: $accent;
-  }
+  transition: background 0.15s, color 0.15s;
 
   &:disabled {
     opacity: 0.3;
     cursor: default;
   }
+
+  &:not(:disabled):hover {
+    background: $surface-hover;
+    color: #fff;
+  }
+}
+
+.trend-period {
+  font-size: 0.8rem;
+  color: $muted;
+  padding: 0 6px;
+  white-space: nowrap;
 }
 
 .trend-chart-wrap {
   position: relative;
-  height: 320px;
+  height: 260px;
 }

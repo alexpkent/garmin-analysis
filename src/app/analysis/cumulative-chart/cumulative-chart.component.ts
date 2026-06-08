@@ -3,7 +3,6 @@ import {
   ElementRef,
   EventEmitter,
   Input,
-  NgZone,
   OnChanges,
   OnDestroy,
   Output,
@@ -16,25 +15,18 @@ import isoWeek from 'dayjs/plugin/isoWeek';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 dayjs.extend(isoWeek);
 dayjs.extend(isSameOrBefore);
-import { ACTIVITY_COLORS, UI_COLORS } from '../../constants/colors';
-import {
-  isRun,
-  isRide,
-  isFootball,
-  activityIcon,
-  formatDistance,
-  getDuration
-} from '../../utils/activity.utils';
+import { ACTIVITY_COLORS } from '../../constants/colors';
+import { isRun, isRide, isFootball } from '../../utils/activity.utils';
 
 declare const Chart: any;
 
 @Component({
-  selector: 'app-volume-chart',
-  templateUrl: './volume-chart.component.html',
-  styleUrls: ['./volume-chart.component.scss'],
+  selector: 'app-cumulative-chart',
+  templateUrl: './cumulative-chart.component.html',
+  styleUrls: ['./cumulative-chart.component.scss'],
   standalone: false
 })
-export class VolumeChartComponent implements OnChanges, OnDestroy {
+export class CumulativeChartComponent implements OnChanges, OnDestroy {
   @Input() activities: Activity[] = [];
   @Input() startDate: Dayjs | null = null;
   @Input() endDate: Dayjs | null = null;
@@ -47,38 +39,13 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
   @ViewChild('canvas', { static: true })
   canvasRef!: ElementRef<HTMLCanvasElement>;
 
-  constructor(private zone: NgZone) {}
-
   private chart: any = null;
   periodLabel = '';
   fullscreen = false;
-  popupWeek: { label: string; activities: Activity[] } | null = null;
-  private weekActivities: Activity[][] = [];
-  private storedWeekLabels: string[] = [];
 
   toggleFullscreen(): void {
     this.fullscreen = !this.fullscreen;
     setTimeout(() => this.chart?.resize(), 0);
-  }
-
-  closePopup(): void {
-    this.popupWeek = null;
-  }
-
-  garminUrl(a: Activity): string {
-    return `https://connect.garmin.com/app/activity/${a.id}`;
-  }
-
-  formatDistance(m: number): string {
-    return formatDistance(m);
-  }
-
-  formatDuration(s: number): string {
-    return getDuration(s);
-  }
-
-  activityIcon(a: Activity): string {
-    return activityIcon(a);
   }
 
   ngOnChanges(_: SimpleChanges): void {
@@ -99,78 +66,113 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
 
     this.periodLabel = `${start.format('MMM YYYY')} – ${end.format('MMM YYYY')}`;
 
-    // Build weekly labels
-    const weekLabels: string[] = [];
+    // Build weekly tick labels (week ending Sunday)
+    const labels: string[] = [];
     let cursor = start.isoWeekday(1);
     if (cursor.isAfter(start)) cursor = cursor.subtract(7, 'days');
     while (cursor.isSameOrBefore(end, 'day')) {
-      weekLabels.push(cursor.add(6, 'days').format('D MMM'));
+      labels.push(cursor.add(6, 'days').format('D MMM'));
       cursor = cursor.add(7, 'days');
     }
-    const weekCount = weekLabels.length;
+    const weekCount = labels.length;
     let weekStart = start.isoWeekday(1);
     if (weekStart.isAfter(start)) weekStart = weekStart.subtract(7, 'days');
 
-    this.storedWeekLabels = weekLabels;
-    this.weekActivities = Array.from({ length: weekCount }, () => []);
-
-    const runData = new Array(weekCount).fill(0);
-    const cycleData = new Array(weekCount).fill(0);
-    const footballData = new Array(weekCount).fill(0);
-    const otherData = new Array(weekCount).fill(0);
+    // Weekly distance per sport bucket (miles)
+    const runWeekly = new Array(weekCount).fill(0);
+    const rideWeekly = new Array(weekCount).fill(0);
+    const footballWeekly = new Array(weekCount).fill(0);
+    const otherWeekly = new Array(weekCount).fill(0);
 
     for (const a of this.activities) {
       const d = dayjs(a.start_date).startOf('day');
       if (d.isBefore(start) || d.isAfter(end)) continue;
       const idx = Math.floor(d.diff(weekStart, 'days') / 7);
       if (idx < 0 || idx >= weekCount) continue;
-      const miles = (a.distance_meters ?? 0) / 1609.344;
-      if (isRun(a)) runData[idx] += miles;
-      else if (isRide(a)) cycleData[idx] += miles;
-      else if (isFootball(a)) footballData[idx] += miles;
-      else otherData[idx] += miles;
-      this.weekActivities[idx].push(a);
+      const miles = (a.distance_meters ?? 0) * 0.000621371;
+      if (isRun(a)) runWeekly[idx] += miles;
+      else if (isRide(a)) rideWeekly[idx] += miles;
+      else if (isFootball(a)) footballWeekly[idx] += miles;
+      else otherWeekly[idx] += miles;
     }
 
-    for (let i = 0; i < weekCount; i++) {
-      runData[i] = Math.round(runData[i] * 10) / 10;
-      cycleData[i] = Math.round(cycleData[i] * 10) / 10;
-      footballData[i] = Math.round(footballData[i] * 10) / 10;
-      otherData[i] = Math.round(otherData[i] * 10) / 10;
-    }
+    // Convert weekly buckets to cumulative totals
+    const toCumulative = (weekly: number[]): number[] => {
+      const cum: number[] = [];
+      let total = 0;
+      for (const v of weekly) {
+        total += v;
+        cum.push(Math.round(total * 10) / 10);
+      }
+      return cum;
+    };
+
+    const runCum = toCumulative(runWeekly);
+    const rideCum = toCumulative(rideWeekly);
+    const footballCum = toCumulative(footballWeekly);
+    const otherCum = toCumulative(otherWeekly);
+    const totalCum = runCum.map(
+      (_, i) =>
+        Math.round(
+          (runCum[i] + rideCum[i] + footballCum[i] + otherCum[i]) * 10
+        ) / 10
+    );
 
     const datasets = [
       {
-        label: 'Running',
-        data: runData,
-        backgroundColor: ACTIVITY_COLORS.run + '88',
-        borderColor: ACTIVITY_COLORS.run,
-        borderWidth: 1,
-        stack: 'volume'
+        label: 'Total',
+        data: totalCum,
+        borderColor: '#ffffff',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.3,
+        fill: false
       },
       {
         label: 'Cycling',
-        data: cycleData,
-        backgroundColor: ACTIVITY_COLORS.ride + '88',
+        data: rideCum,
         borderColor: ACTIVITY_COLORS.ride,
-        borderWidth: 1,
-        stack: 'volume'
+        backgroundColor: ACTIVITY_COLORS.ride + '22',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.3,
+        fill: false
+      },
+      {
+        label: 'Running',
+        data: runCum,
+        borderColor: ACTIVITY_COLORS.run,
+        backgroundColor: ACTIVITY_COLORS.run + '22',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.3,
+        fill: false
       },
       {
         label: 'Football',
-        data: footballData,
-        backgroundColor: ACTIVITY_COLORS.football + '88',
+        data: footballCum,
         borderColor: ACTIVITY_COLORS.football,
-        borderWidth: 1,
-        stack: 'volume'
+        backgroundColor: ACTIVITY_COLORS.football + '22',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.3,
+        fill: false
       },
       {
         label: 'Other',
-        data: otherData,
-        backgroundColor: ACTIVITY_COLORS.other + '88',
+        data: otherCum,
         borderColor: ACTIVITY_COLORS.other,
-        borderWidth: 1,
-        stack: 'volume'
+        backgroundColor: ACTIVITY_COLORS.other + '22',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.3,
+        fill: false
       }
     ];
 
@@ -178,7 +180,7 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
       const hiddenStates = datasets.map(
         (_: any, i: number) => this.chart.getDatasetMeta(i)?.hidden ?? false
       );
-      this.chart.data.labels = weekLabels;
+      this.chart.data.labels = labels;
       this.chart.data.datasets = datasets;
       hiddenStates.forEach((hidden: boolean, i: number) => {
         this.chart.getDatasetMeta(i).hidden = hidden;
@@ -188,24 +190,12 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
     }
 
     this.chart = new Chart(this.canvasRef.nativeElement, {
-      type: 'bar',
-      data: { labels: weekLabels, datasets },
+      type: 'line',
+      data: { labels, datasets },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
-        onClick: (_event: any, elements: any[]) => {
-          if (!elements.length) return;
-          const idx = elements[0].index;
-          const acts = this.weekActivities[idx] ?? [];
-          if (!acts.length) return;
-          this.zone.run(() => {
-            this.popupWeek = {
-              label: this.storedWeekLabels[idx],
-              activities: acts
-            };
-          });
-        },
         plugins: {
           legend: {
             position: 'top',
@@ -213,13 +203,13 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
           },
           tooltip: {
             backgroundColor: '#212529',
-            titleColor: UI_COLORS.accent,
+            titleColor: '#e8b84b',
             bodyColor: '#dee2e6',
             borderColor: '#495057',
             borderWidth: 1,
             callbacks: {
               label: (ctx: any) => {
-                if (!ctx.parsed.y) return '';
+                if (ctx.parsed.y == null) return '';
                 return ` ${ctx.dataset.label}: ${ctx.parsed.y} mi`;
               }
             }
@@ -227,23 +217,23 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
         },
         scales: {
           x: {
-            stacked: true,
             ticks: {
               color: '#6c757d',
-              maxRotation: 0,
+              maxRotation: 45,
               autoSkip: true,
               maxTicksLimit: 14
             },
             grid: { color: '#2a2d31' }
           },
           y: {
-            stacked: true,
-            beginAtZero: true,
+            type: 'linear',
+            position: 'left',
             ticks: { color: '#6c757d' },
             grid: { color: '#2a2d31' },
+            beginAtZero: true,
             title: {
               display: true,
-              text: 'Distance (mi)',
+              text: 'Cumulative miles',
               color: '#6c757d',
               font: { size: 11 }
             }
