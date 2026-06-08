@@ -242,7 +242,9 @@ export class AnalysisComponent implements OnInit {
         (s) =>
           s.vo2max_running != null ||
           s.training_status != null ||
-          s.load_focus != null
+          s.load_focus != null ||
+          s.resting_hr != null ||
+          s.training_readiness != null
       );
       const pool = withData.length > 0 ? withData : snapshots;
       this.latestHealth =
@@ -363,6 +365,17 @@ export class AnalysisComponent implements OnInit {
     if (age < 70) return 4;
     return 5;
   })();
+
+  readinessCategory(score: number | null | undefined): {
+    label: string;
+    color: string;
+  } {
+    if (score == null) return { label: 'Unknown', color: '#6c757d' };
+    if (score >= 75) return { label: 'Optimal', color: '#4caf50' };
+    if (score >= 50) return { label: 'Good', color: '#ffd54f' };
+    if (score >= 25) return { label: 'Fair', color: '#ff8c00' };
+    return { label: 'Low', color: '#e63419' };
+  }
 
   vo2maxCategory(
     vo2: number | null | undefined
@@ -490,7 +503,39 @@ export class AnalysisComponent implements OnInit {
     const insights: TrainingInsight[] = [];
     const now = dayjs();
 
-    // 1. Garmin training status
+    // 1. Training Readiness
+    if (this.latestHealth?.training_readiness?.score != null) {
+      const score = this.latestHealth.training_readiness.score;
+      const cat = this.readinessCategory(score);
+      const feedbackMap: Record<string, string> = {
+        OPTIMAL: 'Your body is primed — a great day to push hard.',
+        GOOD: 'You are well recovered and ready to train.',
+        FAIR: 'Moderate readiness — moderate intensity recommended.',
+        LOW: 'Readiness is low — consider an easy or rest day.',
+        VERY_LOW: 'Very low readiness — prioritise rest and recovery.'
+      };
+      const feedback = this.latestHealth.training_readiness.feedback ?? '';
+      const text =
+        feedbackMap[feedback] ??
+        `Score ${score} — ${feedback.replace(/_/g, ' ').toLowerCase()}.`;
+      const level: TrainingInsight['level'] =
+        score >= 75
+          ? 'good'
+          : score >= 50
+            ? 'info'
+            : score >= 25
+              ? 'warn'
+              : 'alert';
+      insights.push({
+        icon: 'fas fa-bolt',
+        label: `Readiness ${score}`,
+        text,
+        color: cat.color,
+        level
+      });
+    }
+
+    // 2. Garmin training status
     if (this.latestHealth?.training_status) {
       const status = this.latestHealth.training_status.replace(/_\d+$/, '');
       const color = TRAINING_STATUS_COLOR[status] ?? '#adb5bd';

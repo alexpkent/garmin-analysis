@@ -83,7 +83,7 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
       })
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    // Weekly HR aggregated from activities (same weekly-bucket approach as activity trends)
+    // Build weekly labels
     const weekLabels: string[] = [];
     let cursor = start.isoWeekday(1);
     if (cursor.isAfter(start)) cursor = cursor.subtract(7, 'days');
@@ -94,65 +94,47 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
     const weekCount = weekLabels.length;
     let weekStart = start.isoWeekday(1);
     if (weekStart.isAfter(start)) weekStart = weekStart.subtract(7, 'days');
-    const avgHrBuckets: Map<number, number[]> = new Map();
+
+    // Max HR and Avg HR from activities — peak / mean per week
     const maxHrBuckets: Map<number, number[]> = new Map();
+    const avgHrBuckets: Map<number, number[]> = new Map();
     for (const a of this.activities) {
       const d = dayjs(a.start_date).startOf('day');
       if (d.isBefore(start) || d.isAfter(end)) continue;
       const idx = Math.floor(d.diff(weekStart, 'days') / 7);
       if (idx < 0 || idx >= weekCount) continue;
-      if (a.averageHR != null) {
-        if (!avgHrBuckets.has(idx)) avgHrBuckets.set(idx, []);
-        avgHrBuckets.get(idx)!.push(a.averageHR);
-      }
       if (a.maxHR != null) {
         if (!maxHrBuckets.has(idx)) maxHrBuckets.set(idx, []);
         maxHrBuckets.get(idx)!.push(a.maxHR);
       }
+      if (a.averageHR != null) {
+        if (!avgHrBuckets.has(idx)) avgHrBuckets.set(idx, []);
+        avgHrBuckets.get(idx)!.push(a.averageHR);
+      }
     }
+    const maxHrWeekly = Array.from({ length: weekCount }, (_, i) => {
+      const vals = maxHrBuckets.get(i);
+      return vals?.length ? Math.max(...vals) : null;
+    });
     const avgHrWeekly = Array.from({ length: weekCount }, (_, i) => {
       const vals = avgHrBuckets.get(i);
       if (!vals?.length) return null;
-      return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+      return Math.round(vals.reduce((s, v) => s + v, 0) / vals.length);
     });
-    const maxHrWeekly = Array.from({ length: weekCount }, (_, i) => {
-      const vals = maxHrBuckets.get(i);
-      if (!vals?.length) return null;
-      return Math.max(...vals);
-    });
-    // Bucket filtered snapshots into weekly slots
+
+    // VO₂ Max, Resting HR, Training Status from snapshots
     const vo2Weekly: (number | null)[] = new Array(weekCount).fill(null);
-    const lowAerobicWeekly: (number | null)[] = new Array(weekCount).fill(null);
-    const highAerobicWeekly: (number | null)[] = new Array(weekCount).fill(
-      null
-    );
-    const anaerobicWeekly: (number | null)[] = new Array(weekCount).fill(null);
-    const lowTargetWeekly: (number | null)[] = new Array(weekCount).fill(null);
-    const highTargetWeekly: (number | null)[] = new Array(weekCount).fill(null);
+    const rhrWeekly: (number | null)[] = new Array(weekCount).fill(null);
     const statusWeekly: (string | null)[] = new Array(weekCount).fill(null);
 
     for (const s of filtered) {
       const d = dayjs(s.date).startOf('day');
       const idx = Math.floor(d.diff(weekStart, 'days') / 7);
       if (idx < 0 || idx >= weekCount) continue;
-      if (s.vo2max_running != null) vo2Weekly[idx] = s.vo2max_running;
+      if (s.vo2max_running != null && s.vo2max_running > 0)
+        vo2Weekly[idx] = s.vo2max_running;
+      if (s.resting_hr != null) rhrWeekly[idx] = s.resting_hr;
       if (s.training_status != null) statusWeekly[idx] = s.training_status;
-      if (s.load_focus) {
-        if (s.load_focus.low_aerobic_actual != null)
-          lowAerobicWeekly[idx] = s.load_focus.low_aerobic_actual;
-        if (s.load_focus.high_aerobic_actual != null)
-          highAerobicWeekly[idx] = s.load_focus.high_aerobic_actual;
-        if (s.load_focus.anaerobic_actual != null)
-          anaerobicWeekly[idx] = s.load_focus.anaerobic_actual;
-        const lMin = s.load_focus.low_aerobic_low,
-          lMax = s.load_focus.low_aerobic_high;
-        if (lMin != null && lMax != null)
-          lowTargetWeekly[idx] = Math.round((lMin + lMax) / 2);
-        const hMin = s.load_focus.high_aerobic_low,
-          hMax = s.load_focus.high_aerobic_high;
-        if (hMin != null && hMax != null)
-          highTargetWeekly[idx] = Math.round((hMin + hMax) / 2);
-      }
     }
 
     // Compute status dot colours and labels from weekly status phrases
@@ -184,12 +166,12 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
         yAxisID: 'yVo2'
       },
       {
-        label: 'Avg HR',
-        data: avgHrWeekly,
-        borderColor: '#ef9a9a',
-        backgroundColor: '#ef9a9a22',
-        pointRadius: 2,
-        pointHoverRadius: 5,
+        label: 'Resting HR',
+        data: rhrWeekly,
+        borderColor: '#ffd54f',
+        backgroundColor: '#ffd54f22',
+        pointRadius: 3,
+        pointHoverRadius: 6,
         borderWidth: 2,
         tension: 0.3,
         spanGaps: true,
@@ -208,64 +190,16 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
         yAxisID: 'yHr'
       },
       {
-        label: 'Low Aerobic Load',
-        data: lowAerobicWeekly,
-        borderColor: '#1FA87A',
-        backgroundColor: '#1FA87A22',
+        label: 'Avg HR',
+        data: avgHrWeekly,
+        borderColor: '#ff8a65',
+        backgroundColor: '#ff8a6522',
         pointRadius: 2,
         pointHoverRadius: 5,
         borderWidth: 2,
         tension: 0.3,
         spanGaps: true,
-        yAxisID: 'yLoad'
-      },
-      {
-        label: 'Low Aerobic Target',
-        data: lowTargetWeekly,
-        borderColor: '#1FA87A',
-        backgroundColor: 'transparent',
-        borderDash: [4, 4],
-        pointRadius: 0,
-        borderWidth: 1,
-        tension: 0.3,
-        spanGaps: true,
-        yAxisID: 'yLoad'
-      },
-      {
-        label: 'High Aerobic Load',
-        data: highAerobicWeekly,
-        borderColor: UI_COLORS.accent,
-        backgroundColor: UI_COLORS.accent + '22',
-        pointRadius: 2,
-        pointHoverRadius: 5,
-        borderWidth: 2,
-        tension: 0.3,
-        spanGaps: true,
-        yAxisID: 'yLoad'
-      },
-      {
-        label: 'High Aerobic Target',
-        data: highTargetWeekly,
-        borderColor: UI_COLORS.accent,
-        backgroundColor: 'transparent',
-        borderDash: [4, 4],
-        pointRadius: 0,
-        borderWidth: 1,
-        tension: 0.3,
-        spanGaps: true,
-        yAxisID: 'yLoad'
-      },
-      {
-        label: 'Anaerobic Load',
-        data: anaerobicWeekly,
-        borderColor: '#6A1B9A',
-        backgroundColor: '#6A1B9A22',
-        pointRadius: 2,
-        pointHoverRadius: 5,
-        borderWidth: 2,
-        tension: 0.3,
-        spanGaps: true,
-        yAxisID: 'yLoad'
+        yAxisID: 'yHr'
       },
       {
         label: 'Training Status',
@@ -343,18 +277,6 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
               display: true,
               text: 'VO₂ Max',
               color: '#42a5f5',
-              font: { size: 11 }
-            }
-          },
-          yLoad: {
-            type: 'linear',
-            position: 'right',
-            ticks: { color: '#adb5bd' },
-            grid: { drawOnChartArea: false },
-            title: {
-              display: true,
-              text: 'Load',
-              color: '#adb5bd',
               font: { size: 11 }
             }
           },

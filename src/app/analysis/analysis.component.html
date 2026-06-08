@@ -169,6 +169,25 @@
               </div>
             }
 
+            @if (latestHealth.resting_hr != null) {
+              <div class="latest-stat">
+                <span class="latest-stat-label">Resting HR</span>
+                <span class="latest-stat-value" style="color:#ffd54f">{{ latestHealth.resting_hr }} bpm</span>
+              </div>
+            }
+
+            @if (latestHealth.training_readiness != null && latestHealth.training_readiness.score != null) {
+              <div class="latest-stat">
+                <span class="latest-stat-label">Readiness</span>
+                <span class="latest-stat-value" [style.color]="readinessCategory(latestHealth.training_readiness.score).color">
+                  {{ latestHealth.training_readiness.score }}
+                </span>
+                <span class="latest-stat-band" [style.color]="readinessCategory(latestHealth.training_readiness.score).color">
+                  {{ readinessCategory(latestHealth.training_readiness.score).label }}
+                </span>
+              </div>
+            }
+
           </div>
         </div>
       }
@@ -316,6 +335,7 @@
 
       <app-trend-chart
         [activities]="activities"
+        [snapshots]="healthSnapshots"
         [startDate]="periodStart"
         [endDate]="periodEnd"
         [canGoBack]="canGoBack"

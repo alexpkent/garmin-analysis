@@ -10,6 +10,7 @@ import {
   ViewChild
 } from '@angular/core';
 import { Activity } from '../../types/Activity';
+import { HealthSnapshot } from '../../activity.service';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
@@ -39,6 +40,7 @@ interface Series {
 })
 export class TrendChartComponent implements OnChanges, OnDestroy {
   @Input() activities: Activity[] = [];
+  @Input() snapshots: HealthSnapshot[] = [];
   @Input() startDate: Dayjs | null = null;
   @Input() endDate: Dayjs | null = null;
   @Input() canGoBack = false;
@@ -60,12 +62,6 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
   }
 
   readonly series: Series[] = [
-    {
-      label: 'Training Load',
-      valueKey: 'activityTrainingLoad',
-      color: UI_COLORS.accent,
-      aggregate: 'sum'
-    },
     {
       label: 'Training Effect',
       valueKey: 'trainingEffect',
@@ -133,7 +129,7 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
     }
 
     // Mean or sum per week depending on series aggregate setting
-    const datasets = this.series.map((s, si) => ({
+    const datasets: any[] = this.series.map((s, si) => ({
       label: s.label,
       data: Array.from({ length: weekCount }, (_, i) => {
         const vals = buckets[si].get(i);
@@ -152,6 +148,76 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
       hidden: s.hidden ?? false,
       yAxisID: s.yAxisID ?? 'y'
     }));
+
+    // Load focus series from snapshots (hidden by default — toggle on for zone breakdown)
+    const filteredSnaps = this.snapshots
+      .filter((s) => {
+        const d = dayjs(s.date).startOf('day');
+        return !d.isBefore(start) && !d.isAfter(end);
+      })
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    const lowAerobicW: (number | null)[] = new Array(weekCount).fill(null);
+    const lowTargetW: (number | null)[] = new Array(weekCount).fill(null);
+    const highAerobicW: (number | null)[] = new Array(weekCount).fill(null);
+    const highTargetW: (number | null)[] = new Array(weekCount).fill(null);
+    const anaerobicW: (number | null)[] = new Array(weekCount).fill(null);
+    const anaerobicTargetW: (number | null)[] = new Array(weekCount).fill(null);
+
+    for (const s of filteredSnaps) {
+      const d = dayjs(s.date).startOf('day');
+      const idx = Math.floor(d.diff(weekStart, 'days') / 7);
+      if (idx < 0 || idx >= weekCount) continue;
+      if (s.load_focus) {
+        if (s.load_focus.low_aerobic_actual != null)
+          lowAerobicW[idx] = s.load_focus.low_aerobic_actual;
+        if (s.load_focus.high_aerobic_actual != null)
+          highAerobicW[idx] = s.load_focus.high_aerobic_actual;
+        if (s.load_focus.anaerobic_actual != null)
+          anaerobicW[idx] = s.load_focus.anaerobic_actual;
+        const lMin = s.load_focus.low_aerobic_low,
+          lMax = s.load_focus.low_aerobic_high;
+        if (lMin != null && lMax != null)
+          lowTargetW[idx] = Math.round((lMin + lMax) / 2);
+        const hMin = s.load_focus.high_aerobic_low,
+          hMax = s.load_focus.high_aerobic_high;
+        if (hMin != null && hMax != null)
+          highTargetW[idx] = Math.round((hMin + hMax) / 2);
+        const aMin = s.load_focus.anaerobic_low,
+          aMax = s.load_focus.anaerobic_high;
+        if (aMin != null && aMax != null)
+          anaerobicTargetW[idx] = Math.round((aMin + aMax) / 2);
+      }
+    }
+
+    const mkLoadDs = (
+      label: string,
+      data: (number | null)[],
+      color: string,
+      dashed = false
+    ) => ({
+      label,
+      data,
+      borderColor: color,
+      backgroundColor: dashed ? 'transparent' : color + '22',
+      ...(dashed ? { borderDash: [4, 4] } : {}),
+      pointRadius: dashed ? 0 : 2,
+      pointHoverRadius: dashed ? 0 : 5,
+      borderWidth: dashed ? 1 : 2,
+      tension: 0.3,
+      spanGaps: true,
+      hidden: false,
+      yAxisID: 'y'
+    });
+
+    datasets.push(
+      mkLoadDs('Low Aerobic Load', lowAerobicW, '#1FA87A'),
+      mkLoadDs('Low Aerobic Target', lowTargetW, '#1FA87A', true),
+      mkLoadDs('High Aerobic Load', highAerobicW, UI_COLORS.accent),
+      mkLoadDs('High Aerobic Target', highTargetW, UI_COLORS.accent, true),
+      mkLoadDs('Anaerobic Load', anaerobicW, '#6A1B9A'),
+      mkLoadDs('Anaerobic Target', anaerobicTargetW, '#6A1B9A', true)
+    );
 
     if (this.chart) {
       const hiddenStates = datasets.map(

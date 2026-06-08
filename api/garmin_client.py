@@ -151,6 +151,39 @@ class GarminClient:
             snapshot.setdefault("training_status", None)
             snapshot.setdefault("load_focus", None)
 
+        # Resting Heart Rate
+        try:
+            rhr_data = self._client.get_rhr_day(date_str)
+            if isinstance(rhr_data, dict):
+                rhr_val = (
+                    rhr_data.get("restingHeartRate")
+                    or rhr_data.get("restingHeartRateValue")
+                    or (rhr_data.get("allDayHR") or {}).get("restingHeartRateValue")
+                )
+                snapshot["resting_hr"] = int(rhr_val) if rhr_val is not None else None
+            else:
+                snapshot["resting_hr"] = None
+        except Exception:
+            snapshot["resting_hr"] = None
+
+        # Training Readiness
+        try:
+            readiness_data = self._client.get_training_readiness(date_str)
+            dto: dict | None = None
+            if isinstance(readiness_data, dict):
+                dto = readiness_data.get("trainingReadinessDTO") or readiness_data
+            elif isinstance(readiness_data, list) and readiness_data:
+                dto = readiness_data[-1]
+            if dto:
+                snapshot["training_readiness"] = {
+                    "score": dto.get("score") or dto.get("trainingReadinessScore"),
+                    "feedback": dto.get("feedbackShort") or dto.get("feedback"),
+                }
+            else:
+                snapshot["training_readiness"] = None
+        except Exception:
+            snapshot["training_readiness"] = None
+
         return snapshot
 
     def get_personal_records(self) -> dict:
