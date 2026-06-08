@@ -17,7 +17,14 @@ import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 dayjs.extend(isoWeek);
 dayjs.extend(isSameOrBefore);
 import { ACTIVITY_COLORS, UI_COLORS } from '../../constants/colors';
-import { isRun, isRide, activityIcon, formatDistance, getDuration } from '../../utils/activity.utils';
+import {
+  isRun,
+  isRide,
+  isFootball,
+  activityIcon,
+  formatDistance,
+  getDuration
+} from '../../utils/activity.utils';
 
 declare const Chart: any;
 
@@ -62,11 +69,17 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
     return `https://connect.garmin.com/app/activity/${a.id}`;
   }
 
-  formatDistance(m: number): string { return formatDistance(m); }
+  formatDistance(m: number): string {
+    return formatDistance(m);
+  }
 
-  formatDuration(s: number): string { return getDuration(s); }
+  formatDuration(s: number): string {
+    return getDuration(s);
+  }
 
-  activityIcon(a: Activity): string { return activityIcon(a); }
+  activityIcon(a: Activity): string {
+    return activityIcon(a);
+  }
 
   ngOnChanges(_: SimpleChanges): void {
     this.buildChart();
@@ -103,6 +116,7 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
 
     const runData = new Array(weekCount).fill(0);
     const cycleData = new Array(weekCount).fill(0);
+    const footballData = new Array(weekCount).fill(0);
     const otherData = new Array(weekCount).fill(0);
 
     for (const a of this.activities) {
@@ -112,8 +126,8 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
       if (idx < 0 || idx >= weekCount) continue;
       const miles = (a.distance_meters ?? 0) / 1609.344;
       if (isRun(a)) runData[idx] += miles;
-      else if (isRide(a))
-        cycleData[idx] += miles;
+      else if (isRide(a)) cycleData[idx] += miles;
+      else if (isFootball(a)) footballData[idx] += miles;
       else otherData[idx] += miles;
       this.weekActivities[idx].push(a);
     }
@@ -121,6 +135,7 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
     for (let i = 0; i < weekCount; i++) {
       runData[i] = Math.round(runData[i] * 10) / 10;
       cycleData[i] = Math.round(cycleData[i] * 10) / 10;
+      footballData[i] = Math.round(footballData[i] * 10) / 10;
       otherData[i] = Math.round(otherData[i] * 10) / 10;
     }
 
@@ -138,6 +153,14 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
         data: cycleData,
         backgroundColor: ACTIVITY_COLORS.ride + '88',
         borderColor: ACTIVITY_COLORS.ride,
+        borderWidth: 1,
+        stack: 'volume'
+      },
+      {
+        label: 'Football',
+        data: footballData,
+        backgroundColor: ACTIVITY_COLORS.football + '88',
+        borderColor: ACTIVITY_COLORS.football,
         borderWidth: 1,
         stack: 'volume'
       },

@@ -178,7 +178,7 @@
         <div class="latest-card">
           <div class="latest-card-header">
             <div class="latest-card-title">
-              <span class="latest-icon">💪</span>
+              <i [class]="latestActivityIcon(latestActivity) + ' latest-icon'"></i>
               <span class="latest-name">{{ latestActivity.name }}</span>
             </div>
             <div class="latest-card-meta">

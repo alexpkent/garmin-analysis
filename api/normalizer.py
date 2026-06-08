@@ -15,6 +15,7 @@ _GARMIN_TYPE_MAP = {
     "ride": {"cycling", "road_biking", "mountain_biking", "indoor_cycling", "virtual_ride"},
     "swim": {"open_water_swimming", "pool_swimming"},
     "walk": {"walking", "hiking"},
+    "football": {"soccer", "football", "indoor_soccer", "indoor_football"},
 }
 
 

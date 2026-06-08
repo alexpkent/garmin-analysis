@@ -83,9 +83,10 @@
   border-radius: 10px;
 }
 
-.badge-run   { background: rgba($run-color,   0.15); color: $run-color;   border: 1px solid rgba($run-color,   0.3); }
-.badge-ride  { background: rgba($ride-color,  0.15); color: $ride-color;  border: 1px solid rgba($ride-color,  0.3); }
-.badge-other { background: rgba($other-color, 0.15); color: $other-color; border: 1px solid rgba($other-color, 0.3); }
+.badge-run      { background: rgba($run-color,      0.15); color: $run-color;      border: 1px solid rgba($run-color,      0.3); }
+.badge-ride     { background: rgba($ride-color,     0.15); color: $ride-color;     border: 1px solid rgba($ride-color,     0.3); }
+.badge-football { background: rgba($football-color, 0.15); color: $football-color; border: 1px solid rgba($football-color, 0.3); }
+.badge-other    { background: rgba($other-color,    0.15); color: $other-color;    border: 1px solid rgba($other-color,    0.3); }
 
 .badge-pill--zero {
   opacity: 0.25;
@@ -98,6 +99,11 @@
   gap: 10px;
   flex-wrap: wrap;
   padding: 0 0 16px;
+}
+
+/* ── Sticky controls wrapper (mobile only) ─────────────── */
+.sticky-controls {
+  /* desktop: plain flow */
 }
 
 .filter-search-wrap {
@@ -164,9 +170,10 @@
 
   &:hover { color: $muted; border-color: $muted; }
 
-  &.active-run   { color: $run-color;   border-color: $run-color;   background: rgba($run-color,   0.1); }
-  &.active-ride  { color: $ride-color;  border-color: $ride-color;  background: rgba($ride-color,  0.1); }
-  &.active-other { color: $other-color; border-color: $other-color; background: rgba($other-color, 0.1); }
+  &.active-run      { color: $run-color;      border-color: $run-color;      background: rgba($run-color,      0.1); }
+  &.active-ride     { color: $ride-color;     border-color: $ride-color;     background: rgba($ride-color,     0.1); }
+  &.active-football { color: $football-color; border-color: $football-color; background: rgba($football-color, 0.1); }
+  &.active-other    { color: $other-color;    border-color: $other-color;    background: rgba($other-color,    0.1); }
 }
 
 .filter-reset-btn {
@@ -543,6 +550,9 @@
   margin-top: 2px;
 }
 
+/* ── Mobile month strip (visible on mobile only) ────────── */
+.mobile-month-strip { display: none; }
+
 /* ── Mobile ─────────────────────────────────────────────── */
 @media (max-width: 575px) {
   .log-main { padding: 12px 10px; }
@@ -556,4 +566,60 @@
   .summary-primary { font-size: 1.05rem; }
   .summary-secondary { font-size: 0.75rem; }
   .badge-pill { font-size: 0.68rem; }
-}
+  /* Hide desktop sidebar, show mobile strip */
+  .log-nav { display: none; }
+
+  /* Stick the filter bar + month strip below the navbar */
+  .sticky-controls {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: $bg;
+    padding: 8px 0 0;
+    margin: 0 -10px;
+    padding-left: 10px;
+    padding-right: 10px;
+    border-bottom: 1px solid $card-border;
+  }
+
+  .filter-bar {
+    padding-bottom: 8px;
+  }
+
+  .mobile-month-strip {
+    display: flex;
+    overflow-x: auto;
+    gap: 6px;
+    padding: 6px 0 8px;
+    margin-bottom: 4px;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+  }
+
+  .mobile-month-chip {
+    flex: 0 0 auto;
+    background: $card-bg;
+    border: 1px solid $card-border;
+    border-radius: 999px;
+    color: $muted;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+
+    &:hover { color: #fff; }
+
+    &--active {
+      background: rgba($accent, 0.15);
+      border-color: $accent;
+      color: $accent;
+    }
+  }
+
+  .mobile-month-year {
+    font-weight: 400;
+    color: $dim;
+    font-size: 0.65rem;
+  }}

@@ -12,18 +12,7 @@
         Heatmap
       </span>
       <span class="navbar-text home mr-auto mt-1">
-        @if (isRun(lastVisibleActivity)) {
-          <i class="fas fa-running fa-lg ml-1 mr-1"
-          ></i>
-        }
-        @if (isRide(lastVisibleActivity)) {
-          <i class="fas fa-biking fa-lg ml-1 mr-1"
-          ></i>
-        }
-        @if (isOtherActivity(lastVisibleActivity)) {
-          <i class="fas fa-heartbeat fa-lg ml-1 mr-1"
-          ></i>
-        }
+        <i [class]="activityIcon(lastVisibleActivity) + ' fa-lg ml-1 mr-1'"></i>
         <span>&nbsp;{{getTimeSince(lastVisibleActivity.start_date)}}&nbsp;</span>
         <a [href]="'https://connect.garmin.com/app/activity/' + lastVisibleActivity.id"
            target="_blank" rel="noopener noreferrer"
@@ -32,13 +21,16 @@
         </a>
       </span>
       @if (loaded) {
-        <span class="navbar-text small summary pt-0 pb-0">
-          {{distanceToMiles(totalDistance) | number:'1.0-0'}} Miles<span class="text-warning"> | </span>
-          {{secondsToHours(totalSeconds) | number:'1.0-0'}} Hours<span class="text-warning"> | </span>
-          {{runCount}} Runs<span class="text-warning"> | </span>
-          {{rideCount}} Rides<span class="text-warning"> | </span>
-          {{otherActivityCount}} Others
-        </span>
+        <div class="hm-summary">
+          <span class="hm-summary-stat">{{distanceToMiles(totalDistance) | number:'1.0-0'}} <small>mi</small></span>
+          <span class="hm-summary-sep">·</span>
+          <span class="hm-summary-stat">{{secondsToHours(totalSeconds) | number:'1.0-0'}} <small>hr</small></span>
+          <span class="hm-summary-sep">·</span>
+          <span class="badge-pill badge-run" [class.badge-pill--zero]="runCount === 0">{{runCount}} <i class="fas fa-running"></i></span>
+          <span class="badge-pill badge-ride" [class.badge-pill--zero]="rideCount === 0">{{rideCount}} <i class="fas fa-biking"></i></span>
+          <span class="badge-pill badge-football" [class.badge-pill--zero]="footballCount === 0">{{footballCount}} <i class="fas fa-futbol"></i></span>
+          <span class="badge-pill badge-other" [class.badge-pill--zero]="otherActivityCount === 0">{{otherActivityCount}} <i class="fas fa-heartbeat"></i></span>
+        </div>
       }
     </nav>
   }

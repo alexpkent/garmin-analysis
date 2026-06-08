@@ -25,9 +25,11 @@ import {
 import {
   isRun,
   isRide,
+  isFootball,
   isOtherActivity,
   distanceToMiles,
   getDuration,
+  activityIcon,
   METERS_PER_MILE,
   SECONDS_PER_HOUR
 } from '../utils/activity.utils';
@@ -50,6 +52,7 @@ interface Summary {
   seconds: number;
   runCount: number;
   rideCount: number;
+  footballCount: number;
   otherCount: number;
 }
 
@@ -66,6 +69,7 @@ interface WeekData {
   isEmpty: boolean;
   runCount: number;
   rideCount: number;
+  footballCount: number;
   otherCount: number;
   days: DayData[];
 }
@@ -93,16 +97,17 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
 
   // ── Filter state ────────────────────────────────────────
   searchQuery = '';
-  filterTypes: Set<string> = new Set(['run', 'ride', 'other']);
+  filterTypes: Set<string> = new Set(['run', 'ride', 'football', 'other']);
 
   get filteredWeekGroups(): WeekData[] {
     const q = this.searchQuery.trim().toLowerCase();
     const showRun = this.filterTypes.has('run');
     const showRide = this.filterTypes.has('ride');
+    const showFootball = this.filterTypes.has('football');
     const showOther = this.filterTypes.has('other');
 
     // Fast path: no filtering active, avoid rebuilding the entire array tree.
-    if (!q && showRun && showRide && showOther) {
+    if (!q && showRun && showRide && showFootball && showOther) {
       return this.weekGroups;
     }
 
@@ -115,6 +120,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
             const typeMatch =
               (this.isRun(a) && showRun) ||
               (this.isRide(a) && showRide) ||
+              (this.isFootball(a) && showFootball) ||
               (this.isOtherActivity(a) && showOther);
             const nameMatch = !q || a.name.toLowerCase().includes(q);
             return typeMatch && nameMatch;
@@ -127,7 +133,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
   }
 
   get isFiltered(): boolean {
-    return this.searchQuery.trim().length > 0 || this.filterTypes.size < 3;
+    return this.searchQuery.trim().length > 0 || this.filterTypes.size < 4;
   }
 
   toggleTypeFilter(type: string): void {
@@ -144,7 +150,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
 
   clearFilters(): void {
     this.searchQuery = '';
-    this.filterTypes = new Set(['run', 'ride', 'other']);
+    this.filterTypes = new Set(['run', 'ride', 'football', 'other']);
   }
 
   private scrollObserver: IntersectionObserver | null = null;
@@ -157,6 +163,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
 
   readonly runColor = ACTIVITY_COLORS.run;
   readonly rideColor = ACTIVITY_COLORS.ride;
+  readonly footballColor = ACTIVITY_COLORS.football;
   readonly otherColor = ACTIVITY_COLORS.other;
 
   private readonly tanakaMaxHr: number = computeMaxHr();
@@ -293,6 +300,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
         isEmpty: weekActivities.length === 0,
         runCount: weekActivities.filter((a) => this.isRun(a)).length,
         rideCount: weekActivities.filter((a) => this.isRide(a)).length,
+        footballCount: weekActivities.filter((a) => this.isFootball(a)).length,
         otherCount: weekActivities.filter((a) => this.isOtherActivity(a))
           .length,
         days
@@ -331,6 +339,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
         ),
         runCount: filtered.filter((a) => this.isRun(a)).length,
         rideCount: filtered.filter((a) => this.isRide(a)).length,
+        footballCount: filtered.filter((a) => this.isFootball(a)).length,
         otherCount: filtered.filter((a) => this.isOtherActivity(a)).length
       };
     });
@@ -431,11 +440,19 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
 
   private scrollNavToActive() {
     setTimeout(() => {
+      // Desktop sidebar
       const activeBtn = document.querySelector(
         '.nav-month-active'
       ) as HTMLElement | null;
       if (activeBtn) {
         activeBtn.scrollIntoView({ block: 'nearest' });
+      }
+      // Mobile horizontal strip
+      const activeChip = document.querySelector(
+        '.mobile-month-chip--active'
+      ) as HTMLElement | null;
+      if (activeChip) {
+        activeChip.scrollIntoView({ inline: 'nearest', block: 'nearest' });
       }
     }, 0);
   }
@@ -545,17 +562,14 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     if (this.isRide(activity)) {
       return this.rideColor;
     }
+    if (this.isFootball(activity)) {
+      return this.footballColor;
+    }
     return this.otherColor;
   }
 
   activityIcon(activity: Activity): string {
-    if (this.isRun(activity)) {
-      return '🏃';
-    }
-    if (this.isRide(activity)) {
-      return '🚴';
-    }
-    return '🏋️';
+    return activityIcon(activity);
   }
 
   isRun(activity: Activity): boolean {
@@ -563,6 +577,9 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
   }
   isRide(activity: Activity): boolean {
     return isRide(activity);
+  }
+  isFootball(activity: Activity): boolean {
+    return isFootball(activity);
   }
   isOtherActivity(activity: Activity): boolean {
     return isOtherActivity(activity);
@@ -598,11 +615,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
   }
 
   latestActivityIcon(a: Activity): string {
-    const t = (a.activity_type ?? '').toLowerCase();
-    if (t.includes('run')) return 'fas fa-running';
-    if (t.includes('ride') || t.includes('cycl') || t.includes('bike'))
-      return 'fas fa-biking';
-    return 'fas fa-heartbeat';
+    return activityIcon(a);
   }
 
   garminUrl(activity: Activity): string {

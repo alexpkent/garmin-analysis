@@ -10,8 +10,13 @@ import { Activity, formatTrainingEffectLabel } from '../types/Activity';
 import { Polyline } from '../types/Polyline';
 import { ACTIVITY_COLORS } from '../constants/colors';
 import {
-  isRun, isRide, isOtherActivity,
-  distanceToMiles, getDuration
+  isRun,
+  isRide,
+  isFootball,
+  isOtherActivity,
+  distanceToMiles,
+  getDuration,
+  activityIcon
 } from '../utils/activity.utils';
 declare var L: any;
 
@@ -28,6 +33,7 @@ export class HeatmapComponent implements OnInit {
   syncError = false;
   runCount = 0;
   rideCount = 0;
+  footballCount = 0;
   otherActivityCount = 0;
   totalDistance = 0;
   totalSeconds = 0;
@@ -40,9 +46,11 @@ export class HeatmapComponent implements OnInit {
   ridePolylines: Polyline[] = [];
   runsLayer: any;
   ridesLayer: any;
+  footballLayer: any;
   otherActivitiesLayer: any;
   readonly rideColor = ACTIVITY_COLORS.ride;
   readonly runColor = ACTIVITY_COLORS.run;
+  readonly footballColor = ACTIVITY_COLORS.football;
   readonly otherActivityColor = ACTIVITY_COLORS.other;
   lastVisibleActivity: Activity;
   view = View;
@@ -82,6 +90,7 @@ export class HeatmapComponent implements OnInit {
     this.totalSeconds = 0;
     this.runCount = 0;
     this.rideCount = 0;
+    this.footballCount = 0;
     this.otherActivityCount = 0;
 
     const startOfToday = dayjs().startOf('day');
@@ -164,6 +173,8 @@ export class HeatmapComponent implements OnInit {
             this.runCount++;
           } else if (this.isRide(activity)) {
             this.rideCount++;
+          } else if (this.isFootball(activity)) {
+            this.footballCount++;
           } else {
             this.otherActivityCount++;
           }
@@ -174,6 +185,7 @@ export class HeatmapComponent implements OnInit {
   private showPolyline(polyline: Polyline) {
     const isRun = this.isRun(polyline.activity);
     const isRide = this.isRide(polyline.activity);
+    const isFootball = this.isFootball(polyline.activity);
 
     if (!polyline.visible) {
       if (isRun) {
@@ -182,8 +194,10 @@ export class HeatmapComponent implements OnInit {
       if (isRide) {
         this.ridesLayer.addLayer(polyline);
       }
-
-      if (!isRun && !isRide) {
+      if (isFootball) {
+        this.footballLayer.addLayer(polyline);
+      }
+      if (!isRun && !isRide && !isFootball) {
         this.otherActivitiesLayer.addLayer(polyline);
       }
 
@@ -197,12 +211,13 @@ export class HeatmapComponent implements OnInit {
     if (isRun) {
       this.runCount += 1;
     }
-
     if (isRide) {
       this.rideCount += 1;
     }
-
-    if (!isRun && !isRide) {
+    if (isFootball) {
+      this.footballCount += 1;
+    }
+    if (!isRun && !isRide && !isFootball) {
       this.otherActivityCount += 1;
     }
   }
@@ -211,6 +226,7 @@ export class HeatmapComponent implements OnInit {
     if (polyline.visible) {
       const isRun = this.isRun(polyline.activity);
       const isRide = this.isRide(polyline.activity);
+      const isFootball = this.isFootball(polyline.activity);
 
       polyline.visible = false;
       if (isRun) {
@@ -219,7 +235,10 @@ export class HeatmapComponent implements OnInit {
       if (isRide) {
         this.ridesLayer.removeLayer(polyline);
       }
-      if (!isRun && !isRide) {
+      if (isFootball) {
+        this.footballLayer.removeLayer(polyline);
+      }
+      if (!isRun && !isRide && !isFootball) {
         this.otherActivitiesLayer.removeLayer(polyline);
       }
     }
@@ -279,6 +298,9 @@ export class HeatmapComponent implements OnInit {
     this.ridesLayer = L.layerGroup(
       this.polylines.filter((p) => this.isRide(p.activity))
     );
+    this.footballLayer = L.layerGroup(
+      this.polylines.filter((p) => this.isFootball(p.activity))
+    );
     this.otherActivitiesLayer = L.layerGroup(
       this.polylines.filter((p) => this.isOtherActivity(p.activity))
     );
@@ -291,6 +313,7 @@ export class HeatmapComponent implements OnInit {
         darkMap,
         this.runsLayer,
         this.ridesLayer,
+        this.footballLayer,
         this.otherActivitiesLayer
       ],
       preferCanvas: true
@@ -306,6 +329,7 @@ export class HeatmapComponent implements OnInit {
     const overlays = {
       Runs: this.runsLayer,
       Rides: this.ridesLayer,
+      Football: this.footballLayer,
       Others: this.otherActivitiesLayer
     };
 
@@ -343,6 +367,8 @@ export class HeatmapComponent implements OnInit {
         color = this.runColor;
       } else if (this.isRide(stream)) {
         color = this.rideColor;
+      } else if (this.isFootball(stream)) {
+        color = this.footballColor;
       }
 
       const polyline = L.polyline(coordinates, {
@@ -366,19 +392,31 @@ export class HeatmapComponent implements OnInit {
     });
   }
 
-  isRun(activity: Activity): boolean { return isRun(activity); }
-  isRide(activity: Activity): boolean { return isRide(activity); }
-  isOtherActivity(activity: Activity): boolean { return isOtherActivity(activity); }
+  isRun(activity: Activity): boolean {
+    return isRun(activity);
+  }
+  isRide(activity: Activity): boolean {
+    return isRide(activity);
+  }
+  isFootball(activity: Activity): boolean {
+    return isFootball(activity);
+  }
+  isOtherActivity(activity: Activity): boolean {
+    return isOtherActivity(activity);
+  }
+  activityIcon(activity: Activity): string {
+    return activityIcon(activity);
+  }
 
   private createPolylinePopup(activity: Activity) {
-    let iconClass = 'fas fa-heartbeat';
+    const iconClass = activityIcon(activity);
     let typeClass = 'hm-popup__header--other';
     if (this.isRun(activity)) {
-      iconClass = 'fas fa-running';
       typeClass = 'hm-popup__header--run';
     } else if (this.isRide(activity)) {
-      iconClass = 'fas fa-biking';
       typeClass = 'hm-popup__header--ride';
+    } else if (this.isFootball(activity)) {
+      typeClass = 'hm-popup__header--football';
     }
 
     const durationSeconds = activity.duration ?? activity.moving_time_seconds;
@@ -467,7 +505,9 @@ export class HeatmapComponent implements OnInit {
     });
   }
 
-  distanceToMiles(meters: number): number { return distanceToMiles(meters); }
+  distanceToMiles(meters: number): number {
+    return distanceToMiles(meters);
+  }
 
   secondsToHours(time: number) {
     return time / 60 / 60;
@@ -477,5 +517,7 @@ export class HeatmapComponent implements OnInit {
     return dayjs(startDate).fromNow();
   }
 
-  private getDuration(durationInSeconds: number): string { return getDuration(durationInSeconds); }
+  private getDuration(durationInSeconds: number): string {
+    return getDuration(durationInSeconds);
+  }
 }
