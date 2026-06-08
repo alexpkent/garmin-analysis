@@ -33,8 +33,10 @@ export function getDuration(seconds: number): string {
 export function activityIcon(activity: Activity): string {
   const t = (activity.activity_type ?? '').toLowerCase();
   if (t.includes('run')) return 'fas fa-running';
-  if (t.includes('cycl') || t.includes('ride') || t.includes('bike')) return 'fas fa-bicycle';
+  if (t.includes('cycl') || t.includes('ride') || t.includes('bike'))
+    return 'fas fa-bicycle';
   if (t.includes('swim')) return 'fas fa-swimmer';
+  if (t.includes('football') || t.includes('soccer')) return 'fas fa-futbol';
   return 'fas fa-dumbbell';
 }
 
@@ -46,11 +48,11 @@ export function activityColor(activity: Activity): string {
 
 export function formatActivityType(type: string): string {
   const labels: Record<string, string> = {
-    run:   'Run',
-    ride:  'Ride',
-    swim:  'Swim',
-    walk:  'Walk',
-    other: 'Other',
+    run: 'Run',
+    ride: 'Ride',
+    swim: 'Swim',
+    walk: 'Walk',
+    other: 'Other'
   };
   return labels[type] ?? type.charAt(0).toUpperCase() + type.slice(1);
 }
