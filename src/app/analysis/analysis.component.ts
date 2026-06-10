@@ -61,7 +61,7 @@ interface AiAnalysisExport {
 const CHATGPT_URL_LIMIT = 7000;
 const CHATGPT_ANALYSIS_DAYS = 30;
 const GARMIN_ANALYSIS_PROMPT =
-  'Analyse this Garmin data and validate the assessment statements for correctness';
+  'Concise review: first validate the assessment statements against the Garmin activity and health data, noting what is correct, misleading, or unsupported. Then add any extra activity or health insights not covered by the assessments.';
 
 @Component({
   selector: 'app-analysis',
@@ -291,7 +291,7 @@ export class AnalysisComponent implements OnInit {
 
     const analysisWindow = startDate
       ? {
-          days,
+          days: days!,
           start_date: startDate.format('YYYY-MM-DD'),
           end_date: today.format('YYYY-MM-DD')
         }
@@ -713,28 +713,29 @@ export class AnalysisComponent implements OnInit {
       });
     }
 
-    // 2. Weekly load trend (last 7d vs prior 7d)
+    // 2. Weekly load trend (last 7d vs recent baseline)
     const last7 = this.activities
       .filter((a) => dayjs(a.start_date).isAfter(now.subtract(7, 'days')))
       .reduce((sum, a) => sum + (a.activityTrainingLoad ?? 0), 0);
-    const prior7 = this.activities
-      .filter((a) => {
-        const d = dayjs(a.start_date);
-        return (
-          d.isAfter(now.subtract(14, 'days')) &&
-          d.isSameOrBefore(now.subtract(7, 'days'))
-        );
-      })
-      .reduce((sum, a) => sum + (a.activityTrainingLoad ?? 0), 0);
-    if (last7 > 0 || prior7 > 0) {
-      if (prior7 > 0) {
-        const pct = Math.round(((last7 - prior7) / prior7) * 100);
+    const baseline7 =
+      this.activities
+        .filter((a) => {
+          const d = dayjs(a.start_date);
+          return (
+            d.isAfter(now.subtract(28, 'days')) &&
+            d.isSameOrBefore(now.subtract(7, 'days'))
+          );
+        })
+        .reduce((sum, a) => sum + (a.activityTrainingLoad ?? 0), 0) / 3;
+    if (last7 > 0 || baseline7 > 0) {
+      if (baseline7 > 0) {
+        const pct = Math.round(((last7 - baseline7) / baseline7) * 100);
         const sign = pct > 0 ? '+' : '';
         if (pct > 25) {
           insights.push({
             icon: 'fas fa-arrow-up',
             label: 'Load Spike',
-            text: `Load jumped ${sign}${pct}% this week vs last — watch for overreaching.`,
+            text: `7-day load is ${sign}${pct}% above recent baseline — watch for overreaching.`,
             color: '#e63419',
             level: 'alert'
           });
@@ -742,7 +743,7 @@ export class AnalysisComponent implements OnInit {
           insights.push({
             icon: 'fas fa-arrow-up',
             label: 'Load Rising',
-            text: `Load up ${pct}% this week — steady progression.`,
+            text: `7-day load is ${pct}% above recent baseline — steady progression.`,
             color: UI_COLORS.accent,
             level: 'info'
           });
@@ -750,7 +751,7 @@ export class AnalysisComponent implements OnInit {
           insights.push({
             icon: 'fas fa-minus',
             label: 'Load Stable',
-            text: `Load consistent week-on-week (${sign}${pct}%).`,
+            text: `7-day load is close to recent baseline (${sign}${pct}%).`,
             color: '#4caf50',
             level: 'good'
           });
@@ -758,7 +759,7 @@ export class AnalysisComponent implements OnInit {
           insights.push({
             icon: 'fas fa-arrow-down',
             label: 'Load Easing',
-            text: `Load down ${Math.abs(pct)}% this week — recovery or taper.`,
+            text: `7-day load is ${Math.abs(pct)}% below recent baseline — recovery or taper.`,
             color: '#42a5f5',
             level: 'info'
           });
@@ -766,7 +767,7 @@ export class AnalysisComponent implements OnInit {
           insights.push({
             icon: 'fas fa-arrow-down',
             label: 'Low Load',
-            text: `Load dropped ${Math.abs(pct)}% this week — significant rest period.`,
+            text: `7-day load is ${Math.abs(pct)}% below recent baseline — significant rest period.`,
             color: '#adb5bd',
             level: 'info'
           });
