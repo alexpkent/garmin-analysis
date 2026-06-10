@@ -50,6 +50,7 @@ export class AnalysisComponent implements OnInit {
   latestActivity: Activity | null = null;
   healthSnapshots: HealthSnapshot[] = [];
   latestHealth: HealthSnapshot | null = null;
+  todayReadinessHealth: HealthSnapshot | null = null;
 
   // Period navigation
   periodSize: 'week' | 'month' | 'quarter' | 'year' = 'year';
@@ -236,6 +237,11 @@ export class AnalysisComponent implements OnInit {
 
     this.activityService.getHealth().then((snapshots) => {
       this.healthSnapshots = snapshots;
+      const today = dayjs().format('YYYY-MM-DD');
+      this.todayReadinessHealth =
+        snapshots.find(
+          (s) => s.date === today && s.training_readiness?.score != null
+        ) ?? null;
       // Prefer the most recent entry that has at least some non-null data so
       // that an all-null placeholder for today doesn't blank out the display.
       const withData = snapshots.filter(
@@ -503,9 +509,14 @@ export class AnalysisComponent implements OnInit {
     const insights: TrainingInsight[] = [];
     const now = dayjs();
 
+    const highRiskInsight = this.computeHighRiskInsight(now);
+    if (highRiskInsight) {
+      insights.push(highRiskInsight);
+    }
+
     // 1. Training Readiness
-    if (this.latestHealth?.training_readiness?.score != null) {
-      const score = this.latestHealth.training_readiness.score;
+    if (this.todayReadinessHealth?.training_readiness?.score != null) {
+      const score = this.todayReadinessHealth.training_readiness.score;
       const cat = this.readinessCategory(score);
       const feedbackMap: Record<string, string> = {
         OPTIMAL: 'Your body is primed — a great day to push hard.',
@@ -514,7 +525,8 @@ export class AnalysisComponent implements OnInit {
         LOW: 'Readiness is low — consider an easy or rest day.',
         VERY_LOW: 'Very low readiness — prioritise rest and recovery.'
       };
-      const feedback = this.latestHealth.training_readiness.feedback ?? '';
+      const feedback =
+        this.todayReadinessHealth.training_readiness.feedback ?? '';
       const text =
         feedbackMap[feedback] ??
         `Score ${score} — ${feedback.replace(/_/g, ' ').toLowerCase()}.`;
@@ -799,5 +811,96 @@ export class AnalysisComponent implements OnInit {
     }
 
     return insights;
+  }
+
+  private computeHighRiskInsight(now: Dayjs): TrainingInsight | null {
+    const last7 = this.activities.filter((a) =>
+      dayjs(a.start_date).isAfter(now.subtract(7, 'days'))
+    );
+    const prior21 = this.activities.filter((a) => {
+      const d = dayjs(a.start_date);
+      return (
+        d.isAfter(now.subtract(28, 'days')) &&
+        d.isSameOrBefore(now.subtract(7, 'days'))
+      );
+    });
+
+    const last7Load = last7.reduce(
+      (sum, a) => sum + (a.activityTrainingLoad ?? 0),
+      0
+    );
+    const baseline7Load =
+      prior21.reduce((sum, a) => sum + (a.activityTrainingLoad ?? 0), 0) / 3;
+    const acuteLoadSpike =
+      baseline7Load > 0 &&
+      last7Load > baseline7Load * 1.3 &&
+      last7Load - baseline7Load > 100;
+
+    const highStrainSessions = last7.filter((a) =>
+      this.isHighStrainActivity(a)
+    );
+    const hardDays = new Set(
+      highStrainSessions.map((a) => dayjs(a.start_date).format('YYYY-MM-DD'))
+    );
+    const activeDays = new Set(
+      last7.map((a) => dayjs(a.start_date).format('YYYY-MM-DD'))
+    );
+    const hardBackToBack = Array.from(hardDays).some((date) =>
+      hardDays.has(dayjs(date).subtract(1, 'day').format('YYYY-MM-DD'))
+    );
+    const lowRest = activeDays.size >= 6;
+    const lowReadiness =
+      this.todayReadinessHealth?.training_readiness?.score != null &&
+      this.todayReadinessHealth.training_readiness.score < 50;
+    const overreachingStatus =
+      this.latestHealth?.training_status?.replace(/_\d+$/, '') ===
+      'OVERREACHING';
+
+    const factors: string[] = [];
+    if (acuteLoadSpike) {
+      factors.push(
+        `7-day load ${Math.round(last7Load)} vs ${Math.round(baseline7Load)} baseline`
+      );
+    }
+    if (highStrainSessions.length >= 3) {
+      factors.push(`${highStrainSessions.length} hard sessions`);
+    }
+    if (hardBackToBack) {
+      factors.push('back-to-back hard days');
+    }
+    if (lowRest) {
+      factors.push(`${activeDays.size}/7 active days`);
+    }
+    if (lowReadiness) {
+      factors.push('readiness < 50');
+    }
+    if (overreachingStatus) {
+      factors.push('overreaching status');
+    }
+
+    if (factors.length < 2) {
+      return null;
+    }
+
+    const isHighRisk =
+      factors.length >= 3 || acuteLoadSpike || overreachingStatus;
+    const factorText = factors.slice(0, 3).join('; ');
+    return {
+      icon: 'fas fa-heartbeat',
+      label: isHighRisk ? 'High Risk' : 'Elevated Risk',
+      text: `${factorText}. Keep the next session easy.`,
+      color: isHighRisk ? '#e63419' : '#ff8c00',
+      level: isHighRisk ? 'alert' : 'warn'
+    };
+  }
+
+  private isHighStrainActivity(activity: Activity): boolean {
+    const avgHr = activity.averageHR ?? 0;
+    return (
+      (activity.activityTrainingLoad ?? 0) >= 200 ||
+      (activity.trainingEffect ?? 0) >= 4 ||
+      (activity.anaerobicTrainingEffect ?? 0) >= 3 ||
+      avgHr >= this.tanakaMaxHr * 0.85
+    );
   }
 }

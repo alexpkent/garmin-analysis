@@ -3,6 +3,13 @@
 @include loading-overlay;
 
 /* ── Export button ──────────────────────────────────────── */
+.export-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
 .export-icon-btn {
   background: none;
   border: none;
@@ -12,7 +19,6 @@
   padding: 4px 8px;
   border-radius: 4px;
   transition: color 0.15s;
-  margin-left: auto;
 
   &:hover { color: $link-hover; }
 }

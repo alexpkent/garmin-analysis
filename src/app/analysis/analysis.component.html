@@ -176,14 +176,14 @@
               </div>
             }
 
-            @if (latestHealth.training_readiness != null && latestHealth.training_readiness.score != null) {
+            @if (todayReadinessHealth?.training_readiness?.score != null) {
               <div class="latest-stat">
                 <span class="latest-stat-label">Readiness</span>
-                <span class="latest-stat-value" [style.color]="readinessCategory(latestHealth.training_readiness.score).color">
-                  {{ latestHealth.training_readiness.score }}
+                <span class="latest-stat-value" [style.color]="readinessCategory(todayReadinessHealth!.training_readiness!.score).color">
+                  {{ todayReadinessHealth!.training_readiness!.score }}
                 </span>
-                <span class="latest-stat-band" [style.color]="readinessCategory(latestHealth.training_readiness.score).color">
-                  {{ readinessCategory(latestHealth.training_readiness.score).label }}
+                <span class="latest-stat-band" [style.color]="readinessCategory(todayReadinessHealth!.training_readiness!.score).color">
+                  {{ readinessCategory(todayReadinessHealth!.training_readiness!.score).label }}
                 </span>
               </div>
             }
