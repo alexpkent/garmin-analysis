@@ -181,18 +181,6 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     private zone: NgZone
   ) {}
 
-  async exportActivities(): Promise<void> {
-    const { activities } = await this.activityService.getActivities();
-    const json = JSON.stringify(activities, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `activities-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   ngOnInit(): void {
     this.load();
   }

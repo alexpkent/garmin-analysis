@@ -2,21 +2,6 @@
 
 @include loading-overlay;
 
-/* ── Export button ──────────────────────────────────────── */
-.export-icon-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: $link;
-  font-size: 1.1rem;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: color 0.15s;
-  margin-left: auto;
-
-  &:hover { color: $link-hover; }
-}
-
 /* ── Page layout ────────────────────────────────────────── */
 .log-layout {
   display: flex;
