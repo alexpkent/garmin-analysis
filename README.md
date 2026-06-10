@@ -5,11 +5,13 @@ An Angular SPA backed by Python Azure Functions that pulls training and health d
 ## Pages
 
 ### Analysis
+
 Training assessment, health snapshot, VO2 max categories, fitness and trend charts.
 
 ![site image](screenshots/analysis-graphs.png)
 
 ### Heatmap
+
 All activities overlaid on a [Leaflet](https://leafletjs.com/) map. Routes are rendered darker the more times they have been covered. Cluster markers show the count of activities starting in each area and update automatically with zoom level. Supports multiple base map providers, activity-type filters, time filters, and detail popups.
 
 ![site image](screenshots/analysis-heatmaps.png)
@@ -19,12 +21,16 @@ All activities overlaid on a [Leaflet](https://leafletjs.com/) map. Routes are r
 ![site image](screenshots/markers.png)
 
 ### Training Log
+
 Weekly activity breakdown with search/filter by name and activity type, and a detail popup for each activity.
 
 ![site image](screenshots/training-log.png)
 
 ### Personal Records
-Best times and longest efforts fetched from Garmin Connect, grouped by sport (Running, Cycling, Swimming). Includes race time predictions based on current fitness.
+
+- Best times and longest efforts fetched from Garmin Connect, grouped by sport (Running, Cycling, Swimming).
+- Race time predictions based on current fitness.
+- Table of activities per country.
 
 # Azure Setup
 
@@ -39,6 +45,7 @@ activities/
     tokens.json       <- created on first Garmin login
     health.json       <- created on first sync
     records.json      <- created on first sync
+    sync-status.json  <- created on first sync
 ```
 
 `garmin/activities.json` — all activities in a unified normalised schema.
@@ -47,26 +54,14 @@ activities/
 
 `garmin/records.json` — personal records and race predictions. Refreshed once per day during the activities sync.
 
+`sync-status.json` - last Garmin sync time.
+
 ## Static Web App
 
 Create a Static Web App and sign in to GitHub selecting the repo. Azure will generate the workflow file for the deployment, which:
 
 - On PR creation: deploys to a staging environment for preview.
 - On merge to master: deletes the staging deployment, builds master, and deploys to production.
-
-## CDN (Optional)
-
-Static Web Apps by default allocate a unique URL. An easy way to provide a custom URL is to put a CDN in front of the static site.
-
-- Create Azure CDN (Standard Microsoft tier)
-- Create Endpoint -> Origin Type: Custom Origin -> Origin Hostname: URL of the Static Web App (without `https://`)
-- Disable HTTP
-
-To prevent cached responses hiding new activities:
-
-- Go to Rules Engine -> Add Rule
-- `If Request URL` set to `Any`
-- Then `Cache Expiration` set to `Bypass cache`
 
 # Code Settings
 
@@ -76,32 +71,38 @@ Angular environment settings in `src/environments/environment.ts`:
 | ------------ | -------------------------------------------------------------------- |
 | `mapCenter`  | `[lat, lng]` to centre the map on load                               |
 | `userDob`    | User's date of birth (`YYYY-MM-DD`) for heart rate zone calculations |
-| `userGender` | `'male'` or `'female'` for VO2 max category bands                   |
+| `userGender` | `'male'` or `'female'` for VO2 max category bands                    |
 
 # Deployment Settings
 
 In the Static Web App configuration (Application settings) set the following environment variables:
 
-| Setting                  | Description                                 |
-| ------------------------ | ------------------------------------------- |
-| `BLOB_CONNECTION_STRING` | Azure Storage connection string             |
-| `BLOB_CONTAINER`         | Blob container name (default: `activities`) |
-| `GARMIN_EMAIL`           | Garmin Connect account email                |
-| `GARMIN_PASSWORD`        | Garmin Connect account password             |
+| Setting                        | Description                                                  |
+| ------------------------------ | ------------------------------------------------------------ |
+| `BLOB_CONNECTION_STRING`       | Azure Storage connection string                              |
+| `BLOB_CONTAINER`               | Blob container name (default: `activities`)                  |
+| `GARMIN_EMAIL`                 | Garmin Connect account email                                 |
+| `GARMIN_PASSWORD`              | Garmin Connect account password                              |
+| `GARMIN_SYNC_INTERVAL_MINUTES` | Minimum minutes between Garmin sync attempts (default: `15`) |
 
 # How It Works
 
 ## Activities — `GET /api/activities`
 
-1. Loads saved Garmin OAuth tokens from `garmin/tokens.json` (or performs a fresh login if none exist).
-2. Fetches new Garmin activities since the last sync and retrieves GPS route data for each, using [python-garminconnect](https://github.com/cyberjunky/python-garminconnect).
-3. Reads all activities from `garmin/activities.json`, merges new ones, and returns them sorted newest-first.
-4. If Garmin Connect is unreachable the response still returns cached activities, with an `X-Sync-Error: true` header so the UI can show an error banner.
-5. On every successful Garmin connection, also captures today's health snapshot and personal records (if not already done today).
+1. Reads `garmin/sync-status.json`; if the last successful sync is newer than `GARMIN_SYNC_INTERVAL_MINUTES` (default `15`), returns cached activities without calling Garmin.
+2. Otherwise loads saved Garmin OAuth tokens from `garmin/tokens.json` (or performs a fresh login if none exist).
+3. Fetches new Garmin activities since the last sync and retrieves GPS route data for each, using [python-garminconnect](https://github.com/cyberjunky/python-garminconnect).
+4. Reads all activities from `garmin/activities.json`, merges new ones, updates `garmin/sync-status.json`, and returns them sorted newest-first.
+5. If Garmin Connect is unreachable the response still returns cached activities, with an `X-Sync-Error: true` header so the UI can show an error banner.
+6. On every successful Garmin connection, also captures today's health snapshot and personal records (if not already done today).
 
 ## Health Data — `GET /api/health`
 
-Returns the full contents of `garmin/health.json` as a JSON array, newest entries first. Each entry contains:
+Returns the full contents of `garmin/health.json` as a JSON array, newest entries first.
+
+This endpoint only reads blob storage; health data is refreshed as a side effect of a successful `GET /api/activities` Garmin sync.
+
+Each entry contains:
 
 | Field             | Description                                                                        |
 | ----------------- | ---------------------------------------------------------------------------------- |
@@ -113,7 +114,11 @@ Returns the full contents of `garmin/health.json` as a JSON array, newest entrie
 
 ## Personal Records — `GET /api/records`
 
-Returns the contents of `garmin/records.json`. Written once per day during the activities sync. Contains:
+Returns the contents of `garmin/records.json`.
+
+This endpoint only reads blob storage; records are refreshed once per day as a side effect of a successful `GET /api/activities` Garmin sync.
+
+Contains:
 
 | Field              | Description                                                   |
 | ------------------ | ------------------------------------------------------------- |
@@ -123,16 +128,16 @@ Returns the contents of `garmin/records.json`. Written once per day during the a
 
 Each record object:
 
-| Field           | Description                                              |
-| --------------- | -------------------------------------------------------- |
-| `type_id`       | Garmin PR type identifier                                |
+| Field           | Description                                             |
+| --------------- | ------------------------------------------------------- |
+| `type_id`       | Garmin PR type identifier                               |
 | `label`         | Human-readable label (e.g. `Fastest 5K`, `Longest Run`) |
-| `activity_type` | `running`, `cycling`, or `lap_swimming`                  |
-| `activity_name` | Name of the activity that set the record                 |
-| `value`         | Seconds (timed records) or metres (distance records)     |
-| `unit`          | `time` or `distance`                                     |
-| `activity_id`   | Garmin Connect activity ID (for deep-link)               |
-| `date`          | ISO date the record was set                              |
+| `activity_type` | `running`, `cycling`, or `lap_swimming`                 |
+| `activity_name` | Name of the activity that set the record                |
+| `value`         | Seconds (timed records) or metres (distance records)    |
+| `unit`          | `time` or `distance`                                    |
+| `activity_id`   | Garmin Connect activity ID (for deep-link)              |
+| `date`          | ISO date the record was set                             |
 
 # Local Development
 
@@ -156,7 +161,8 @@ This file is gitignored. It holds all environment variables for local runs:
     "BLOB_CONNECTION_STRING": "<your Azure Storage connection string>",
     "BLOB_CONTAINER": "activities",
     "GARMIN_EMAIL": "<your Garmin Connect email>",
-    "GARMIN_PASSWORD": "<your Garmin Connect password>"
+    "GARMIN_PASSWORD": "<your Garmin Connect password>",
+    "GARMIN_SYNC_INTERVAL_MINUTES": "15"
   }
 }
 ```

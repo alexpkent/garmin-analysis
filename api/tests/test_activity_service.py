@@ -1,6 +1,6 @@
 import os
 import sys
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -16,6 +16,12 @@ from activity_service import ActivityService  # noqa: E402
 # ---------------------------------------------------------------------------
 
 _GARMIN_BLOB = "garmin/activities.json"
+_SYNC_STATUS_BLOB = "garmin/sync-status.json"
+
+
+def _sync_status(minutes_ago: int) -> dict:
+    sync_time = datetime.now(timezone.utc) - timedelta(minutes=minutes_ago)
+    return {"last_successful_sync": sync_time.isoformat().replace("+00:00", "Z")}
 
 
 def _stored_activity(
@@ -51,15 +57,22 @@ def _garmin_raw_activity(activity_id: int, date_str: str) -> dict:
     }
 
 
-def _make_service(garmin_blob=None):
+def _make_service(garmin_blob=None, sync_status=None):
     mock_blob = MagicMock()
     mock_garmin = MagicMock()
 
-    mock_blob.read_json.side_effect = lambda name: garmin_blob if name == _GARMIN_BLOB else None
+    mock_blob.read_json.side_effect = lambda name: (
+        garmin_blob if name == _GARMIN_BLOB else sync_status if name == _SYNC_STATUS_BLOB else None
+    )
+    mock_garmin.fetch_activities.return_value = []
     mock_garmin.get_activity_polyline.return_value = None
 
     service = ActivityService(mock_blob, mock_garmin)
     return service, mock_blob, mock_garmin
+
+
+def _write_calls(mock_blob, blob_name: str) -> list:
+    return [c for c in mock_blob.write_json.call_args_list if c[0][0] == blob_name]
 
 
 # ---------------------------------------------------------------------------
@@ -71,16 +84,32 @@ def test_first_sync_fetches_all_activities():
     """No prior garmin blob → get_activities called with date(2000,1,1); activities stored."""
     new_act = _garmin_raw_activity(1001, "2024-02-01")
     service, mock_blob, mock_garmin = _make_service(garmin_blob=None)
-    mock_garmin.get_activities.return_value = [new_act]
+    mock_garmin.fetch_activities.return_value = [new_act]
     mock_garmin.get_activity_polyline.return_value = "polyline1"
 
     activities, sync_failed = service.get_activities()
 
-    mock_garmin.get_activities.assert_called_once_with(date(2000, 1, 1))
-    mock_blob.write_json.assert_called_once()
-    written_blob_name = mock_blob.write_json.call_args[0][0]
-    assert written_blob_name == _GARMIN_BLOB
+    mock_garmin.fetch_activities.assert_called_once_with(date(2000, 1, 1))
+    written_activity_calls = [c for c in mock_blob.write_json.call_args_list if c[0][0] == _GARMIN_BLOB]
+    assert len(written_activity_calls) == 1
     assert sync_failed is False
+
+
+def test_fresh_sync_status_returns_cached_data_without_garmin_call():
+    """Recent successful sync → return cached blob only and do not call Garmin."""
+    garmin_blob = [_stored_activity(1001, "2024-01-10", encoded_route="p1")]
+    service, mock_blob, mock_garmin = _make_service(
+        garmin_blob=garmin_blob,
+        sync_status=_sync_status(minutes_ago=5),
+    )
+
+    activities, sync_failed = service.get_activities()
+
+    assert activities == garmin_blob
+    assert sync_failed is False
+    mock_garmin.ensure_logged_in.assert_not_called()
+    mock_garmin.fetch_activities.assert_not_called()
+    mock_blob.write_json.assert_not_called()
 
 
 def test_incremental_sync_uses_last_date():
@@ -90,12 +119,13 @@ def test_incremental_sync_uses_last_date():
         _stored_activity(1002, "2024-01-05", encoded_route="p2"),
     ]
     service, mock_blob, mock_garmin = _make_service(garmin_blob=garmin_blob)
-    mock_garmin.get_activities.return_value = []
+    mock_garmin.fetch_activities.return_value = []
 
     service.get_activities()
 
-    mock_garmin.get_activities.assert_called_once_with(date(2024, 1, 10))
-    mock_blob.write_json.assert_not_called()
+    mock_garmin.fetch_activities.assert_called_once_with(date(2024, 1, 10))
+    status_writes = _write_calls(mock_blob, _SYNC_STATUS_BLOB)
+    assert len(status_writes) == 1
 
 
 def test_no_duplicates_on_incremental_sync():
@@ -104,7 +134,7 @@ def test_no_duplicates_on_incremental_sync():
     garmin_blob = [existing]
     service, mock_blob, mock_garmin = _make_service(garmin_blob=garmin_blob)
     # Garmin returns the same activity again
-    mock_garmin.get_activities.return_value = [_garmin_raw_activity(1001, "2024-01-10")]
+    mock_garmin.fetch_activities.return_value = [_garmin_raw_activity(1001, "2024-01-10")]
     mock_garmin.get_activity_polyline.return_value = "p1"
 
     activities, _ = service.get_activities()
@@ -118,13 +148,13 @@ def test_polyline_fetched_for_new_activities():
     """get_activity_polyline called for each new activity; encoded_route stored."""
     new_act = _garmin_raw_activity(1001, "2024-02-01")
     service, mock_blob, mock_garmin = _make_service()
-    mock_garmin.get_activities.return_value = [new_act]
+    mock_garmin.fetch_activities.return_value = [new_act]
     mock_garmin.get_activity_polyline.return_value = "encoded_polyline_123"
 
     activities, _ = service.get_activities()
 
     mock_garmin.get_activity_polyline.assert_called_once_with(1001)
-    written_data = mock_blob.write_json.call_args[0][1]
+    written_data = _write_calls(mock_blob, _GARMIN_BLOB)[0][0][1]
     assert written_data[0]["encoded_route"] == "encoded_polyline_123"
 
 
@@ -132,13 +162,14 @@ def test_garmin_unreachable_serves_cached_data():
     """GarminConnectConnectionError raised → sync_failed=True; cached data still returned."""
     garmin_blob = [_stored_activity(1001, "2024-01-10", encoded_route="p1")]
     service, mock_blob, mock_garmin = _make_service(garmin_blob=garmin_blob)
-    mock_garmin.get_activities.side_effect = GarminConnectConnectionError("unreachable")
+    mock_garmin.fetch_activities.side_effect = GarminConnectConnectionError("unreachable")
 
     activities, sync_failed = service.get_activities()
 
     assert sync_failed is True
     assert any(a["id"] == "1001" and a["source"] == "garmin" for a in activities)
-    mock_blob.write_json.assert_not_called()
+    status_writes = _write_calls(mock_blob, _SYNC_STATUS_BLOB)
+    assert len(status_writes) == 1
 
 
 def test_strava_source_activities_preserved_in_stored_blob():
@@ -148,7 +179,7 @@ def test_strava_source_activities_preserved_in_stored_blob():
         _stored_activity(9001, "2024-01-09", encoded_route="abc", source="strava"),
     ]
     service, mock_blob, mock_garmin = _make_service(garmin_blob=garmin_blob)
-    mock_garmin.get_activities.return_value = []
+    mock_garmin.fetch_activities.return_value = []
 
     activities, _ = service.get_activities()
 
@@ -167,7 +198,7 @@ def test_result_sorted_descending_by_date():
         _stored_activity(9001, "2024-01-10", encoded_route="abc", source="strava"),
     ]
     service, mock_blob, mock_garmin = _make_service(garmin_blob=garmin_blob)
-    mock_garmin.get_activities.return_value = []
+    mock_garmin.fetch_activities.return_value = []
 
     activities, _ = service.get_activities()
 
@@ -179,7 +210,7 @@ def test_incremental_sync_retains_existing_and_adds_new():
     """Existing activity in blob is retained when a different new activity is added."""
     garmin_blob = [_stored_activity(100, "2024-01-10", encoded_route="p1")]
     service, mock_blob, mock_garmin = _make_service(garmin_blob=garmin_blob)
-    mock_garmin.get_activities.return_value = [_garmin_raw_activity(200, "2024-01-15")]
+    mock_garmin.fetch_activities.return_value = [_garmin_raw_activity(200, "2024-01-15")]
     mock_garmin.get_activity_polyline.return_value = "polyline_new"
 
     activities, sync_failed = service.get_activities()
@@ -194,10 +225,11 @@ def test_incremental_sync_retains_existing_and_adds_new():
 def test_garmin_unreachable_no_prior_data_returns_empty_with_error():
     """AC3: Garmin unreachable with no prior data → empty list and sync_failed=True."""
     service, mock_blob, mock_garmin = _make_service(garmin_blob=None)
-    mock_garmin.get_activities.side_effect = GarminConnectConnectionError("unreachable")
+    mock_garmin.fetch_activities.side_effect = GarminConnectConnectionError("unreachable")
 
     activities, sync_failed = service.get_activities()
 
     assert activities == []
     assert sync_failed is True
-    mock_blob.write_json.assert_not_called()
+    status_writes = _write_calls(mock_blob, _SYNC_STATUS_BLOB)
+    assert len(status_writes) == 1

@@ -12,6 +12,9 @@ def _get_api_dir() -> str:
 
 
 def _load_function_app():
+    os.environ.setdefault("BLOB_CONNECTION_STRING", "UseDevelopmentStorage=true")
+    os.environ.setdefault("GARMIN_EMAIL", "test@example.com")
+    os.environ.setdefault("GARMIN_PASSWORD", "secret")
     api_dir = _get_api_dir()
     if api_dir not in sys.path:
         sys.path.insert(0, api_dir)
@@ -45,10 +48,8 @@ def test_get_activities_returns_200():
     handler = _find_handler(module)
     assert handler is not None, "No handler registered for route 'activities'"
 
-    with patch.object(module, "BlobStore"), \
-         patch.object(module, "GarminClient"), \
-         patch.object(module, "ActivityService") as mock_svc_cls:
-        mock_svc_cls.return_value.get_activities.return_value = ([], False)
+    with patch.object(module, "_activity_service") as mock_svc:
+        mock_svc.get_activities.return_value = ([], False)
         response = handler(_make_request())
 
     assert response.status_code == 200
@@ -59,10 +60,8 @@ def test_get_activities_sync_error_sets_header():
     handler = _find_handler(module)
     assert handler is not None
 
-    with patch.object(module, "BlobStore"), \
-         patch.object(module, "GarminClient"), \
-         patch.object(module, "ActivityService") as mock_svc_cls:
-        mock_svc_cls.return_value.get_activities.return_value = ([], True)
+    with patch.object(module, "_activity_service") as mock_svc:
+        mock_svc.get_activities.return_value = ([], True)
         response = handler(_make_request())
 
     assert response.status_code == 200
