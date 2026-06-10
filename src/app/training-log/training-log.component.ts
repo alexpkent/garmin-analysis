@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { DecimalPipe, DatePipe } from '@angular/common';
-import { ActivityService, HealthSnapshot } from '../activity.service';
+import { ActivityService } from '../activity.service';
 import { Activity, formatTrainingEffectLabel } from '../types/Activity';
 import { HeatmapBand } from '../analysis/calendar-heatmap/calendar-heatmap.component';
 import { environment } from '../../environments/environment';
@@ -73,26 +73,6 @@ interface WeekData {
   otherCount: number;
   days: DayData[];
 }
-
-interface AiAnalysisExport {
-  schema_version: 1;
-  exported_at: string;
-  analysis_window?: {
-    days: number;
-    start_date: string;
-    end_date: string;
-  };
-  counts: {
-    activities: number;
-    health_snapshots: number;
-  };
-  activities: Activity[];
-  health: HealthSnapshot[];
-}
-
-const CHATGPT_URL_LIMIT = 7000;
-const CHATGPT_ANALYSIS_DAYS = 30;
-const GARMIN_ANALYSIS_PROMPT = 'Analyse this Garmin health and activity data';
 
 @Component({
   selector: 'app-training-log',
@@ -200,102 +180,6 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     private datePipe: DatePipe,
     private zone: NgZone
   ) {}
-
-  async exportAnalysisData(): Promise<void> {
-    const data = await this.buildAiAnalysisExport();
-    const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `garmin-analysis-${data.exported_at.slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async openChatGptAnalysis(): Promise<void> {
-    const chatWindow = window.open('about:blank', '_blank');
-    const data = await this.buildAiAnalysisExport(CHATGPT_ANALYSIS_DAYS);
-    const prompt = this.buildChatGptPrompt(data, true);
-    const directUrl = this.chatGptUrl(prompt);
-
-    if (directUrl) {
-      this.openChatGptUrl(directUrl, chatWindow);
-      return;
-    }
-
-    const copied = await this.copyText(prompt);
-    const fallbackPrompt = copied
-      ? `${GARMIN_ANALYSIS_PROMPT}. I have copied the last ${CHATGPT_ANALYSIS_DAYS} days of JSON data to my clipboard; ask me to paste it.`
-      : `${GARMIN_ANALYSIS_PROMPT}. I could not fit the last ${CHATGPT_ANALYSIS_DAYS} days of JSON data into the URL; ask me to paste the exported JSON file.`;
-    this.openChatGptUrl(this.chatGptUrl(fallbackPrompt)!, chatWindow);
-  }
-
-  private async buildAiAnalysisExport(
-    days?: number
-  ): Promise<AiAnalysisExport> {
-    const [{ activities }, health] = await Promise.all([
-      this.activityService.getActivities(),
-      this.activityService.getHealth()
-    ]);
-    const today = dayjs().startOf('day');
-    const startDate = days != null ? today.subtract(days, 'days') : null;
-    const filteredActivities = startDate
-      ? activities.filter((a) =>
-          dayjs(a.start_date).isSameOrAfter(startDate, 'day')
-        )
-      : activities;
-    const filteredHealth = startDate
-      ? health.filter((s) => dayjs(s.date).isSameOrAfter(startDate, 'day'))
-      : health;
-
-    const analysisWindow = startDate
-      ? {
-          days,
-          start_date: startDate.format('YYYY-MM-DD'),
-          end_date: today.format('YYYY-MM-DD')
-        }
-      : undefined;
-
-    return {
-      schema_version: 1,
-      exported_at: new Date().toISOString(),
-      ...(analysisWindow ? { analysis_window: analysisWindow } : {}),
-      counts: {
-        activities: filteredActivities.length,
-        health_snapshots: filteredHealth.length
-      },
-      activities: filteredActivities,
-      health: filteredHealth
-    };
-  }
-
-  private buildChatGptPrompt(data: AiAnalysisExport, compact = false): string {
-    const json = compact ? JSON.stringify(data) : JSON.stringify(data, null, 2);
-    return `${GARMIN_ANALYSIS_PROMPT}\n\n${json}`;
-  }
-
-  private chatGptUrl(prompt: string): string | null {
-    const url = `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`;
-    return url.length <= CHATGPT_URL_LIMIT ? url : null;
-  }
-
-  private openChatGptUrl(url: string, chatWindow: Window | null): void {
-    if (chatWindow) {
-      chatWindow.location.href = url;
-    } else {
-      window.location.href = url;
-    }
-  }
-
-  private async copyText(text: string): Promise<boolean> {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      return false;
-    }
-  }
 
   ngOnInit(): void {
     this.load();

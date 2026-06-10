@@ -2,6 +2,27 @@
 
 @include loading-overlay;
 
+/* ── Export actions ─────────────────────────────────────── */
+.export-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.export-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: $link;
+  font-size: 1.1rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.15s;
+
+  &:hover { color: $link-hover; }
+}
+
 /* ── Period size toggle ───────────────────────────────── */
 .period-size-toggle {
   display: flex;

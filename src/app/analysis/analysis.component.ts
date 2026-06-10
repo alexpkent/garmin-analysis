@@ -34,6 +34,35 @@ export interface TrainingInsight {
   level: 'good' | 'info' | 'warn' | 'alert';
 }
 
+interface AiAssessmentStatement {
+  label: string;
+  level: TrainingInsight['level'];
+  text: string;
+}
+
+interface AiAnalysisExport {
+  schema_version: 1;
+  exported_at: string;
+  analysis_window?: {
+    days: number;
+    start_date: string;
+    end_date: string;
+  };
+  counts: {
+    activities: number;
+    health_snapshots: number;
+    assessment_statements: number;
+  };
+  assessment_statements: AiAssessmentStatement[];
+  activities: Activity[];
+  health: HealthSnapshot[];
+}
+
+const CHATGPT_URL_LIMIT = 7000;
+const CHATGPT_ANALYSIS_DAYS = 30;
+const GARMIN_ANALYSIS_PROMPT =
+  'Analyse this Garmin data and validate the assessment statements for correctness';
+
 @Component({
   selector: 'app-analysis',
   templateUrl: './analysis.component.html',
@@ -211,6 +240,112 @@ export class AnalysisComponent implements OnInit {
   };
 
   constructor(private activityService: ActivityService) {}
+
+  async exportAnalysisData(): Promise<void> {
+    const data = await this.buildAiAnalysisExport();
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `garmin-analysis-${data.exported_at.slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async openChatGptAnalysis(): Promise<void> {
+    const chatWindow = window.open('about:blank', '_blank');
+    const data = await this.buildAiAnalysisExport(CHATGPT_ANALYSIS_DAYS);
+    const prompt = this.buildChatGptPrompt(data, true);
+    const directUrl = this.chatGptUrl(prompt);
+
+    if (directUrl) {
+      this.openChatGptUrl(directUrl, chatWindow);
+      return;
+    }
+
+    const copied = await this.copyText(prompt);
+    const fallbackPrompt = copied
+      ? `${GARMIN_ANALYSIS_PROMPT}. I have copied the last ${CHATGPT_ANALYSIS_DAYS} days of JSON data to my clipboard; ask me to paste it.`
+      : `${GARMIN_ANALYSIS_PROMPT}. I could not fit the last ${CHATGPT_ANALYSIS_DAYS} days of JSON data into the URL; ask me to paste the exported JSON file.`;
+    this.openChatGptUrl(this.chatGptUrl(fallbackPrompt)!, chatWindow);
+  }
+
+  private async buildAiAnalysisExport(
+    days?: number
+  ): Promise<AiAnalysisExport> {
+    const [{ activities }, health] = await Promise.all([
+      this.activityService.getActivities(),
+      this.activityService.getHealth()
+    ]);
+    const today = dayjs().startOf('day');
+    const startDate = days != null ? today.subtract(days, 'days') : null;
+    const filteredActivities = startDate
+      ? activities.filter((a) =>
+          dayjs(a.start_date).isSameOrAfter(startDate, 'day')
+        )
+      : activities;
+    const filteredHealth = startDate
+      ? health.filter((s) => dayjs(s.date).isSameOrAfter(startDate, 'day'))
+      : health;
+
+    const analysisWindow = startDate
+      ? {
+          days,
+          start_date: startDate.format('YYYY-MM-DD'),
+          end_date: today.format('YYYY-MM-DD')
+        }
+      : undefined;
+    const assessmentStatements = this.buildAssessmentStatements();
+
+    return {
+      schema_version: 1,
+      exported_at: new Date().toISOString(),
+      ...(analysisWindow ? { analysis_window: analysisWindow } : {}),
+      counts: {
+        activities: filteredActivities.length,
+        health_snapshots: filteredHealth.length,
+        assessment_statements: assessmentStatements.length
+      },
+      assessment_statements: assessmentStatements,
+      activities: filteredActivities,
+      health: filteredHealth
+    };
+  }
+
+  private buildAssessmentStatements(): AiAssessmentStatement[] {
+    const insights = this.trainingInsights.length
+      ? this.trainingInsights
+      : this.computeTrainingInsights();
+    return insights.map(({ label, level, text }) => ({ label, level, text }));
+  }
+
+  private buildChatGptPrompt(data: AiAnalysisExport, compact = false): string {
+    const json = compact ? JSON.stringify(data) : JSON.stringify(data, null, 2);
+    return `${GARMIN_ANALYSIS_PROMPT}\n\n${json}`;
+  }
+
+  private chatGptUrl(prompt: string): string | null {
+    const url = `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`;
+    return url.length <= CHATGPT_URL_LIMIT ? url : null;
+  }
+
+  private openChatGptUrl(url: string, chatWindow: Window | null): void {
+    if (chatWindow) {
+      chatWindow.location.href = url;
+    } else {
+      window.location.href = url;
+    }
+  }
+
+  private async copyText(text: string): Promise<boolean> {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   ngOnInit(): void {
     this.activityService
@@ -709,6 +844,16 @@ export class AnalysisComponent implements OnInit {
       }
     }
 
+    const loadBySportInsight = this.computeLoadBySportInsight(now);
+    if (loadBySportInsight) {
+      insights.push(loadBySportInsight);
+    }
+
+    const hrStrainInsight = this.computeHrStrainInsight(now);
+    if (hrStrainInsight) {
+      insights.push(hrStrainInsight);
+    }
+
     // 4. Intensity distribution (last 28 days)
     const last28 = this.activities.filter((a) =>
       dayjs(a.start_date).isAfter(now.subtract(28, 'days'))
@@ -810,7 +955,25 @@ export class AnalysisComponent implements OnInit {
       }
     }
 
-    return insights;
+    return this.sortTrainingInsights(insights);
+  }
+
+  private sortTrainingInsights(insights: TrainingInsight[]): TrainingInsight[] {
+    const severityRank: Record<TrainingInsight['level'], number> = {
+      alert: 0,
+      warn: 1,
+      info: 2,
+      good: 3
+    };
+
+    return insights
+      .map((insight, index) => ({ insight, index }))
+      .sort(
+        (a, b) =>
+          severityRank[a.insight.level] - severityRank[b.insight.level] ||
+          a.index - b.index
+      )
+      .map(({ insight }) => insight);
   }
 
   private computeHighRiskInsight(now: Dayjs): TrainingInsight | null {
@@ -902,5 +1065,113 @@ export class AnalysisComponent implements OnInit {
       (activity.anaerobicTrainingEffect ?? 0) >= 3 ||
       avgHr >= this.tanakaMaxHr * 0.85
     );
+  }
+
+  private computeLoadBySportInsight(now: Dayjs): TrainingInsight | null {
+    const recent = this.activities.filter(
+      (a) =>
+        dayjs(a.start_date).isAfter(now.subtract(7, 'days')) &&
+        a.activityTrainingLoad != null &&
+        a.activityTrainingLoad > 0
+    );
+    const totalLoad = recent.reduce(
+      (sum, a) => sum + (a.activityTrainingLoad ?? 0),
+      0
+    );
+    if (recent.length < 2 || totalLoad <= 0) return null;
+
+    const loadBySport = new Map<string, number>();
+    for (const activity of recent) {
+      const sportKey = this.assessmentSportKey(activity);
+      loadBySport.set(
+        sportKey,
+        (loadBySport.get(sportKey) ?? 0) + (activity.activityTrainingLoad ?? 0)
+      );
+    }
+
+    const [sport, load] = Array.from(loadBySport.entries()).sort(
+      (a, b) => b[1] - a[1]
+    )[0];
+    const pct = Math.round((load / totalLoad) * 100);
+    if (pct < 45) return null;
+
+    const label = this.formatSportLabel(sport);
+    return {
+      icon: this.sportIcon(sport),
+      label: 'Load By Sport',
+      text: `${label} accounts for ${pct}% of 7-day load (${Math.round(load)} of ${Math.round(totalLoad)}).`,
+      color: UI_COLORS.accent,
+      level: pct >= 70 ? 'warn' : 'info'
+    };
+  }
+
+  private computeHrStrainInsight(now: Dayjs): TrainingInsight | null {
+    const recent = this.activities
+      .filter(
+        (a) =>
+          a.averageHR != null &&
+          dayjs(a.start_date).isAfter(now.subtract(90, 'days'))
+      )
+      .sort(
+        (a, b) => dayjs(b.start_date).valueOf() - dayjs(a.start_date).valueOf()
+      );
+    const latest = recent[0];
+    if (!latest?.averageHR) return null;
+
+    const baseline = recent
+      .slice(1)
+      .filter(
+        (a) =>
+          this.assessmentSportKey(a) === this.assessmentSportKey(latest) &&
+          a.averageHR != null
+      )
+      .slice(0, 10);
+    if (baseline.length < 3) return null;
+
+    const avgBaselineHr =
+      baseline.reduce((sum, a) => sum + (a.averageHR ?? 0), 0) /
+      baseline.length;
+    const diff = Math.round(latest.averageHR - avgBaselineHr);
+    if (diff < 8) return null;
+
+    const label = this.formatSportLabel(this.assessmentSportKey(latest));
+    return {
+      icon: 'fas fa-heartbeat',
+      label: 'HR Strain Outlier',
+      text: `Latest ${label.toLowerCase()} averaged ${Math.round(latest.averageHR)} bpm, ${diff} above recent ${label.toLowerCase()} baseline.`,
+      color: diff >= 15 ? '#e63419' : '#ff8c00',
+      level: diff >= 15 ? 'alert' : 'warn'
+    };
+  }
+
+  private formatSportLabel(activityType: string): string {
+    const labels: Record<string, string> = {
+      run: 'Running',
+      ride: 'Cycling',
+      swim: 'Swimming',
+      walk: 'Walking',
+      football: 'Football',
+      other: 'Other'
+    };
+    return labels[activityType] ?? activityType;
+  }
+
+  private assessmentSportKey(activity: Activity): string {
+    const name = activity.name.toLowerCase();
+    if (name.includes('football') || name.includes('soccer')) {
+      return 'football';
+    }
+    return activity.activity_type;
+  }
+
+  private sportIcon(activityType: string): string {
+    const icons: Record<string, string> = {
+      run: 'fas fa-running',
+      ride: 'fas fa-biking',
+      swim: 'fas fa-swimmer',
+      walk: 'fas fa-walking',
+      football: 'fas fa-futbol'
+    };
+    return icons[activityType] ?? 'fas fa-dumbbell';
   }
 }

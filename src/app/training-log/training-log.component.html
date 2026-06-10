@@ -4,14 +4,6 @@
     <span class="navbar-brand mb-0 h1 text-warning">
       Training Log
     </span>
-    <div class="export-actions">
-      <button class="export-icon-btn" (click)="openChatGptAnalysis()" title="Analyse last 30 days with ChatGPT">
-        <i class="fas fa-comments"></i>
-      </button>
-      <button class="export-icon-btn" (click)="exportAnalysisData()" title="Export analysis data as JSON">
-        <i class="fas fa-file-export"></i>
-      </button>
-    </div>
   </nav>
 
   @if (syncError) {

@@ -136,6 +136,7 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
       if (s.resting_hr != null) rhrWeekly[idx] = s.resting_hr;
       if (s.training_status != null) statusWeekly[idx] = s.training_status;
     }
+    const vo2AxisRange = this.vo2AxisRange(vo2Weekly);
 
     // Compute status dot colours and labels from weekly status phrases
     this.statusLabels = statusWeekly.map((s) => {
@@ -221,6 +222,8 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
       );
       this.chart.data.labels = weekLabels;
       this.chart.data.datasets = datasets;
+      this.chart.options.scales.yVo2.min = vo2AxisRange.min;
+      this.chart.options.scales.yVo2.max = vo2AxisRange.max;
       hiddenStates.forEach((hidden: boolean, i: number) => {
         this.chart.getDatasetMeta(i).hidden = hidden;
       });
@@ -271,6 +274,8 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
           yVo2: {
             type: 'linear',
             position: 'left',
+            min: vo2AxisRange.min,
+            max: vo2AxisRange.max,
             ticks: { color: '#42a5f5' },
             grid: { color: '#2a2d31' },
             title: {
@@ -302,5 +307,24 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
         }
       }
     });
+  }
+
+  private vo2AxisRange(values: (number | null)[]): {
+    min: number;
+    max: number;
+  } {
+    const vo2Values = values.filter((v): v is number => v != null);
+    if (vo2Values.length === 0) return { min: 30, max: 70 };
+
+    const min = Math.min(...vo2Values);
+    const max = Math.max(...vo2Values);
+    const center = (min + max) / 2;
+    const lower = Math.floor(center - 5);
+    const upper = Math.ceil(center + 5);
+
+    return {
+      min: Math.max(0, lower),
+      max: Math.max(upper, lower + 10)
+    };
   }
 }
