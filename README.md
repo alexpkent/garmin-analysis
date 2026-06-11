@@ -26,6 +26,10 @@ Weekly activity breakdown with search/filter by name and activity type, and a de
 
 ![site image](screenshots/training-log.png)
 
+### Compare
+
+Compare any metric in one time period against another e.g. year vs year, month vs month.
+
 ### Personal Records
 
 - Best times and longest efforts fetched from Garmin Connect, grouped by sport (Running, Cycling, Swimming).
