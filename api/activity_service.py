@@ -155,10 +155,13 @@ class ActivityService:
         today = date.today()
         date_str = today.isoformat()
         health: list = self._blob_store.read_json(_HEALTH_BLOB) or []
-        if any(e.get("date") == date_str for e in health):
-            return  # already captured today
+        existing = next((e for e in health if e.get("date") == date_str), None)
+        if existing is not None and existing.get("resting_hr") is not None:
+            return  # already captured today with full data
         try:
             snapshot = self._garmin_client.get_health_snapshot(today)
+            # Replace existing null entry or insert fresh
+            health = [e for e in health if e.get("date") != date_str]
             health.insert(0, snapshot)
             self._blob_store.write_json(_HEALTH_BLOB, health)
         except Exception:

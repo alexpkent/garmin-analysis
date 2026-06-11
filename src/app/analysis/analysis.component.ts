@@ -10,8 +10,10 @@ import dayjs, { Dayjs } from 'dayjs';
 import type { ManipulateType } from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import relativeTime from 'dayjs/plugin/relativeTime';
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
+dayjs.extend(relativeTime);
 import {
   TRAINING_STATUS_LABEL,
   TRAINING_STATUS_COLOR,
@@ -75,6 +77,11 @@ export class AnalysisComponent implements OnInit {
   loading = true;
   loaded = false;
   lastAssessedTime: Date | null = null;
+
+  get lastSyncAgo(): string | null {
+    const t = this.activityService.lastSyncTime;
+    return t ? dayjs(t).fromNow() : null;
+  }
   selectedDay: DaySelection | null = null;
   latestActivity: Activity | null = null;
   healthSnapshots: HealthSnapshot[] = [];
@@ -644,7 +651,14 @@ export class AnalysisComponent implements OnInit {
     const insights: TrainingInsight[] = [];
     const now = dayjs();
 
-    const highRiskInsight = this.computeHighRiskInsight(now);
+    const daysSinceLastActivity = this.latestActivity
+      ? now.diff(dayjs(this.latestActivity.start_date), 'days')
+      : null;
+
+    const highRiskInsight = this.computeHighRiskInsight(
+      now,
+      daysSinceLastActivity ?? 0
+    );
     if (highRiskInsight) {
       insights.push(highRiskInsight);
     }
@@ -732,13 +746,23 @@ export class AnalysisComponent implements OnInit {
         const pct = Math.round(((last7 - baseline7) / baseline7) * 100);
         const sign = pct > 0 ? '+' : '';
         if (pct > 25) {
-          insights.push({
-            icon: 'fas fa-arrow-up',
-            label: 'Load Spike',
-            text: `7-day load is ${sign}${pct}% above recent baseline — watch for overreaching.`,
-            color: '#e63419',
-            level: 'alert'
-          });
+          if (daysSinceLastActivity !== null && daysSinceLastActivity >= 2) {
+            insights.push({
+              icon: 'fas fa-arrow-up',
+              label: 'Load Spike',
+              text: `7-day load is ${sign}${pct}% above recent baseline — ${daysSinceLastActivity} rest day${daysSinceLastActivity === 1 ? '' : 's'} since last session.`,
+              color: '#ff8c00',
+              level: 'warn'
+            });
+          } else {
+            insights.push({
+              icon: 'fas fa-arrow-up',
+              label: 'Load Spike',
+              text: `7-day load is ${sign}${pct}% above recent baseline — watch for overreaching.`,
+              color: '#e63419',
+              level: 'alert'
+            });
+          }
         } else if (pct > 10) {
           insights.push({
             icon: 'fas fa-arrow-up',
@@ -850,7 +874,10 @@ export class AnalysisComponent implements OnInit {
       insights.push(loadBySportInsight);
     }
 
-    const hrStrainInsight = this.computeHrStrainInsight(now);
+    const hrStrainInsight = this.computeHrStrainInsight(
+      now,
+      daysSinceLastActivity ?? 0
+    );
     if (hrStrainInsight) {
       insights.push(hrStrainInsight);
     }
@@ -907,8 +934,8 @@ export class AnalysisComponent implements OnInit {
     }
 
     // 5. Days since last activity
-    if (this.latestActivity) {
-      const daysSince = now.diff(dayjs(this.latestActivity.start_date), 'days');
+    if (daysSinceLastActivity !== null) {
+      const daysSince = daysSinceLastActivity;
       if (daysSince >= 7) {
         insights.push({
           icon: 'fas fa-bed',
@@ -977,7 +1004,10 @@ export class AnalysisComponent implements OnInit {
       .map(({ insight }) => insight);
   }
 
-  private computeHighRiskInsight(now: Dayjs): TrainingInsight | null {
+  private computeHighRiskInsight(
+    now: Dayjs,
+    daysSinceLastActivity: number
+  ): TrainingInsight | null {
     const last7 = this.activities.filter((a) =>
       dayjs(a.start_date).isAfter(now.subtract(7, 'days'))
     );
@@ -1040,6 +1070,17 @@ export class AnalysisComponent implements OnInit {
     }
     if (overreachingStatus) {
       factors.push('overreaching status');
+    }
+
+    // If the user has already rested 2+ days since their last session, load-history
+    // risk factors have been absorbed. Only current-state signals remain relevant.
+    if (daysSinceLastActivity >= 2) {
+      const currentFactors: string[] = [];
+      if (lowReadiness) currentFactors.push('readiness < 50');
+      if (overreachingStatus) currentFactors.push('overreaching status');
+      if (currentFactors.length < 2) return null;
+      factors.length = 0;
+      factors.push(...currentFactors);
     }
 
     if (factors.length < 2) {
@@ -1106,7 +1147,13 @@ export class AnalysisComponent implements OnInit {
     };
   }
 
-  private computeHrStrainInsight(now: Dayjs): TrainingInsight | null {
+  private computeHrStrainInsight(
+    now: Dayjs,
+    daysSinceLastActivity: number
+  ): TrainingInsight | null {
+    // Elevated HR from a past session is no longer actionable if the user has already rested
+    if (daysSinceLastActivity >= 2) return null;
+
     const recent = this.activities
       .filter(
         (a) =>

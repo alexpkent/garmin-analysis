@@ -152,19 +152,30 @@ class GarminClient:
             snapshot.setdefault("load_focus", None)
 
         # Resting Heart Rate
+        # get_heart_rates uses /wellness-service/wellness/dailyHeartRate and
+        # returns restingHeartRate at the top level of the response dict.
         try:
-            rhr_data = self._client.get_rhr_day(date_str)
-            if isinstance(rhr_data, dict):
-                rhr_val = (
-                    rhr_data.get("restingHeartRate")
-                    or rhr_data.get("restingHeartRateValue")
-                    or (rhr_data.get("allDayHR") or {}).get("restingHeartRateValue")
-                )
+            hr_data = self._client.get_heart_rates(date_str)
+            if isinstance(hr_data, dict):
+                rhr_val = hr_data.get("restingHeartRate")
                 snapshot["resting_hr"] = int(rhr_val) if rhr_val is not None else None
             else:
                 snapshot["resting_hr"] = None
         except Exception:
-            snapshot["resting_hr"] = None
+            # Fall back to get_rhr_day (userstats-service/wellness/daily,
+            # metricId=60) whose response nests the value under
+            # allMetrics.metricsMap.WELLNESS_RESTING_HEART_RATE[*].value
+            try:
+                rhr_data = self._client.get_rhr_day(date_str)
+                rhr_val = None
+                if isinstance(rhr_data, dict):
+                    metrics = (rhr_data.get("allMetrics") or {}).get("metricsMap") or {}
+                    rhr_list = metrics.get("WELLNESS_RESTING_HEART_RATE") or []
+                    if rhr_list and isinstance(rhr_list, list):
+                        rhr_val = rhr_list[-1].get("value")
+                snapshot["resting_hr"] = int(rhr_val) if rhr_val is not None else None
+            except Exception:
+                snapshot["resting_hr"] = None
 
         # Training Readiness
         try:
