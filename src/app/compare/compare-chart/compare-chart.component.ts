@@ -58,12 +58,12 @@ export class CompareChartComponent implements OnChanges, OnDestroy {
     this.chart?.destroy();
   }
 
-  private get bucketCount(): number {
+  private bucketCount(start: Dayjs): number {
     switch (this.granularity) {
       case 'week':
         return 7;
       case 'month':
-        return 31;
+        return start.daysInMonth();
       case 'quarter':
         return 14;
       case 'year':
@@ -84,16 +84,34 @@ export class CompareChartComponent implements OnChanges, OnDestroy {
     }
   }
 
-  private get xLabels(): string[] {
+  private xLabels(start: Dayjs): string[] {
     switch (this.granularity) {
       case 'week':
         return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      case 'month':
-        return Array.from({ length: 31 }, (_, i) => String(i + 1));
-      case 'quarter':
-        return Array.from({ length: 14 }, (_, i) => `W${i + 1}`);
-      case 'year':
-        return Array.from({ length: 53 }, (_, i) => `W${i + 1}`);
+      case 'month': {
+        const days = start.daysInMonth();
+        return Array.from({ length: days }, (_, i) =>
+          i % 2 === 0 ? start.date(i + 1).format('D MMM') : ''
+        );
+      }
+      case 'quarter': {
+        // 14 weekly buckets — label each with the Monday of that week
+        return Array.from({ length: 14 }, (_, i) =>
+          start.add(i * 7, 'days').format('D MMM')
+        );
+      }
+      case 'year': {
+        // 53 weekly buckets — label with month name only when a new month begins
+        const labels: string[] = [];
+        let lastMonth = -1;
+        for (let i = 0; i < 53; i++) {
+          const weekStart = start.add(i * 7, 'days');
+          const m = weekStart.month();
+          labels.push(m !== lastMonth ? weekStart.format('MMM') : '');
+          lastMonth = m;
+        }
+        return labels;
+      }
     }
   }
 
@@ -102,7 +120,7 @@ export class CompareChartComponent implements OnChanges, OnDestroy {
     start: Dayjs
   ): (number | null)[] {
     if (!this.metric || !start) return [];
-    const count = this.bucketCount;
+    const count = this.bucketCount(start);
     const buckets: number[][] = Array.from({ length: count }, () => []);
 
     for (const a of activities) {
@@ -143,7 +161,7 @@ export class CompareChartComponent implements OnChanges, OnDestroy {
     start: Dayjs
   ): (number | null)[] {
     if (!this.metric || !start || this.metric.source !== 'health') return [];
-    const count = this.bucketCount;
+    const count = this.bucketCount(start);
     const buckets: number[][] = Array.from({ length: count }, () => []);
 
     for (const s of snapshots) {
@@ -164,7 +182,7 @@ export class CompareChartComponent implements OnChanges, OnDestroy {
   private buildChart(): void {
     if (!this.metric || !this.startA || !this.startB) return;
 
-    const labels = this.xLabels;
+    const labels = this.xLabels(this.startA);
     const isHealth = this.metric.source === 'health';
     const dataA = isHealth
       ? this.buildHealthDataset(this.snapshotsA, this.startA)
@@ -242,7 +260,9 @@ export class CompareChartComponent implements OnChanges, OnDestroy {
             x: {
               ticks: {
                 color: '#adb5bd',
-                maxTicksLimit: 26,
+                autoSkip: false,
+                maxRotation: 45,
+                minRotation: 45,
                 font: { size: 11 }
               },
               grid: { color: '#343a40' }
