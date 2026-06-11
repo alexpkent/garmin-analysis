@@ -105,13 +105,11 @@
 
       <!-- Metric selector -->
       <div class="section-label">Metric</div>
-      <div class="toggle-group metric-toggle">
+      <select class="period-select metric-select" [(ngModel)]="selectedMetricKey">
         @for (m of metrics; track m.key) {
-          <button class="toggle-btn" [class.active]="selectedMetricKey === m.key" (click)="selectedMetricKey = m.key">
-            {{ m.label }}
-          </button>
+          <option [ngValue]="m.key">{{ m.label }}</option>
         }
-      </div>
+      </select>
 
       <!-- Chart -->
       <app-compare-chart
