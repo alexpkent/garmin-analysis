@@ -1,0 +1,56 @@
+@use '../../../styles/variables' as *;
+
+.compare-chart-card {
+  background: $card-bg;
+  border: 1px solid $card-border;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+
+  &.fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    border-radius: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+
+    .chart-wrap {
+      flex: 1;
+      height: auto;
+    }
+  }
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.chart-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.fs-btn {
+  background: none;
+  border: none;
+  color: $muted;
+  cursor: pointer;
+  padding: 4px 6px;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  transition: color 0.15s;
+
+  &:hover { color: #fff; }
+}
+
+.chart-wrap {
+  height: 320px;
+
+  canvas { width: 100% !important; }
+}

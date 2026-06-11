@@ -1,0 +1,11 @@
+<div class="compare-chart-card" [class.fullscreen]="fullscreen">
+  <div class="chart-header">
+    <span class="chart-title">{{ metric?.label }} over time</span>
+    <button class="fs-btn" (click)="toggleFullscreen()" [attr.aria-label]="fullscreen ? 'Exit fullscreen' : 'Fullscreen'">
+      <i [class]="fullscreen ? 'fas fa-compress' : 'fas fa-expand'"></i>
+    </button>
+  </div>
+  <div class="chart-wrap">
+    <canvas #canvas></canvas>
+  </div>
+</div>

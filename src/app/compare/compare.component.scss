@@ -1,0 +1,214 @@
+@use '../../styles/variables' as *;
+
+@include loading-overlay;
+
+.compare-content {
+  padding: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* ── Section label ────────────────────────────────────── */
+.section-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: $dim;
+  margin-bottom: 6px;
+  margin-top: 20px;
+
+  &:first-child { margin-top: 16px; }
+}
+
+/* ── Toggle group ─────────────────────────────────────── */
+.toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.metric-toggle {
+  margin-bottom: 20px;
+}
+
+.toggle-btn {
+  font-size: 0.78rem;
+  padding: 4px 12px;
+  color: $muted;
+  background: transparent;
+  border: 1px solid $border-mid;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+
+  &:hover {
+    color: #fff;
+    border-color: $dim;
+  }
+
+  &.active {
+    color: $card-bg;
+    background: $accent;
+    border-color: $accent;
+  }
+
+  &.sm {
+    padding: 3px 8px;
+    font-size: 0.73rem;
+  }
+}
+
+/* ── Period pickers ──────────────────────────────────── */
+.period-pickers {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: 16px;
+  margin-bottom: 4px;
+}
+
+.period-picker {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.period-picker-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.accent-a { color: $accent; }
+.accent-b { color: #42a5f5; }
+
+.period-vs {
+  align-self: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: $dim;
+  padding-top: 28px;
+  flex-shrink: 0;
+}
+
+.period-select {
+  background: #2a2d31;
+  border: 1px solid $border-mid;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.82rem;
+  padding: 5px 8px;
+  width: 100%;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: $accent;
+  }
+}
+
+.sub-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+.period-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid;
+  align-self: flex-start;
+}
+
+.accent-a-badge {
+  border-color: $accent;
+  color: $accent;
+}
+
+.accent-b-badge {
+  border-color: #42a5f5;
+  color: #42a5f5;
+}
+
+/* ── Summary card ─────────────────────────────────────── */
+.summary-card {
+  background: $card-bg;
+  border: 1px solid $card-border;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 32px;
+}
+
+.summary-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.summary-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.summary-hint {
+  font-size: 0.72rem;
+  color: $dim;
+}
+
+.summary-table-wrap {
+  overflow-x: auto;
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+
+  th {
+    color: $muted;
+    font-weight: 600;
+    text-align: left;
+    padding: 6px 10px;
+    border-bottom: 1px solid $card-border;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 7px 10px;
+    color: $text-light;
+    border-bottom: 1px solid #2a2d31;
+  }
+
+  tbody tr {
+    cursor: pointer;
+    transition: background 0.12s;
+
+    &:hover { background: $surface-hover; }
+    &:last-child td { border-bottom: none; }
+  }
+
+  .selected-row {
+    background: #252830;
+
+    .metric-name { color: $accent; font-weight: 600; }
+  }
+}
+
+.col-a { color: $accent !important; }
+.col-b { color: #42a5f5 !important; }
+
+.metric-name {
+  color: $muted;
+}
+
+.delta-pos { color: #1FA87A; font-weight: 600; }
+.delta-neg { color: #e63419; font-weight: 600; }

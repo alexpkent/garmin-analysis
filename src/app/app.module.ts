@@ -15,6 +15,8 @@ import { HeatmapComponent } from './heatmap/heatmap.component';
 import { NavComponent } from './nav/nav.component';
 import { TrainingLogComponent } from './training-log/training-log.component';
 import { RecordsComponent } from './records/records.component';
+import { CompareComponent } from './compare/compare.component';
+import { CompareChartComponent } from './compare/compare-chart/compare-chart.component';
 import {
   provideHttpClient,
   withInterceptorsFromDi
@@ -40,7 +42,9 @@ registerLocaleData(localeEnGb, 'en-GB');
     HeatmapComponent,
     NavComponent,
     TrainingLogComponent,
-    RecordsComponent
+    RecordsComponent,
+    CompareComponent,
+    CompareChartComponent
   ],
   bootstrap: [AppComponent],
   imports: [

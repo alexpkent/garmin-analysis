@@ -61,23 +61,26 @@ export class ActivityService {
   /** Number of alert-level training insights — written by AnalysisComponent, read by NavComponent */
   trainingAlertCount = 0;
 
-  /** ISO timestamp of the last successful Garmin sync, from X-Last-Sync response header */
+  /** ISO timestamp of the last successful Garmin sync, from the activities response body */
   lastSyncTime: string | null = null;
 
   constructor(private http: HttpClient) {}
 
   getActivities(): Promise<{ activities: Activity[]; syncError: boolean }> {
     return this.http
-      .get<Activity[]>('/api/activities', { observe: 'response' })
+      .get<{
+        activities: Activity[];
+        last_sync_time: string | null;
+        sync_error: boolean;
+      }>('/api/activities')
       .toPromise()
-      .then((response) => {
-        const lastSync = response?.headers.get('X-Last-Sync');
-        if (lastSync) {
-          this.lastSyncTime = lastSync;
+      .then((body) => {
+        if (body?.last_sync_time) {
+          this.lastSyncTime = body.last_sync_time;
         }
         return {
-          activities: (response?.body ?? []) as Activity[],
-          syncError: response?.headers.get('X-Sync-Error') === 'true'
+          activities: body?.activities ?? [],
+          syncError: body?.sync_error ?? false
         };
       })
       .catch((err) => {
