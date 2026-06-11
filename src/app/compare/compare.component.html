@@ -1,0 +1,162 @@
+<div class="bg-dark min-vh-100 text-white">
+  <nav class="navbar navbar-dark bg-dark pb-0 border-bottom border-secondary">
+    <span class="navbar-brand mb-0 h1 text-warning">Compare</span>
+  </nav>
+
+  @if (loading) {
+    <div class="loading-overlay">
+      <div class="loading-ring"></div>
+      <span class="loading-text">Loading activities…</span>
+    </div>
+  }
+
+  @if (loaded) {
+    <div class="compare-content">
+
+      <!-- Granularity toggle -->
+      <div class="section-label">Period size</div>
+      <div class="toggle-group">
+        @for (item of GRANULARITIES; track item.value) {
+          <button class="toggle-btn" [class.active]="granularity === item.value" (click)="setGranularity(item.value)">
+            {{ item.label }}
+          </button>
+        }
+      </div>
+
+      <!-- Period pickers -->
+      <div class="period-pickers">
+
+        <!-- Period A -->
+        <div class="period-picker period-a">
+          <div class="period-picker-label accent-a">Period A</div>
+
+          <select class="period-select" [(ngModel)]="yearA">
+            @for (y of availableYears; track y) {
+              <option [ngValue]="y">{{ y }}</option>
+            }
+          </select>
+
+          @if (granularity === 'quarter') {
+            <div class="sub-toggle">
+              @for (q of QUARTERS; track q) {
+                <button class="toggle-btn sm" [class.active]="quarterA === q" (click)="quarterA = q">Q{{ q }}</button>
+              }
+            </div>
+          }
+
+          @if (granularity === 'month') {
+            <select class="period-select" [(ngModel)]="monthA">
+              @for (name of MONTH_NAMES; track $index) {
+                <option [ngValue]="$index">{{ name }}</option>
+              }
+            </select>
+          }
+
+          @if (granularity === 'week') {
+            <select class="period-select" [(ngModel)]="weekA">
+              @for (w of weekOptions(yearA); track w.value) {
+                <option [ngValue]="w.value">{{ w.label }}</option>
+              }
+            </select>
+          }
+
+          <div class="period-badge accent-a-badge">{{ labelA }}</div>
+        </div>
+
+        <div class="period-vs">vs</div>
+
+        <!-- Period B -->
+        <div class="period-picker period-b">
+          <div class="period-picker-label accent-b">Period B</div>
+
+          <select class="period-select" [(ngModel)]="yearB">
+            @for (y of availableYears; track y) {
+              <option [ngValue]="y">{{ y }}</option>
+            }
+          </select>
+
+          @if (granularity === 'quarter') {
+            <div class="sub-toggle">
+              @for (q of QUARTERS; track q) {
+                <button class="toggle-btn sm" [class.active]="quarterB === q" (click)="quarterB = q">Q{{ q }}</button>
+              }
+            </div>
+          }
+
+          @if (granularity === 'month') {
+            <select class="period-select" [(ngModel)]="monthB">
+              @for (name of MONTH_NAMES; track $index) {
+                <option [ngValue]="$index">{{ name }}</option>
+              }
+            </select>
+          }
+
+          @if (granularity === 'week') {
+            <select class="period-select" [(ngModel)]="weekB">
+              @for (w of weekOptions(yearB); track w.value) {
+                <option [ngValue]="w.value">{{ w.label }}</option>
+              }
+            </select>
+          }
+
+          <div class="period-badge accent-b-badge">{{ labelB }}</div>
+        </div>
+      </div>
+
+      <!-- Metric selector -->
+      <div class="section-label">Metric</div>
+      <div class="toggle-group metric-toggle">
+        @for (m of metrics; track m.key) {
+          <button class="toggle-btn" [class.active]="selectedMetricKey === m.key" (click)="selectedMetricKey = m.key">
+            {{ m.label }}
+          </button>
+        }
+      </div>
+
+      <!-- Chart -->
+      <app-compare-chart
+        [activitiesA]="activitiesA"
+        [activitiesB]="activitiesB"
+        [snapshotsA]="snapshotsA"
+        [snapshotsB]="snapshotsB"
+        [labelA]="labelA"
+        [labelB]="labelB"
+        [startA]="startA"
+        [startB]="startB"
+        [granularity]="granularity"
+        [metric]="selectedMetric">
+      </app-compare-chart>
+
+      <!-- Summary table -->
+      <div class="summary-card">
+        <div class="summary-header">
+          <span class="summary-title">Summary</span>
+          <span class="summary-hint">Click a row to update the chart</span>
+        </div>
+        <div class="summary-table-wrap">
+          <table class="summary-table">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th class="col-a">{{ labelA }}</th>
+                <th class="col-b">{{ labelB }}</th>
+                <th>Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of summaryRows; track row.metric.key) {
+                <tr [class.selected-row]="row.metric.key === selectedMetricKey" (click)="selectedMetricKey = row.metric.key">
+                  <td class="metric-name">{{ row.metric.label }}</td>
+                  <td>{{ formatValue(row.valueA, row.metric) }}</td>
+                  <td>{{ formatValue(row.valueB, row.metric) }}</td>
+                  <td [class]="deltaClass(row.delta, row.metric)">{{ formatDelta(row.pct, row.delta) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  }
+</div>

@@ -12,6 +12,7 @@ export class NavComponent {
     { label: 'Analysis', icon: 'fas fa-chart-line', route: '/' },
     { label: 'Heatmap', icon: 'fas fa-fire', route: '/heatmap' },
     { label: 'Training Log', icon: 'fas fa-calendar-alt', route: '/log' },
+    { label: 'Compare', icon: 'fas fa-exchange-alt', route: '/compare' },
     { label: 'Records', icon: 'fas fa-trophy', route: '/records' }
   ];
 

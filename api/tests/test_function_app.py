@@ -55,14 +55,17 @@ def test_get_activities_returns_200():
     assert response.status_code == 200
 
 
-def test_get_activities_sync_error_sets_header():
+def test_get_activities_sync_error_in_body():
     module = _load_function_app()
     handler = _find_handler(module)
     assert handler is not None
 
-    with patch.object(module, "_activity_service") as mock_svc:
+    with patch.object(module, "_activity_service") as mock_svc, \
+         patch.object(module, "_blob_store") as mock_store:
         mock_svc.get_activities.return_value = ([], True)
+        mock_store.read_json.return_value = None
         response = handler(_make_request())
 
     assert response.status_code == 200
-    assert response.headers.get("X-Sync-Error") == "true"
+    body = json.loads(response.get_body())
+    assert body["sync_error"] is True

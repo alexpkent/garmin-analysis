@@ -50,6 +50,7 @@
 .analysis-content {
   padding: 20px 16px;
   max-width: 1200px;
+  margin: 0 auto;
 }
 
 /* ── Latest activity card ──────────────────────────────── */
@@ -101,7 +102,7 @@
 .sync-timestamp {
   font-size: 0.72rem;
   color: $muted;
-  text-align: right;
+  text-align: left;
   padding: 4px 14px 0;
 }
 
