@@ -17,6 +17,10 @@
     </div>
   }
 
+  @if (lastSyncAgo) {
+    <div class="sync-timestamp">Synced {{ lastSyncAgo }}</div>
+  }
+
   @if (loading) {
     <div class="loading-overlay">
       <div class="loading-ring"></div>
@@ -35,11 +39,7 @@
               <i class="fas fa-brain latest-icon"></i>
               <span class="latest-name">Training Assessment</span>
             </div>
-            @if (lastAssessedTime) {
-              <div class="latest-card-meta">
-                <span class="latest-ago">{{ lastAssessedTime | date:'shortTime' }}, {{ lastAssessedTime | date:'mediumDate' }}</span>
-              </div>
-            }
+
           </div>
           <div class="assess-list">
             @for (insight of trainingInsights; track insight.label) {

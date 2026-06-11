@@ -24,6 +24,12 @@ def get_activities(req: func.HttpRequest) -> func.HttpResponse:
     if sync_failed:
         headers["X-Sync-Error"] = "true"
 
+    sync_status = _blob_store.read_json("garmin/sync-status.json")
+    if isinstance(sync_status, dict):
+        last_sync = sync_status.get("last_successful_sync")
+        if last_sync:
+            headers["X-Last-Sync"] = last_sync
+
     return func.HttpResponse(
         orjson.dumps(activities),
         status_code=200,

@@ -58,54 +58,46 @@ export interface RecordsData {
   providedIn: 'root'
 })
 export class ActivityService {
-  private cache: Promise<{
-    activities: Activity[];
-    syncError: boolean;
-  }> | null = null;
-  private healthCache: Promise<HealthSnapshot[]> | null = null;
-  private recordsCache: Promise<RecordsData | null> | null = null;
-
   /** Number of alert-level training insights — written by AnalysisComponent, read by NavComponent */
   trainingAlertCount = 0;
+
+  /** ISO timestamp of the last successful Garmin sync, from X-Last-Sync response header */
+  lastSyncTime: string | null = null;
 
   constructor(private http: HttpClient) {}
 
   getActivities(): Promise<{ activities: Activity[]; syncError: boolean }> {
-    if (!this.cache) {
-      this.cache = this.http
-        .get<Activity[]>('/api/activities', { observe: 'response' })
-        .toPromise()
-        .then((response) => ({
+    return this.http
+      .get<Activity[]>('/api/activities', { observe: 'response' })
+      .toPromise()
+      .then((response) => {
+        const lastSync = response?.headers.get('X-Last-Sync');
+        if (lastSync) {
+          this.lastSyncTime = lastSync;
+        }
+        return {
           activities: (response?.body ?? []) as Activity[],
           syncError: response?.headers.get('X-Sync-Error') === 'true'
-        }))
-        .catch((err) => {
-          this.cache = null;
-          throw err;
-        });
-    }
-    return this.cache;
+        };
+      })
+      .catch((err) => {
+        throw err;
+      });
   }
 
   getHealth(): Promise<HealthSnapshot[]> {
-    if (!this.healthCache) {
-      this.healthCache = this.http
-        .get<HealthSnapshot[]>('/api/health')
-        .toPromise()
-        .then((data) => data ?? [])
-        .catch(() => []);
-    }
-    return this.healthCache;
+    return this.http
+      .get<HealthSnapshot[]>('/api/health')
+      .toPromise()
+      .then((data) => data ?? [])
+      .catch(() => []);
   }
 
   getRecords(): Promise<RecordsData | null> {
-    if (!this.recordsCache) {
-      this.recordsCache = this.http
-        .get<RecordsData>('/api/records')
-        .toPromise()
-        .then((data) => data ?? null)
-        .catch(() => null);
-    }
-    return this.recordsCache;
+    return this.http
+      .get<RecordsData>('/api/records')
+      .toPromise()
+      .then((data) => data ?? null)
+      .catch(() => null);
   }
 }
