@@ -498,6 +498,21 @@
   &:hover { color: $link-hover; }
 }
 
+.modal-garmin-footer {
+  padding: 8px 14px;
+  border-top: 1px solid $card-border;
+}
+
+.day-garmin-link {
+  font-size: 0.75rem;
+  color: $link;
+  text-decoration: none;
+
+  &:hover { color: $link-hover; }
+
+  i { margin-right: 3px; }
+}
+
 .latest-card-body {
   display: flex;
   flex-wrap: wrap;

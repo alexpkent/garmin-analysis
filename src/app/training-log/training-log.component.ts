@@ -1,4 +1,10 @@
-import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  NgZone,
+  HostListener
+} from '@angular/core';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { ActivityService } from '../activity.service';
 import { Activity, formatTrainingEffectLabel } from '../types/Activity';
@@ -541,6 +547,11 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
 
   closeModal() {
     this.selectedActivity = null;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closeModal();
   }
 
   activityColor(activity: Activity): string {
