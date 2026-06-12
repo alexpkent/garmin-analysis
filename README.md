@@ -180,27 +180,14 @@ cd api
 pip install -r requirements.txt
 ```
 
-## 3. Start the API (terminal 1)
+## 3. Start everything
 
 ```bash
-cd api
-func start --python
+npm run dev
 ```
 
-The function runs at `http://localhost:7071`.
-
-## 4. Start the Angular dev server (terminal 2)
-
-```bash
-ng serve
-```
-
-## 5. Start the SWA proxy (terminal 3)
-
-```bash
-swa start http://localhost:4200 --api-devserver-url http://localhost:7071
-```
+This runs the Azure Functions API, Angular dev server, and SWA proxy concurrently in one terminal.
 
 Open **http://localhost:4280** — this routes `/api/*` to the function and everything else to the Angular dev server.
 
-> **Note:** Use `--api-devserver-url` (not `--api-location`) when the function is already running. `--api-location` tells SWA CLI to start func itself, which triggers a download that fails on corporate networks with proxy certificate inspection.
+> **Note:** The SWA proxy uses `--api-devserver-url` (not `--api-location`) to connect to the already-running function. `--api-location` tells SWA CLI to start func itself, which triggers a download that fails on corporate networks with proxy certificate inspection.
