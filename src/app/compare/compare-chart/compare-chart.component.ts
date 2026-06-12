@@ -6,7 +6,8 @@ import {
   OnChanges,
   OnDestroy,
   SimpleChanges,
-  ViewChild
+  ViewChild,
+  HostListener
 } from '@angular/core';
 import { Activity } from '../../types/Activity';
 import { HealthSnapshot } from '../../activity.service';
@@ -41,6 +42,7 @@ export class CompareChartComponent implements OnChanges, OnDestroy {
   canvasRef!: ElementRef<HTMLCanvasElement>;
 
   private chart: any = null;
+  private touchDismissListener: ((e: TouchEvent) => void) | null = null;
   fullscreen = false;
 
   constructor(private zone: NgZone) {}
@@ -50,12 +52,23 @@ export class CompareChartComponent implements OnChanges, OnDestroy {
     setTimeout(() => this.chart?.resize(), 0);
   }
 
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.fullscreen) {
+      this.fullscreen = false;
+      setTimeout(() => this.chart?.resize(), 0);
+    }
+  }
+
   ngOnChanges(_: SimpleChanges): void {
     this.buildChart();
   }
 
   ngOnDestroy(): void {
     this.chart?.destroy();
+    if (this.touchDismissListener) {
+      document.removeEventListener('touchstart', this.touchDismissListener);
+    }
   }
 
   private bucketCount(start: Dayjs): number {
@@ -247,6 +260,24 @@ export class CompareChartComponent implements OnChanges, OnDestroy {
               borderColor: '#343a40',
               borderWidth: 1,
               callbacks: {
+                title: (items: any[]) => {
+                  const idx = items[0]?.dataIndex;
+                  if (idx == null) return '';
+                  switch (this.granularity) {
+                    case 'week': {
+                      const dayLabel = this.startA.add(idx, 'days');
+                      return `${items[0].label} ${dayLabel.format('D MMM')}`;
+                    }
+                    case 'month':
+                      return this.startA.date(idx + 1).format('D MMM YYYY');
+                    case 'quarter':
+                    case 'year': {
+                      const weekStart = this.startA.add(idx * 7, 'days');
+                      const weekEnd = weekStart.add(6, 'days');
+                      return `${weekStart.format('D MMM')} – ${weekEnd.format('D MMM')}`;
+                    }
+                  }
+                },
                 label: (ctx: any) => {
                   const v = ctx.parsed.y;
                   if (v == null) return '';
@@ -280,6 +311,22 @@ export class CompareChartComponent implements OnChanges, OnDestroy {
             }
           }
         }
+      });
+
+      // On touch devices, a tap outside the canvas should dismiss the tooltip.
+      if (this.touchDismissListener) {
+        document.removeEventListener('touchstart', this.touchDismissListener);
+      }
+      this.touchDismissListener = (e: TouchEvent) => {
+        const canvas = this.canvasRef.nativeElement;
+        if (!canvas.contains(e.target as Node)) {
+          this.chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+          this.chart.setDatasetVisibility(0, this.chart.isDatasetVisible(0));
+          this.chart.update();
+        }
+      };
+      document.addEventListener('touchstart', this.touchDismissListener, {
+        passive: true
       });
     }); // end runOutsideAngular
   }

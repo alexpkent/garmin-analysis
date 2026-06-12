@@ -7,7 +7,8 @@ import {
   OnDestroy,
   Output,
   SimpleChanges,
-  ViewChild
+  ViewChild,
+  HostListener
 } from '@angular/core';
 import { Activity } from '../../types/Activity';
 import dayjs, { Dayjs } from 'dayjs';
@@ -43,6 +44,7 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
   canvasRef!: ElementRef<HTMLCanvasElement>;
 
   private chart: any = null;
+  private touchDismissListener: ((e: TouchEvent) => void) | null = null;
   periodLabel = '';
   fullscreen = false;
 
@@ -51,12 +53,23 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
     setTimeout(() => this.chart?.resize(), 0);
   }
 
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.fullscreen) {
+      this.fullscreen = false;
+      setTimeout(() => this.chart?.resize(), 0);
+    }
+  }
+
   ngOnChanges(_: SimpleChanges): void {
     this.buildChart();
   }
 
   ngOnDestroy(): void {
     this.chart?.destroy();
+    if (this.touchDismissListener) {
+      document.removeEventListener('touchstart', this.touchDismissListener);
+    }
   }
 
   private buildChart(): void {
@@ -93,9 +106,7 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
     const weekEndToIdx = new Map<string, number>();
     for (let i = 0; i < weekCount; i++) {
       weekEndToIdx.set(
-        weekStart
-          .add(i * 7 + 6, 'days')
-          .format('YYYY-MM-DD'),
+        weekStart.add(i * 7 + 6, 'days').format('YYYY-MM-DD'),
         i
       );
     }
@@ -245,6 +256,19 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
           }
         }
       }
+    });
+
+    if (this.touchDismissListener) {
+      document.removeEventListener('touchstart', this.touchDismissListener);
+    }
+    this.touchDismissListener = (e: TouchEvent) => {
+      if (!this.canvasRef.nativeElement.contains(e.target as Node)) {
+        this.chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+        this.chart.update();
+      }
+    };
+    document.addEventListener('touchstart', this.touchDismissListener, {
+      passive: true
     });
   }
 }

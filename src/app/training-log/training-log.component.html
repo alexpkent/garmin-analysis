@@ -206,9 +206,6 @@
           <div class="latest-card-title">
             <i [class]="latestActivityIcon(selectedActivity) + ' latest-icon'"></i>
             <span class="latest-name">{{ selectedActivity.name }}</span>
-            <a [href]="garminUrl(selectedActivity)" target="_blank" rel="noopener noreferrer" class="latest-garmin-link" title="Open in Garmin Connect">
-              <i class="fas fa-external-link-alt"></i>
-            </a>
           </div>
           <div class="latest-card-meta">
             <span class="latest-ago">{{ selectedActivity.start_date | date:'mediumDate' }}</span>
@@ -283,6 +280,14 @@
               }
             </div>
           }
+        </div>
+        <div class="modal-garmin-footer">
+          <a [href]="garminUrl(selectedActivity)"
+             target="_blank"
+             rel="noopener noreferrer"
+             class="day-garmin-link">
+            <i class="fas fa-external-link-alt"></i> Garmin Connect
+          </a>
         </div>
       </div>
     }

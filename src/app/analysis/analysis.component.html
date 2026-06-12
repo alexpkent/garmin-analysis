@@ -39,7 +39,11 @@
               <i class="fas fa-brain latest-icon"></i>
               <span class="latest-name">Training Assessment</span>
             </div>
-
+            @if (lastAssessedAgo) {
+              <div class="latest-card-meta">
+                <span class="latest-ago">Calculated {{ lastAssessedAgo }}</span>
+              </div>
+            }
           </div>
           <div class="assess-list">
             @for (insight of trainingInsights; track insight.label) {
@@ -64,7 +68,7 @@
               <span class="latest-name">Health Snapshot</span>
             </div>
             <div class="latest-card-meta">
-              <span class="latest-ago">{{ latestHealth.date | date:'mediumDate' }}</span>
+              <span class="latest-ago">{{ latestHealthAgo }}</span>
             </div>
           </div>
           <div class="latest-card-body">
@@ -209,7 +213,7 @@
               <span class="latest-name">{{ latestActivity.name }}</span>
             </div>
             <div class="latest-card-meta">
-              <span class="latest-ago">{{ latestActivity.start_date | date:'mediumDate' }}</span>
+              <span class="latest-ago">{{ latestActivityAgo }}</span>
               <a [href]="garminUrl(latestActivity)" target="_blank" rel="noopener noreferrer" class="latest-garmin-link" title="Open in Garmin Connect">
                 <i class="fas fa-external-link-alt"></i>
               </a>

@@ -8,7 +8,8 @@ import {
   OnDestroy,
   Output,
   SimpleChanges,
-  ViewChild
+  ViewChild,
+  HostListener
 } from '@angular/core';
 import { Activity } from '../../types/Activity';
 import dayjs, { Dayjs } from 'dayjs';
@@ -50,6 +51,7 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
   constructor(private zone: NgZone) {}
 
   private chart: any = null;
+  private touchDismissListener: ((e: TouchEvent) => void) | null = null;
   periodLabel = '';
   fullscreen = false;
   popupWeek: { label: string; activities: Activity[] } | null = null;
@@ -63,6 +65,16 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
 
   closePopup(): void {
     this.popupWeek = null;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.fullscreen) {
+      this.fullscreen = false;
+      setTimeout(() => this.chart?.resize(), 0);
+    } else {
+      this.closePopup();
+    }
   }
 
   garminUrl(a: Activity): string {
@@ -87,6 +99,9 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     this.chart?.destroy();
+    if (this.touchDismissListener) {
+      document.removeEventListener('touchstart', this.touchDismissListener);
+    }
   }
 
   private buildChart(): void {
@@ -250,6 +265,19 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
           }
         }
       }
+    });
+
+    if (this.touchDismissListener) {
+      document.removeEventListener('touchstart', this.touchDismissListener);
+    }
+    this.touchDismissListener = (e: TouchEvent) => {
+      if (!this.canvasRef.nativeElement.contains(e.target as Node)) {
+        this.chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+        this.chart.update();
+      }
+    };
+    document.addEventListener('touchstart', this.touchDismissListener, {
+      passive: true
     });
   }
 }

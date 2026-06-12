@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { ActivityService, HealthSnapshot } from '../activity.service';
 import { Activity, formatTrainingEffectLabel } from '../types/Activity';
 import {
@@ -81,6 +81,22 @@ export class AnalysisComponent implements OnInit {
   get lastSyncAgo(): string | null {
     const t = this.activityService.lastSyncTime;
     return t ? dayjs(t).fromNow() : null;
+  }
+
+  get latestActivityAgo(): string | null {
+    return this.latestActivity
+      ? dayjs(this.latestActivity.start_date).fromNow()
+      : null;
+  }
+
+  get lastAssessedAgo(): string | null {
+    return this.lastAssessedTime
+      ? dayjs(this.lastAssessedTime).fromNow()
+      : null;
+  }
+
+  get latestHealthAgo(): string | null {
+    return this.latestHealth ? dayjs(this.latestHealth.date).fromNow() : null;
   }
   selectedDay: DaySelection | null = null;
   latestActivity: Activity | null = null;
@@ -261,20 +277,23 @@ export class AnalysisComponent implements OnInit {
   }
 
   async openChatGptAnalysis(): Promise<void> {
-    const chatWindow = window.open('about:blank', '_blank');
     const data = await this.buildAiAnalysisExport(CHATGPT_ANALYSIS_DAYS);
     const prompt = this.buildChatGptPrompt(data, true);
     const directUrl = this.chatGptUrl(prompt);
 
     if (directUrl) {
+      const chatWindow = window.open('about:blank', '_blank');
       this.openChatGptUrl(directUrl, chatWindow);
       return;
     }
 
+    // Copy to clipboard before opening a new window — window.open() steals
+    // document focus, which causes navigator.clipboard.writeText() to fail.
     const copied = await this.copyText(prompt);
     const fallbackPrompt = copied
       ? `${GARMIN_ANALYSIS_PROMPT}. I have copied the last ${CHATGPT_ANALYSIS_DAYS} days of JSON data to my clipboard; ask me to paste it.`
       : `${GARMIN_ANALYSIS_PROMPT}. I could not fit the last ${CHATGPT_ANALYSIS_DAYS} days of JSON data into the URL; ask me to paste the exported JSON file.`;
+    const chatWindow = window.open('about:blank', '_blank');
     this.openChatGptUrl(this.chatGptUrl(fallbackPrompt)!, chatWindow);
   }
 
@@ -386,18 +405,25 @@ export class AnalysisComponent implements OnInit {
         ) ?? null;
       // Prefer the most recent entry that has at least some non-null data so
       // that an all-null placeholder for today doesn't blank out the display.
-      const withData = snapshots.filter(
-        (s) =>
-          s.vo2max_running != null ||
-          s.training_status != null ||
-          s.load_focus != null ||
-          s.resting_hr != null ||
-          s.training_readiness != null
+      // Build a merged snapshot using the most recent value for each field
+      // independently, so fields recorded at different frequencies all show up.
+      const sorted = [...snapshots].sort((a, b) =>
+        b.date.localeCompare(a.date)
       );
-      const pool = withData.length > 0 ? withData : snapshots;
+      const latestWith = <K extends keyof HealthSnapshot>(key: K) =>
+        sorted.find((s) => s[key] != null)?.[key] ?? null;
+
       this.latestHealth =
-        pool.length > 0
-          ? pool.reduce((a, b) => (a.date > b.date ? a : b))
+        sorted.length > 0
+          ? {
+              date: sorted[0].date,
+              vo2max_running: latestWith('vo2max_running'),
+              vo2max_cycling: latestWith('vo2max_cycling'),
+              training_status: latestWith('training_status'),
+              load_focus: latestWith('load_focus'),
+              resting_hr: latestWith('resting_hr'),
+              training_readiness: latestWith('training_readiness')
+            }
           : null;
       this.updateAlertCount();
     });
@@ -412,6 +438,11 @@ export class AnalysisComponent implements OnInit {
 
   closePopup(): void {
     this.selectedDay = null;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closePopup();
   }
 
   formatTrainingStatus(phrase: string | null | undefined): string {
@@ -956,6 +987,17 @@ export class AnalysisComponent implements OnInit {
     }
 
     // 6. VO2 max trend (last 5 snapshots)
+    const consistencyInsight = this.computeConsistencyInsight(now, daysSinceLastActivity ?? 0);
+    if (consistencyInsight) {
+      insights.push(consistencyInsight);
+    }
+
+    const varietyInsight = this.computeActivityVarietyInsight(now);
+    if (varietyInsight) {
+      insights.push(varietyInsight);
+    }
+
+    // 7. VO2 max trend (last 5 snapshots)
     const vo2Snaps = this.healthSnapshots
       .filter((s) => s.vo2max_running != null)
       .sort((a, b) => a.date.localeCompare(b.date))
@@ -984,6 +1026,162 @@ export class AnalysisComponent implements OnInit {
     }
 
     return this.sortTrainingInsights(insights);
+  }
+
+  private computeConsistencyInsight(now: Dayjs, daysSinceLastActivity: number): TrainingInsight | null {
+    // Examine 4 complete weeks (days 1-28 ago) so the current partial week doesn't skew counts
+    const windowStart = now.startOf('day').subtract(28, 'days');
+    const last28 = this.activities.filter((a) =>
+      dayjs(a.start_date).isSameOrAfter(windowStart, 'day')
+    );
+    if (last28.length === 0) return null;
+
+    // Split into 4 ISO weeks (week 1 = most recent, week 4 = oldest)
+    const weekCounts: number[] = [0, 0, 0, 0];
+    const weekDurations: number[][] = [[], [], [], []];
+    for (const a of last28) {
+      const daysAgo = now.startOf('day').diff(dayjs(a.start_date).startOf('day'), 'days');
+      const weekIdx = Math.min(Math.floor(daysAgo / 7), 3);
+      weekCounts[weekIdx]++;
+      const secs = a.duration ?? a.moving_time_seconds ?? 0;
+      if (secs > 0) weekDurations[weekIdx].push(secs);
+    }
+
+    const activeWeeks = weekCounts.filter((c) => c > 0).length;
+    const totalActivities = last28.length;
+    const perWeek = +(totalActivities / 4).toFixed(1);
+
+    // Average session duration across all activities
+    const allDurations = last28.map((a) => a.duration ?? a.moving_time_seconds ?? 0).filter((s) => s > 0);
+    const avgDurationMins = allDurations.length
+      ? Math.round(allDurations.reduce((s, v) => s + v, 0) / allDurations.length / 60)
+      : null;
+
+    // "Long Break" already reports 7+ day gap — skip consistency if that fired
+    const longBreakFired = daysSinceLastActivity >= 7;
+
+    const shortSession = avgDurationMins != null && avgDurationMins < 20;
+
+    // All 4 weeks active + good volume
+    if (activeWeeks === 4 && perWeek >= 3 && !shortSession) {
+      return {
+        icon: 'fas fa-calendar-check',
+        label: 'Consistent Training',
+        text: `${totalActivities} activities in 28 days (~${perWeek}/week) with activity in every week${avgDurationMins ? ` and avg ${avgDurationMins} min/session` : ''} — strong, reliable pattern.`,
+        color: '#4caf50',
+        level: 'good'
+      };
+    }
+
+    // Gaps present (some weeks empty) — but only if long-break insight hasn't already fired
+    if (activeWeeks <= 2 && !longBreakFired) {
+      const emptyWeeks = 4 - activeWeeks;
+      return {
+        icon: 'fas fa-calendar-times',
+        label: 'Inconsistent Pattern',
+        text: `${emptyWeeks} of the last 4 weeks had no activity (${totalActivities} sessions total, ~${perWeek}/week) — consistency will compound fitness gains faster than occasional spikes.`,
+        color: '#ff8c00',
+        level: 'warn'
+      };
+    }
+
+    // Low volume (< 2/week on average)
+    if (perWeek < 2 && !longBreakFired) {
+      return {
+        icon: 'fas fa-chart-line',
+        label: 'Low Frequency',
+        text: `Only ${totalActivities} sessions in 28 days (~${perWeek}/week) — aim for 3+ sessions per week to build a fitness base.`,
+        color: '#ff8c00',
+        level: 'warn'
+      };
+    }
+
+    // Sessions too short
+    if (shortSession && avgDurationMins != null) {
+      return {
+        icon: 'fas fa-stopwatch',
+        label: 'Short Sessions',
+        text: `Average session is only ${avgDurationMins} min over the last 28 days — longer efforts (30+ min) drive more aerobic adaptation.`,
+        color: '#42a5f5',
+        level: 'info'
+      };
+    }
+
+    // Moderate consistency — decent but not great
+    if (activeWeeks === 3 && perWeek >= 2) {
+      return {
+        icon: 'fas fa-calendar-check',
+        label: 'Mostly Consistent',
+        text: `${totalActivities} sessions across 3 of the last 4 weeks (~${perWeek}/week)${avgDurationMins ? `, avg ${avgDurationMins} min` : ''} — one quiet week. Keep building the habit.`,
+        color: '#42a5f5',
+        level: 'info'
+      };
+    }
+
+    return null;
+  }
+
+  private computeActivityVarietyInsight(now: Dayjs): TrainingInsight | null {
+    const last28 = this.activities.filter((a) =>
+      dayjs(a.start_date).isSameOrAfter(now.startOf('day').subtract(28, 'days'), 'day')
+    );
+    if (last28.length < 3) return null;
+
+    // Collect distinct sport types and their activity counts
+    const sportCounts = new Map<string, number>();
+    for (const a of last28) {
+      const key = this.assessmentSportKey(a);
+      sportCounts.set(key, (sportCounts.get(key) ?? 0) + 1);
+    }
+
+    const sports = Array.from(sportCounts.entries()).sort((a, b) => b[1] - a[1]);
+    const typeCount = sports.length;
+
+    if (typeCount === 1) {
+      const label = this.formatSportLabel(sports[0][0]);
+      return {
+        icon: this.sportIcon(sports[0][0]),
+        label: 'Low Variety',
+        text: `All ${last28.length} sessions in the last 28 days are ${label} — consider cross-training to reduce overuse risk.`,
+        color: '#ff8c00',
+        level: 'warn'
+      };
+    }
+
+    const sportList = sports
+      .map(([key]) => this.formatSportLabel(key))
+      .join(', ');
+
+    if (typeCount >= 3) {
+      const dominantLabel = this.formatSportLabel(sports[0][0]);
+      const energySystems = this.describeEnergySystems(sports.map(([k]) => k));
+      return {
+        icon: 'fas fa-layer-group',
+        label: 'Good Variety',
+        text: `${sportList} — varied training reduces overuse risk.`,
+        color: '#4caf50',
+        level: 'good'
+      };
+    }
+
+    // 2 types
+    return {
+      icon: 'fas fa-layer-group',
+      label: 'Mixed Training',
+      text: `Training split across ${sportList} over the last 28 days — adding a third modality could further reduce overuse risk.`,
+      color: '#42a5f5',
+      level: 'info'
+    };
+  }
+
+  private describeEnergySystems(sportKeys: string[]): string {
+    const tags: string[] = [];
+    if (sportKeys.some((k) => ['run', 'ride', 'swim', 'walk'].includes(k)))
+      tags.push('endurance');
+    if (sportKeys.includes('football')) tags.push('sprint & team sport');
+    if (sportKeys.includes('other')) tags.push('strength work');
+    if (tags.length === 0) return sportKeys.map((k) => this.formatSportLabel(k)).join(', ');
+    return tags.join(', ');
   }
 
   private sortTrainingInsights(insights: TrainingInsight[]): TrainingInsight[] {
@@ -1110,9 +1308,10 @@ export class AnalysisComponent implements OnInit {
   }
 
   private computeLoadBySportInsight(now: Dayjs): TrainingInsight | null {
+    const sevenDaysAgo = now.startOf('day').subtract(7, 'days');
     const recent = this.activities.filter(
       (a) =>
-        dayjs(a.start_date).isAfter(now.subtract(7, 'days')) &&
+        dayjs(a.start_date).isSameOrAfter(sevenDaysAgo, 'day') &&
         a.activityTrainingLoad != null &&
         a.activityTrainingLoad > 0
     );

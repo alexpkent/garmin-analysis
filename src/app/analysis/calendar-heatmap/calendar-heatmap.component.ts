@@ -8,7 +8,8 @@ import {
   Output,
   EventEmitter,
   SimpleChanges,
-  ViewChild
+  ViewChild,
+  HostListener
 } from '@angular/core';
 import { Subscription, fromEvent } from 'rxjs';
 
@@ -83,6 +84,13 @@ export class CalendarHeatmapComponent implements OnInit, OnChanges, OnDestroy {
 
   toggleFullscreen(): void {
     this.fullscreen = !this.fullscreen;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.fullscreen) {
+      this.fullscreen = false;
+    }
   }
 
   private syncing = false;

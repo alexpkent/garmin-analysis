@@ -7,7 +7,8 @@ import {
   OnDestroy,
   Output,
   SimpleChanges,
-  ViewChild
+  ViewChild,
+  HostListener
 } from '@angular/core';
 import { Activity } from '../../types/Activity';
 import { HealthSnapshot } from '../../activity.service';
@@ -53,12 +54,21 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
   canvasRef!: ElementRef<HTMLCanvasElement>;
 
   private chart: any = null;
+  private touchDismissListener: ((e: TouchEvent) => void) | null = null;
   periodLabel = '';
   fullscreen = false;
 
   toggleFullscreen(): void {
     this.fullscreen = !this.fullscreen;
     setTimeout(() => this.chart?.resize(), 0);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.fullscreen) {
+      this.fullscreen = false;
+      setTimeout(() => this.chart?.resize(), 0);
+    }
   }
 
   readonly series: Series[] = [
@@ -82,6 +92,9 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     this.chart?.destroy();
+    if (this.touchDismissListener) {
+      document.removeEventListener('touchstart', this.touchDismissListener);
+    }
   }
 
   private buildChart(): void {
@@ -294,6 +307,19 @@ export class TrendChartComponent implements OnChanges, OnDestroy {
           }
         }
       }
+    });
+
+    if (this.touchDismissListener) {
+      document.removeEventListener('touchstart', this.touchDismissListener);
+    }
+    this.touchDismissListener = (e: TouchEvent) => {
+      if (!this.canvasRef.nativeElement.contains(e.target as Node)) {
+        this.chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+        this.chart.update();
+      }
+    };
+    document.addEventListener('touchstart', this.touchDismissListener, {
+      passive: true
     });
   }
 }
