@@ -38,17 +38,17 @@
   @if (loading) {
     <div class="loading-overlay">
       <div class="loading-ring"></div>
-      <span class="loading-text">Loading activities…</span>
+      <span class="loading-text" [class.msg-fading]="msgFading">{{ loadingMessage }}</span>
     </div>
   }
 
   @if (loaded) {
-    <div class="view-selector">
-      <button class="view-btn" [class.view-btn--active]="currentView == view.Day"   (click)="filterChanged(view.Day)">Day</button>
-      <button class="view-btn" [class.view-btn--active]="currentView == view.Week"  (click)="filterChanged(view.Week)">Week</button>
-      <button class="view-btn" [class.view-btn--active]="currentView == view.Month" (click)="filterChanged(view.Month)">Month</button>
-      <button class="view-btn" [class.view-btn--active]="currentView == view.Year"  (click)="filterChanged(view.Year)">Year</button>
-      <button class="view-btn" [class.view-btn--active]="currentView == view.All"   (click)="filterChanged(view.All)">All</button>
+    <div class="view-selector heatmap-loaded-content" role="group" aria-label="Heatmap period range">
+      <button type="button" class="view-btn" [class.view-btn--active]="currentView == view.Day"   [attr.aria-pressed]="currentView == view.Day" (click)="filterChanged(view.Day)">Day</button>
+      <button type="button" class="view-btn" [class.view-btn--active]="currentView == view.Week"  [attr.aria-pressed]="currentView == view.Week" (click)="filterChanged(view.Week)">Week</button>
+      <button type="button" class="view-btn" [class.view-btn--active]="currentView == view.Month" [attr.aria-pressed]="currentView == view.Month" (click)="filterChanged(view.Month)">Month</button>
+      <button type="button" class="view-btn" [class.view-btn--active]="currentView == view.Year"  [attr.aria-pressed]="currentView == view.Year" (click)="filterChanged(view.Year)">Year</button>
+      <button type="button" class="view-btn" [class.view-btn--active]="currentView == view.All"   [attr.aria-pressed]="currentView == view.All" (click)="filterChanged(view.All)">All</button>
     </div>
   }
 

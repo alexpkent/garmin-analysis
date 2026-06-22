@@ -2,6 +2,17 @@
 
 @include loading-overlay;
 
+@keyframes content-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.heatmap-loaded-content {
+  animation: content-enter 0.3s cubic-bezier(0.2, 0, 0, 1) both;
+
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+}
+
 /* ── Navbar ───────────────────────────────────────────── */
 .hm-summary {
   display: flex;
@@ -13,7 +24,7 @@
 
 .hm-summary-stat {
   color: $muted;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   small { font-size: 0.7rem; color: $dim; }
 }
 
@@ -54,6 +65,12 @@
   text-decoration: none;
 
   &:hover { color: $link-hover !important; }
+
+  &:focus-visible {
+    outline: 2px solid $link;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
 }
 
 /* ── View selector (segmented control) ───────────────── */
@@ -74,7 +91,8 @@
   color: $muted;
   font-size: 0.8rem;
   font-weight: 600;
-  padding: 5px 0;
+  min-height: 36px;
+  padding: 6px 0;
   cursor: pointer;
   letter-spacing: 0.03em;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
@@ -83,6 +101,11 @@
     background: $surface-hover;
     color: #fff;
     border-color: #555;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $link;
+    outline-offset: 2px;
   }
 }
 
@@ -101,15 +124,32 @@
   }
 }
 
-.leaflet-tile {
-  visibility: visible !important;
-  background: red !important;
-}
-
 .map-frame {
   height: 100%;
 }
 
 #map {
   height: 100%;
+}
+
+@media (max-width: 767px) {
+  .hm-summary {
+    gap: 4px;
+  }
+
+  .hm-summary-stat {
+    font-size: 0.78rem;
+  }
+
+  .view-btn {
+    min-height: 44px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge-pill,
+  .view-btn {
+    transition: none;
+  }
 }

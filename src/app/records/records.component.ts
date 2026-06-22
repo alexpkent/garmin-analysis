@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import {
   ActivityService,
   PersonalRecord,
@@ -15,23 +15,61 @@ import relativeTime from 'dayjs/plugin/relativeTime';
   styleUrls: ['./records.component.scss'],
   standalone: false
 })
-export class RecordsComponent implements OnInit {
+export class RecordsComponent implements OnInit, OnDestroy {
   loading = true;
   loaded = false;
   data: RecordsData | null = null;
   activities: Activity[] = [];
+
+  // ── Loading message cycling ────────────────────────────
+  loadingMessage = 'Hunting your personal bests…';
+  msgFading = false;
+  private readonly _loadingMsgs = [
+    'Hunting your personal bests…',
+    'Digging through your race history…',
+    'Checking your all-time records…',
+    'Surfacing your fastest times…'
+  ];
+  private _msgIdx = 0;
+  private _msgTimer: ReturnType<typeof setInterval> | null = null;
+
+  private _startLoadingCycle(): void {
+    this.loadingMessage = this._loadingMsgs[0];
+    this._msgIdx = 0;
+    this._msgTimer = setInterval(() => {
+      this.msgFading = true;
+      setTimeout(() => {
+        this._msgIdx = (this._msgIdx + 1) % this._loadingMsgs.length;
+        this.loadingMessage = this._loadingMsgs[this._msgIdx];
+        this.msgFading = false;
+      }, 260);
+    }, 2800);
+  }
+
+  private _stopLoadingCycle(): void {
+    if (this._msgTimer !== null) {
+      clearInterval(this._msgTimer);
+      this._msgTimer = null;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this._stopLoadingCycle();
+  }
 
   constructor(private activityService: ActivityService) {
     dayjs.extend(relativeTime);
   }
 
   ngOnInit(): void {
+    this._startLoadingCycle();
     Promise.all([
       this.activityService.getRecords(),
       this.activityService.getActivities()
     ]).then(([records, { activities }]) => {
       this.data = records;
       this.activities = activities;
+      this._stopLoadingCycle();
       this.loading = false;
       this.loaded = true;
     });
@@ -53,6 +91,10 @@ export class RecordsComponent implements OnInit {
     return (this.data?.records ?? []).filter(
       (r) => r.activity_type !== 'running' && r.activity_type !== 'cycling'
     );
+  }
+
+  get otherRecordsDisplay(): PersonalRecord[] {
+    return this.otherRecords.filter((r) => r.activity_type !== 'lap_swimming');
   }
 
   get swimmingRecords(): PersonalRecord[] {

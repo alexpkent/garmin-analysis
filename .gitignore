@@ -45,3 +45,9 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+
+# Impeccable
+.impeccable/
+.impeccable-live/
+.impeccable-live.json
+.github/skills/impeccable/

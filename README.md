@@ -36,6 +36,13 @@ Compare any metric in one time period against another e.g. year vs year, month v
 - Race time predictions based on current fitness.
 - Table of activities per country.
 
+## Design Workflow
+
+This project uses [impeccable](https://impeccable.style/) for frontend design and quality passes.
+
+- Product intent and UX principles: [PRODUCT.md](PRODUCT.md)
+- Visual system and design tokens: [DESIGN.md](DESIGN.md)
+
 # Azure Setup
 
 ## Azure Storage Account

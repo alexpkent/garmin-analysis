@@ -231,7 +231,7 @@ export class CumulativeChartComponent implements OnChanges, OnDestroy {
         scales: {
           x: {
             ticks: {
-              color: '#6c757d',
+              color: '#adb5bd',
               maxRotation: 45,
               autoSkip: true,
               maxTicksLimit: 14
@@ -241,13 +241,13 @@ export class CumulativeChartComponent implements OnChanges, OnDestroy {
           y: {
             type: 'linear',
             position: 'left',
-            ticks: { color: '#6c757d' },
+            ticks: { color: '#adb5bd' },
             grid: { color: '#2a2d31' },
             beginAtZero: true,
             title: {
               display: true,
               text: 'Cumulative miles',
-              color: '#6c757d',
+              color: '#adb5bd',
               font: { size: 11 }
             }
           }

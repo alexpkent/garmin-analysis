@@ -6,110 +6,130 @@
   @if (loading) {
     <div class="loading-overlay">
       <div class="loading-ring"></div>
-      <span class="loading-text">Loading activities…</span>
+      <span class="loading-text" [class.msg-fading]="msgFading">{{ loadingMessage }}</span>
     </div>
   }
 
   @if (loaded) {
     <div class="compare-content">
+      <section class="controls-card" aria-label="Comparison controls">
+        <div class="controls-layout">
+          <div class="controls-main">
+            <div class="control-heading-row">
+              <h2 class="control-title">Period Setup</h2>
+              <p class="control-subtitle">Choose granularity and two periods to compare.</p>
+            </div>
 
-      <!-- Granularity toggle -->
-      <div class="section-label">Period size</div>
-      <div class="toggle-group">
-        @for (item of GRANULARITIES; track item.value) {
-          <button class="toggle-btn" [class.active]="granularity === item.value" (click)="setGranularity(item.value)">
-            {{ item.label }}
-          </button>
-        }
-      </div>
-
-      <!-- Period pickers -->
-      <div class="period-pickers">
-
-        <!-- Period A -->
-        <div class="period-picker period-a">
-          <div class="period-picker-label accent-a">Period A</div>
-
-          <select class="period-select" [(ngModel)]="yearA">
-            @for (y of availableYears; track y) {
-              <option [ngValue]="y">{{ y }}</option>
-            }
-          </select>
-
-          @if (granularity === 'quarter') {
-            <div class="sub-toggle">
-              @for (q of QUARTERS; track q) {
-                <button class="toggle-btn sm" [class.active]="quarterA === q" (click)="quarterA = q">Q{{ q }}</button>
+            <div class="toggle-group" role="group" aria-label="Period size">
+              @for (item of GRANULARITIES; track item.value) {
+                <button
+                  type="button"
+                  class="toggle-btn"
+                  [class.active]="granularity === item.value"
+                  [attr.aria-pressed]="granularity === item.value"
+                  (click)="setGranularity(item.value)">
+                  {{ item.label }}
+                </button>
               }
             </div>
-          }
 
-          @if (granularity === 'month') {
-            <select class="period-select" [(ngModel)]="monthA">
-              @for (name of MONTH_NAMES; track $index) {
-                <option [ngValue]="$index">{{ name }}</option>
-              }
-            </select>
-          }
+            <div class="period-pickers">
+              <div class="period-picker period-a">
+                <div class="period-picker-label accent-a">Period A</div>
 
-          @if (granularity === 'week') {
-            <select class="period-select" [(ngModel)]="weekA">
-              @for (w of weekOptions(yearA); track w.value) {
-                <option [ngValue]="w.value">{{ w.label }}</option>
-              }
-            </select>
-          }
+                <select class="period-select" [(ngModel)]="yearA">
+                  @for (y of availableYears; track y) {
+                    <option [ngValue]="y">{{ y }}</option>
+                  }
+                </select>
 
-          <div class="period-badge accent-a-badge">{{ labelA }}</div>
-        </div>
+                @if (granularity === 'quarter') {
+                  <div class="sub-toggle">
+                    @for (q of QUARTERS; track q) {
+                      <button
+                        type="button"
+                        class="toggle-btn sm"
+                        [class.active]="quarterA === q"
+                        [attr.aria-pressed]="quarterA === q"
+                        (click)="quarterA = q">Q{{ q }}</button>
+                    }
+                  </div>
+                }
 
-        <div class="period-vs">vs</div>
+                @if (granularity === 'month') {
+                  <select class="period-select" [(ngModel)]="monthA">
+                    @for (name of MONTH_NAMES; track $index) {
+                      <option [ngValue]="$index">{{ name }}</option>
+                    }
+                  </select>
+                }
 
-        <!-- Period B -->
-        <div class="period-picker period-b">
-          <div class="period-picker-label accent-b">Period B</div>
+                @if (granularity === 'week') {
+                  <select class="period-select" [(ngModel)]="weekA">
+                    @for (w of weekOptions(yearA); track w.value) {
+                      <option [ngValue]="w.value">{{ w.label }}</option>
+                    }
+                  </select>
+                }
 
-          <select class="period-select" [(ngModel)]="yearB">
-            @for (y of availableYears; track y) {
-              <option [ngValue]="y">{{ y }}</option>
-            }
-          </select>
+                <div class="period-badge accent-a-badge">{{ labelA }}</div>
+              </div>
 
-          @if (granularity === 'quarter') {
-            <div class="sub-toggle">
-              @for (q of QUARTERS; track q) {
-                <button class="toggle-btn sm" [class.active]="quarterB === q" (click)="quarterB = q">Q{{ q }}</button>
-              }
+              <div class="period-vs" aria-hidden="true">vs</div>
+
+              <div class="period-picker period-b">
+                <div class="period-picker-label accent-b">Period B</div>
+
+                <select class="period-select" [(ngModel)]="yearB">
+                  @for (y of availableYears; track y) {
+                    <option [ngValue]="y">{{ y }}</option>
+                  }
+                </select>
+
+                @if (granularity === 'quarter') {
+                  <div class="sub-toggle">
+                    @for (q of QUARTERS; track q) {
+                      <button
+                        type="button"
+                        class="toggle-btn sm"
+                        [class.active]="quarterB === q"
+                        [attr.aria-pressed]="quarterB === q"
+                        (click)="quarterB = q">Q{{ q }}</button>
+                    }
+                  </div>
+                }
+
+                @if (granularity === 'month') {
+                  <select class="period-select" [(ngModel)]="monthB">
+                    @for (name of MONTH_NAMES; track $index) {
+                      <option [ngValue]="$index">{{ name }}</option>
+                    }
+                  </select>
+                }
+
+                @if (granularity === 'week') {
+                  <select class="period-select" [(ngModel)]="weekB">
+                    @for (w of weekOptions(yearB); track w.value) {
+                      <option [ngValue]="w.value">{{ w.label }}</option>
+                    }
+                  </select>
+                }
+
+                <div class="period-badge accent-b-badge">{{ labelB }}</div>
+              </div>
             </div>
-          }
+          </div>
 
-          @if (granularity === 'month') {
-            <select class="period-select" [(ngModel)]="monthB">
-              @for (name of MONTH_NAMES; track $index) {
-                <option [ngValue]="$index">{{ name }}</option>
+          <aside class="controls-side" aria-label="Metric selector">
+            <h3 class="metric-title">Metric Focus</h3>
+            <select class="period-select metric-select" [(ngModel)]="selectedMetricKey">
+              @for (m of metrics; track m.key) {
+                <option [ngValue]="m.key">{{ m.label }}</option>
               }
             </select>
-          }
-
-          @if (granularity === 'week') {
-            <select class="period-select" [(ngModel)]="weekB">
-              @for (w of weekOptions(yearB); track w.value) {
-                <option [ngValue]="w.value">{{ w.label }}</option>
-              }
-            </select>
-          }
-
-          <div class="period-badge accent-b-badge">{{ labelB }}</div>
+          </aside>
         </div>
-      </div>
-
-      <!-- Metric selector -->
-      <div class="section-label">Metric</div>
-      <select class="period-select metric-select" [(ngModel)]="selectedMetricKey">
-        @for (m of metrics; track m.key) {
-          <option [ngValue]="m.key">{{ m.label }}</option>
-        }
-      </select>
+      </section>
 
       <!-- Chart -->
       <app-compare-chart
@@ -143,7 +163,14 @@
             </thead>
             <tbody>
               @for (row of summaryRows; track row.metric.key) {
-                <tr [class.selected-row]="row.metric.key === selectedMetricKey" (click)="selectedMetricKey = row.metric.key">
+                <tr
+                  tabindex="0"
+                  role="button"
+                  [attr.aria-pressed]="row.metric.key === selectedMetricKey"
+                  [class.selected-row]="row.metric.key === selectedMetricKey"
+                  (click)="selectedMetricKey = row.metric.key"
+                  (keydown.enter)="selectedMetricKey = row.metric.key"
+                  (keydown.space)="$event.preventDefault(); selectedMetricKey = row.metric.key">
                   <td class="metric-name">{{ row.metric.label }}</td>
                   <td>{{ formatValue(row.valueA, row.metric) }}</td>
                   <td>{{ formatValue(row.valueB, row.metric) }}</td>

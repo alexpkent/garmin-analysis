@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivityService, HealthSnapshot } from '../activity.service';
 import { Activity } from '../types/Activity';
 import dayjs, { Dayjs } from 'dayjs';
@@ -202,11 +202,47 @@ export interface SummaryRow {
   styleUrls: ['./compare.component.scss'],
   standalone: false
 })
-export class CompareComponent implements OnInit {
+export class CompareComponent implements OnInit, OnDestroy {
   loading = true;
   loaded = false;
   activities: Activity[] = [];
   healthSnapshots: HealthSnapshot[] = [];
+
+  // ── Loading message cycling ────────────────────────────
+  loadingMessage = 'Staging the comparison…';
+  msgFading = false;
+  private readonly _loadingMsgs = [
+    'Staging the comparison…',
+    'Lining up your training blocks…',
+    'Loading both periods…',
+    'Preparing the side-by-side view…'
+  ];
+  private _msgIdx = 0;
+  private _msgTimer: ReturnType<typeof setInterval> | null = null;
+
+  private _startLoadingCycle(): void {
+    this.loadingMessage = this._loadingMsgs[0];
+    this._msgIdx = 0;
+    this._msgTimer = setInterval(() => {
+      this.msgFading = true;
+      setTimeout(() => {
+        this._msgIdx = (this._msgIdx + 1) % this._loadingMsgs.length;
+        this.loadingMessage = this._loadingMsgs[this._msgIdx];
+        this.msgFading = false;
+      }, 260);
+    }, 2800);
+  }
+
+  private _stopLoadingCycle(): void {
+    if (this._msgTimer !== null) {
+      clearInterval(this._msgTimer);
+      this._msgTimer = null;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this._stopLoadingCycle();
+  }
 
   granularity: Granularity = 'year';
 
@@ -263,12 +299,14 @@ export class CompareComponent implements OnInit {
   constructor(private activityService: ActivityService) {}
 
   ngOnInit(): void {
+    this._startLoadingCycle();
     Promise.all([
       this.activityService.getActivities(),
       this.activityService.getHealth()
     ]).then(([{ activities }, snapshots]) => {
       this.activities = activities;
       this.healthSnapshots = snapshots;
+      this._stopLoadingCycle();
       this.loading = false;
       this.loaded = true;
 

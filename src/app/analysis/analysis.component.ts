@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { ActivityService, HealthSnapshot } from '../activity.service';
 import { Activity, formatTrainingEffectLabel } from '../types/Activity';
 import {
@@ -71,12 +71,48 @@ const GARMIN_ANALYSIS_PROMPT =
   styleUrls: ['./analysis.component.scss'],
   standalone: false
 })
-export class AnalysisComponent implements OnInit {
+export class AnalysisComponent implements OnInit, OnDestroy {
   activities: Activity[] = [];
   syncError = false;
   loading = true;
   loaded = false;
   lastAssessedTime: Date | null = null;
+
+  // ── Loading message cycling ────────────────────────────
+  loadingMessage = 'Pulling in your sessions…';
+  msgFading = false;
+  private readonly _loadingMsgs = [
+    'Pulling in your sessions…',
+    'Calculating fitness trends…',
+    'Checking your training load…',
+    'Crunching the health data…'
+  ];
+  private _msgIdx = 0;
+  private _msgTimer: ReturnType<typeof setInterval> | null = null;
+
+  private _startLoadingCycle(): void {
+    this.loadingMessage = this._loadingMsgs[0];
+    this._msgIdx = 0;
+    this._msgTimer = setInterval(() => {
+      this.msgFading = true;
+      setTimeout(() => {
+        this._msgIdx = (this._msgIdx + 1) % this._loadingMsgs.length;
+        this.loadingMessage = this._loadingMsgs[this._msgIdx];
+        this.msgFading = false;
+      }, 260);
+    }, 2800);
+  }
+
+  private _stopLoadingCycle(): void {
+    if (this._msgTimer !== null) {
+      clearInterval(this._msgTimer);
+      this._msgTimer = null;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this._stopLoadingCycle();
+  }
 
   get lastSyncAgo(): string | null {
     const t = this.activityService.lastSyncTime;
@@ -374,11 +410,13 @@ export class AnalysisComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this._startLoadingCycle();
     this.activityService
       .getActivities()
       .then(({ activities, syncError }) => {
         this.activities = activities;
         this.syncError = syncError;
+        this._stopLoadingCycle();
         this.loading = false;
         this.loaded = true;
         if (activities.length > 0) {
@@ -393,6 +431,7 @@ export class AnalysisComponent implements OnInit {
         this.updateAlertCount();
       })
       .catch(() => {
+        this._stopLoadingCycle();
         this.loading = false;
       });
 
@@ -422,6 +461,8 @@ export class AnalysisComponent implements OnInit {
               training_status: latestWith('training_status'),
               load_focus: latestWith('load_focus'),
               resting_hr: latestWith('resting_hr'),
+              fitness_age: latestWith('fitness_age'),
+              chronological_age: latestWith('chronological_age'),
               training_readiness: latestWith('training_readiness')
             }
           : null;
@@ -550,7 +591,7 @@ export class AnalysisComponent implements OnInit {
     color: string;
   } {
     if (score == null) return { label: 'Unknown', color: '#6c757d' };
-    if (score >= 75) return { label: 'Optimal', color: '#4caf50' };
+    if (score >= 75) return { label: 'Optimal', color: '#66bb6a' };
     if (score >= 50) return { label: 'Good', color: '#ffd54f' };
     if (score >= 25) return { label: 'Fair', color: '#ff8c00' };
     return { label: 'Low', color: '#e63419' };
@@ -563,8 +604,8 @@ export class AnalysisComponent implements OnInit {
     const thresholds =
       this.VO2_MAX_THRESHOLDS[environment.userGender][this.userAgeGroup];
     if (vo2 >= thresholds[0]) return { label: 'Superior', color: '#9c27b0' };
-    if (vo2 >= thresholds[1]) return { label: 'Excellent', color: '#42a5f5' };
-    if (vo2 >= thresholds[2]) return { label: 'Good', color: '#4caf50' };
+    if (vo2 >= thresholds[1]) return { label: 'Excellent', color: '#4dabf7' };
+    if (vo2 >= thresholds[2]) return { label: 'Good', color: '#66bb6a' };
     if (vo2 >= thresholds[3]) return { label: 'Fair', color: '#ff8c00' };
     return { label: 'Poor', color: '#e63419' };
   }
@@ -578,35 +619,96 @@ export class AnalysisComponent implements OnInit {
   }
 
   // ── Load zone gauge helpers ─────────────────────────────
-  private gaugeMax(actual: number | null, high: number | null): number {
-    return Math.max(actual ?? 0, high ?? 0) * 1.35 || 100;
+  private loadGaugeScaleMax(): number {
+    const focus = this.latestHealth?.load_focus;
+    const values = [
+      focus?.low_aerobic_actual,
+      focus?.low_aerobic_high,
+      focus?.high_aerobic_actual,
+      focus?.high_aerobic_high,
+      focus?.anaerobic_actual,
+      focus?.anaerobic_high
+    ].filter((value): value is number => value != null && value > 0);
+
+    const maxValue = values.length > 0 ? Math.max(...values) : 100;
+    return maxValue * 1.1;
   }
 
   loadGaugeActualPct(
     actual: number | null,
-    low: number | null,
-    high: number | null
+    _low: number | null,
+    _high: number | null
   ): string {
     if (actual == null) return '0%';
-    return `${Math.min(100, (actual / this.gaugeMax(actual, high)) * 100).toFixed(1)}%`;
+    return `${Math.min(100, (actual / this.loadGaugeScaleMax()) * 100).toFixed(1)}%`;
   }
 
   loadGaugeTargetLeft(
-    actual: number | null,
+    _actual: number | null,
     low: number | null,
-    high: number | null
+    _high: number | null
   ): string {
     if (low == null) return '0%';
-    return `${((low / this.gaugeMax(actual, high)) * 100).toFixed(1)}%`;
+    return `${((low / this.loadGaugeScaleMax()) * 100).toFixed(1)}%`;
   }
 
   loadGaugeTargetWidth(
-    actual: number | null,
+    _actual: number | null,
     low: number | null,
     high: number | null
   ): string {
     if (low == null || high == null) return '0%';
-    return `${(((high - low) / this.gaugeMax(actual, high)) * 100).toFixed(1)}%`;
+    return `${(((high - low) / this.loadGaugeScaleMax()) * 100).toFixed(1)}%`;
+  }
+
+  loadGaugeScaleMaxValue(): number {
+    return this.loadGaugeScaleMax();
+  }
+
+  loadGaugeStatusText(
+    actual: number | null,
+    low: number | null,
+    high: number | null
+  ): string {
+    if (actual == null || low == null || high == null) return 'No target range';
+    if (actual < low) return `${Math.round(low - actual)} below target`;
+    if (actual > high) return `${Math.round(actual - high)} above target`;
+    return 'In target range';
+  }
+
+  loadGaugeStatusClass(
+    actual: number | null,
+    low: number | null,
+    high: number | null
+  ): string {
+    if (actual == null || low == null || high == null) {
+      return 'stat-range-neutral';
+    }
+    if (actual >= low && actual <= high) {
+      return 'stat-range-in';
+    }
+
+    const miss = actual < low ? low - actual : actual - high;
+    const targetSpan = Math.max(1, high - low);
+    const missRatio = miss / targetSpan;
+
+    // Treat larger misses as alert severity so users can prioritize quickly.
+    if (missRatio >= 0.35) {
+      return 'stat-range-alert';
+    }
+    return 'stat-range-warn';
+  }
+
+  loadGaugeAriaText(
+    label: string,
+    actual: number | null,
+    low: number | null,
+    high: number | null
+  ): string {
+    if (actual == null || low == null || high == null) {
+      return `${label} target range unavailable`;
+    }
+    return `${label}: actual ${Math.round(actual)}, target ${Math.round(low)} to ${Math.round(high)}, ${this.loadGaugeStatusText(actual, low, high).toLowerCase()}`;
   }
 
   activityValue(activity: Activity): number | null {
@@ -807,7 +909,7 @@ export class AnalysisComponent implements OnInit {
             icon: 'fas fa-minus',
             label: 'Load Stable',
             text: `7-day load is close to recent baseline (${sign}${pct}%).`,
-            color: '#4caf50',
+            color: '#66bb6a',
             level: 'good'
           });
         } else if (pct >= -30) {
@@ -815,7 +917,7 @@ export class AnalysisComponent implements OnInit {
             icon: 'fas fa-arrow-down',
             label: 'Load Easing',
             text: `7-day load is ${Math.abs(pct)}% below recent baseline — recovery or taper.`,
-            color: '#42a5f5',
+            color: '#4dabf7',
             level: 'info'
           });
         } else {
@@ -832,7 +934,7 @@ export class AnalysisComponent implements OnInit {
           icon: 'fas fa-bolt',
           label: 'First Week Back',
           text: 'No load last week — this is your first active week back.',
-          color: '#42a5f5',
+          color: '#4dabf7',
           level: 'info'
         });
       }
@@ -894,7 +996,7 @@ export class AnalysisComponent implements OnInit {
           icon: 'fas fa-balance-scale',
           label: 'Zones Balanced',
           text: 'Low aerobic and high aerobic loads are both within Garmin targets — great balance.',
-          color: '#4caf50',
+          color: '#66bb6a',
           level: 'good'
         });
       }
@@ -949,7 +1051,7 @@ export class AnalysisComponent implements OnInit {
             icon: 'fas fa-bolt',
             label: 'Add Intensity',
             text: `Only ${hardPct}% of sessions were high-intensity. Consider adding a tempo or VO₂ max effort.`,
-            color: '#42a5f5',
+            color: '#4dabf7',
             level: 'info'
           });
         }
@@ -958,7 +1060,7 @@ export class AnalysisComponent implements OnInit {
           icon: 'fas fa-check-circle',
           label: 'Good Intensity Mix',
           text: `${easyPct}% easy / ${hardPct}% hard over the last 4 weeks — solid polarised distribution.`,
-          color: '#4caf50',
+          color: '#66bb6a',
           level: 'good'
         });
       }
@@ -980,14 +1082,17 @@ export class AnalysisComponent implements OnInit {
           icon: 'fas fa-coffee',
           label: 'Rest Period',
           text: `${daysSince} days since your last session — good rest or recovery block.`,
-          color: '#42a5f5',
+          color: '#4dabf7',
           level: 'info'
         });
       }
     }
 
     // 6. VO2 max trend (last 5 snapshots)
-    const consistencyInsight = this.computeConsistencyInsight(now, daysSinceLastActivity ?? 0);
+    const consistencyInsight = this.computeConsistencyInsight(
+      now,
+      daysSinceLastActivity ?? 0
+    );
     if (consistencyInsight) {
       insights.push(consistencyInsight);
     }
@@ -1011,7 +1116,7 @@ export class AnalysisComponent implements OnInit {
           icon: 'fas fa-lungs',
           label: 'VO₂ Max Improving',
           text: `Running VO₂ max up ${diff} over recent snapshots (now ${last.toFixed(1)}) — aerobic fitness growing.`,
-          color: '#4caf50',
+          color: '#66bb6a',
           level: 'good'
         });
       } else if (diff <= -1) {
@@ -1028,7 +1133,10 @@ export class AnalysisComponent implements OnInit {
     return this.sortTrainingInsights(insights);
   }
 
-  private computeConsistencyInsight(now: Dayjs, daysSinceLastActivity: number): TrainingInsight | null {
+  private computeConsistencyInsight(
+    now: Dayjs,
+    daysSinceLastActivity: number
+  ): TrainingInsight | null {
     // Examine 4 complete weeks (days 1-28 ago) so the current partial week doesn't skew counts
     const windowStart = now.startOf('day').subtract(28, 'days');
     const last28 = this.activities.filter((a) =>
@@ -1040,7 +1148,9 @@ export class AnalysisComponent implements OnInit {
     const weekCounts: number[] = [0, 0, 0, 0];
     const weekDurations: number[][] = [[], [], [], []];
     for (const a of last28) {
-      const daysAgo = now.startOf('day').diff(dayjs(a.start_date).startOf('day'), 'days');
+      const daysAgo = now
+        .startOf('day')
+        .diff(dayjs(a.start_date).startOf('day'), 'days');
       const weekIdx = Math.min(Math.floor(daysAgo / 7), 3);
       weekCounts[weekIdx]++;
       const secs = a.duration ?? a.moving_time_seconds ?? 0;
@@ -1052,9 +1162,13 @@ export class AnalysisComponent implements OnInit {
     const perWeek = +(totalActivities / 4).toFixed(1);
 
     // Average session duration across all activities
-    const allDurations = last28.map((a) => a.duration ?? a.moving_time_seconds ?? 0).filter((s) => s > 0);
+    const allDurations = last28
+      .map((a) => a.duration ?? a.moving_time_seconds ?? 0)
+      .filter((s) => s > 0);
     const avgDurationMins = allDurations.length
-      ? Math.round(allDurations.reduce((s, v) => s + v, 0) / allDurations.length / 60)
+      ? Math.round(
+          allDurations.reduce((s, v) => s + v, 0) / allDurations.length / 60
+        )
       : null;
 
     // "Long Break" already reports 7+ day gap — skip consistency if that fired
@@ -1068,7 +1182,7 @@ export class AnalysisComponent implements OnInit {
         icon: 'fas fa-calendar-check',
         label: 'Consistent Training',
         text: `${totalActivities} activities in 28 days (~${perWeek}/week) with activity in every week${avgDurationMins ? ` and avg ${avgDurationMins} min/session` : ''} — strong, reliable pattern.`,
-        color: '#4caf50',
+        color: '#66bb6a',
         level: 'good'
       };
     }
@@ -1102,7 +1216,7 @@ export class AnalysisComponent implements OnInit {
         icon: 'fas fa-stopwatch',
         label: 'Short Sessions',
         text: `Average session is only ${avgDurationMins} min over the last 28 days — longer efforts (30+ min) drive more aerobic adaptation.`,
-        color: '#42a5f5',
+        color: '#4dabf7',
         level: 'info'
       };
     }
@@ -1113,7 +1227,7 @@ export class AnalysisComponent implements OnInit {
         icon: 'fas fa-calendar-check',
         label: 'Mostly Consistent',
         text: `${totalActivities} sessions across 3 of the last 4 weeks (~${perWeek}/week)${avgDurationMins ? `, avg ${avgDurationMins} min` : ''} — one quiet week. Keep building the habit.`,
-        color: '#42a5f5',
+        color: '#4dabf7',
         level: 'info'
       };
     }
@@ -1123,7 +1237,10 @@ export class AnalysisComponent implements OnInit {
 
   private computeActivityVarietyInsight(now: Dayjs): TrainingInsight | null {
     const last28 = this.activities.filter((a) =>
-      dayjs(a.start_date).isSameOrAfter(now.startOf('day').subtract(28, 'days'), 'day')
+      dayjs(a.start_date).isSameOrAfter(
+        now.startOf('day').subtract(28, 'days'),
+        'day'
+      )
     );
     if (last28.length < 3) return null;
 
@@ -1134,7 +1251,9 @@ export class AnalysisComponent implements OnInit {
       sportCounts.set(key, (sportCounts.get(key) ?? 0) + 1);
     }
 
-    const sports = Array.from(sportCounts.entries()).sort((a, b) => b[1] - a[1]);
+    const sports = Array.from(sportCounts.entries()).sort(
+      (a, b) => b[1] - a[1]
+    );
     const typeCount = sports.length;
 
     if (typeCount === 1) {
@@ -1159,7 +1278,7 @@ export class AnalysisComponent implements OnInit {
         icon: 'fas fa-layer-group',
         label: 'Good Variety',
         text: `${sportList} — varied training reduces overuse risk.`,
-        color: '#4caf50',
+        color: '#66bb6a',
         level: 'good'
       };
     }
@@ -1169,7 +1288,7 @@ export class AnalysisComponent implements OnInit {
       icon: 'fas fa-layer-group',
       label: 'Mixed Training',
       text: `Training split across ${sportList} over the last 28 days — adding a third modality could further reduce overuse risk.`,
-      color: '#42a5f5',
+      color: '#4dabf7',
       level: 'info'
     };
   }
@@ -1180,7 +1299,8 @@ export class AnalysisComponent implements OnInit {
       tags.push('endurance');
     if (sportKeys.includes('football')) tags.push('sprint & team sport');
     if (sportKeys.includes('other')) tags.push('strength work');
-    if (tags.length === 0) return sportKeys.map((k) => this.formatSportLabel(k)).join(', ');
+    if (tags.length === 0)
+      return sportKeys.map((k) => this.formatSportLabel(k)).join(', ');
     return tags.join(', ');
   }
 

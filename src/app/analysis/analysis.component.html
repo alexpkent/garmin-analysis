@@ -2,10 +2,10 @@
   <nav class="navbar navbar-dark bg-dark pb-0 border-bottom border-secondary">
     <span class="navbar-brand mb-0 h1 text-warning">Analysis</span>
     <div class="export-actions">
-      <button class="export-icon-btn" (click)="openChatGptAnalysis()" title="Analyse last 30 days with ChatGPT">
+      <button class="export-icon-btn" (click)="openChatGptAnalysis()" title="Analyse last 30 days with ChatGPT" aria-label="Analyse last 30 days with ChatGPT">
         <i class="fas fa-robot"></i>
       </button>
-      <button class="export-icon-btn" (click)="exportAnalysisData()" title="Export analysis data as JSON">
+      <button class="export-icon-btn" (click)="exportAnalysisData()" title="Export analysis data as JSON" aria-label="Export analysis data as JSON">
         <i class="fas fa-file-export"></i>
       </button>
     </div>
@@ -24,7 +24,7 @@
   @if (loading) {
     <div class="loading-overlay">
       <div class="loading-ring"></div>
-      <span class="loading-text">Loading activities…</span>
+      <span class="loading-text" [class.msg-fading]="msgFading">{{ loadingMessage }}</span>
     </div>
   }
 
@@ -48,7 +48,7 @@
           <div class="assess-list">
             @for (insight of trainingInsights; track insight.label) {
               <div class="assess-row">
-                <i [class]="insight.icon + ' assess-icon'" [style.color]="insight.color"></i>
+                <i [class]="insight.icon + ' assess-icon assess-icon--' + insight.level" [style.color]="insight.color"></i>
                 <div class="assess-body">
                   <span class="assess-label" [style.color]="insight.color">{{ insight.label }}</span>
                   <span class="assess-text">{{ insight.text }}</span>
@@ -76,7 +76,7 @@
             @if (latestHealth.vo2max_running != null) {
               <div class="latest-stat">
                 <span class="latest-stat-label">VO₂ Max (Run)</span>
-                <span class="latest-stat-value" [style.color]="vo2maxCategory(latestHealth.vo2max_running)?.color ?? '#42a5f5'">
+                <span class="latest-stat-value" [style.color]="vo2maxCategory(latestHealth.vo2max_running)?.color ?? '#4dabf7'">
                   {{ latestHealth.vo2max_running | number:'1.1-1' }}
                 </span>
                 @if (vo2maxCategory(latestHealth.vo2max_running)) {
@@ -88,7 +88,7 @@
             @if (latestHealth.vo2max_cycling != null) {
               <div class="latest-stat">
                 <span class="latest-stat-label">VO₂ Max (Cycle)</span>
-                <span class="latest-stat-value" [style.color]="vo2maxCategory(latestHealth.vo2max_cycling)?.color ?? '#42a5f5'">
+                <span class="latest-stat-value" [style.color]="vo2maxCategory(latestHealth.vo2max_cycling)?.color ?? '#4dabf7'">
                   {{ latestHealth.vo2max_cycling | number:'1.1-1' }}
                 </span>
                 @if (vo2maxCategory(latestHealth.vo2max_cycling)) {
@@ -109,7 +109,7 @@
             @if (latestHealth.load_focus?.load_balance_phrase) {
               <div class="latest-stat">
                 <span class="latest-stat-label">Load Balance</span>
-                <span class="latest-stat-value" style="color:#adb5bd">
+                <span class="latest-stat-value stat-value-muted">
                   {{ formatLoadBalance(latestHealth.load_focus!.load_balance_phrase) }}
                 </span>
               </div>
@@ -118,20 +118,22 @@
             @if (latestHealth.load_focus?.low_aerobic_actual != null) {
               <div class="latest-stat">
                 <span class="latest-stat-label">Low Aerobic</span>
-                <span class="latest-stat-value" style="color:#1FA87A">
+                <span class="latest-stat-value stat-value-low-aerobic">
                   {{ latestHealth.load_focus!.low_aerobic_actual | number:'1.0-0' }}
                 </span>
-                <span class="latest-stat-band" style="color:#1FA87A">
-                  target {{ latestHealth.load_focus!.low_aerobic_low | number:'1.0-0' }}&ndash;{{ latestHealth.load_focus!.low_aerobic_high | number:'1.0-0' }}
-                </span>
-                <div class="load-gauge-track">
-                  <div class="load-gauge-target"
+                <div class="load-gauge-track"
+                     role="meter"
+                     aria-label="Low aerobic load"
+                     [attr.aria-valuemin]="0"
+                     [attr.aria-valuemax]="loadGaugeScaleMaxValue()"
+                     [attr.aria-valuenow]="latestHealth.load_focus!.low_aerobic_actual"
+                     [attr.aria-valuetext]="loadGaugeAriaText('Low aerobic load', latestHealth.load_focus!.low_aerobic_actual, latestHealth.load_focus!.low_aerobic_low, latestHealth.load_focus!.low_aerobic_high)">
+                  <div class="load-gauge-target load-gauge-target-low-aerobic"
                        [style.left]="loadGaugeTargetLeft(latestHealth.load_focus!.low_aerobic_actual, latestHealth.load_focus!.low_aerobic_low, latestHealth.load_focus!.low_aerobic_high)"
                        [style.width]="loadGaugeTargetWidth(latestHealth.load_focus!.low_aerobic_actual, latestHealth.load_focus!.low_aerobic_low, latestHealth.load_focus!.low_aerobic_high)">
                   </div>
-                  <div class="load-gauge-fill"
-                       [style.width]="loadGaugeActualPct(latestHealth.load_focus!.low_aerobic_actual, latestHealth.load_focus!.low_aerobic_low, latestHealth.load_focus!.low_aerobic_high)"
-                       style="background:#1FA87A">
+                  <div class="load-gauge-marker load-gauge-marker-low-aerobic"
+                       [style.left]="loadGaugeActualPct(latestHealth.load_focus!.low_aerobic_actual, latestHealth.load_focus!.low_aerobic_low, latestHealth.load_focus!.low_aerobic_high)">
                   </div>
                 </div>
               </div>
@@ -140,20 +142,22 @@
             @if (latestHealth.load_focus?.high_aerobic_actual != null) {
               <div class="latest-stat">
                 <span class="latest-stat-label">High Aerobic</span>
-                <span class="latest-stat-value" style="color:#e8b84b">
+                <span class="latest-stat-value stat-value-high-aerobic">
                   {{ latestHealth.load_focus!.high_aerobic_actual | number:'1.0-0' }}
                 </span>
-                <span class="latest-stat-band" style="color:#e8b84b">
-                  target {{ latestHealth.load_focus!.high_aerobic_low | number:'1.0-0' }}&ndash;{{ latestHealth.load_focus!.high_aerobic_high | number:'1.0-0' }}
-                </span>
-                <div class="load-gauge-track">
-                  <div class="load-gauge-target"
+                <div class="load-gauge-track"
+                     role="meter"
+                     aria-label="High aerobic load"
+                     [attr.aria-valuemin]="0"
+                     [attr.aria-valuemax]="loadGaugeScaleMaxValue()"
+                     [attr.aria-valuenow]="latestHealth.load_focus!.high_aerobic_actual"
+                     [attr.aria-valuetext]="loadGaugeAriaText('High aerobic load', latestHealth.load_focus!.high_aerobic_actual, latestHealth.load_focus!.high_aerobic_low, latestHealth.load_focus!.high_aerobic_high)">
+                  <div class="load-gauge-target load-gauge-target-high-aerobic"
                        [style.left]="loadGaugeTargetLeft(latestHealth.load_focus!.high_aerobic_actual, latestHealth.load_focus!.high_aerobic_low, latestHealth.load_focus!.high_aerobic_high)"
                        [style.width]="loadGaugeTargetWidth(latestHealth.load_focus!.high_aerobic_actual, latestHealth.load_focus!.high_aerobic_low, latestHealth.load_focus!.high_aerobic_high)">
                   </div>
-                  <div class="load-gauge-fill"
-                       [style.width]="loadGaugeActualPct(latestHealth.load_focus!.high_aerobic_actual, latestHealth.load_focus!.high_aerobic_low, latestHealth.load_focus!.high_aerobic_high)"
-                       style="background:#e8b84b">
+                  <div class="load-gauge-marker load-gauge-marker-high-aerobic"
+                       [style.left]="loadGaugeActualPct(latestHealth.load_focus!.high_aerobic_actual, latestHealth.load_focus!.high_aerobic_low, latestHealth.load_focus!.high_aerobic_high)">
                   </div>
                 </div>
               </div>
@@ -162,20 +166,22 @@
             @if (latestHealth.load_focus?.anaerobic_actual != null) {
               <div class="latest-stat">
                 <span class="latest-stat-label">Anaerobic</span>
-                <span class="latest-stat-value" style="color:#6A1B9A">
+                <span class="latest-stat-value stat-value-anaerobic">
                   {{ latestHealth.load_focus!.anaerobic_actual | number:'1.0-0' }}
                 </span>
-                <span class="latest-stat-band" style="color:#6A1B9A">
-                  target {{ latestHealth.load_focus!.anaerobic_low | number:'1.0-0' }}&ndash;{{ latestHealth.load_focus!.anaerobic_high | number:'1.0-0' }}
-                </span>
-                <div class="load-gauge-track">
-                  <div class="load-gauge-target"
+                <div class="load-gauge-track"
+                     role="meter"
+                     aria-label="Anaerobic load"
+                     [attr.aria-valuemin]="0"
+                     [attr.aria-valuemax]="loadGaugeScaleMaxValue()"
+                     [attr.aria-valuenow]="latestHealth.load_focus!.anaerobic_actual"
+                     [attr.aria-valuetext]="loadGaugeAriaText('Anaerobic load', latestHealth.load_focus!.anaerobic_actual, latestHealth.load_focus!.anaerobic_low, latestHealth.load_focus!.anaerobic_high)">
+                  <div class="load-gauge-target load-gauge-target-anaerobic"
                        [style.left]="loadGaugeTargetLeft(latestHealth.load_focus!.anaerobic_actual, latestHealth.load_focus!.anaerobic_low, latestHealth.load_focus!.anaerobic_high)"
                        [style.width]="loadGaugeTargetWidth(latestHealth.load_focus!.anaerobic_actual, latestHealth.load_focus!.anaerobic_low, latestHealth.load_focus!.anaerobic_high)">
                   </div>
-                  <div class="load-gauge-fill"
-                       [style.width]="loadGaugeActualPct(latestHealth.load_focus!.anaerobic_actual, latestHealth.load_focus!.anaerobic_low, latestHealth.load_focus!.anaerobic_high)"
-                       style="background:#6A1B9A">
+                  <div class="load-gauge-marker load-gauge-marker-anaerobic"
+                       [style.left]="loadGaugeActualPct(latestHealth.load_focus!.anaerobic_actual, latestHealth.load_focus!.anaerobic_low, latestHealth.load_focus!.anaerobic_high)">
                   </div>
                 </div>
               </div>
@@ -184,7 +190,19 @@
             @if (latestHealth.resting_hr != null) {
               <div class="latest-stat">
                 <span class="latest-stat-label">Resting HR</span>
-                <span class="latest-stat-value" style="color:#ffd54f">{{ latestHealth.resting_hr }} bpm</span>
+                <span class="latest-stat-value stat-value-resting">{{ latestHealth.resting_hr }} bpm</span>
+              </div>
+            }
+
+            @if (latestHealth.fitness_age != null) {
+              <div class="latest-stat">
+                <span class="latest-stat-label">Fitness Age</span>
+                <span class="latest-stat-value">{{ latestHealth.fitness_age }}</span>
+                @if (latestHealth.chronological_age != null) {
+                  <span class="latest-stat-band" [style.color]="latestHealth.fitness_age < latestHealth.chronological_age ? '#4caf50' : latestHealth.fitness_age > latestHealth.chronological_age ? '#ff6040' : '#adb5bd'">
+                    {{ latestHealth.fitness_age < latestHealth.chronological_age ? (latestHealth.chronological_age - latestHealth.fitness_age) + ' yrs younger' : latestHealth.fitness_age > latestHealth.chronological_age ? (latestHealth.fitness_age - latestHealth.chronological_age) + ' yrs older' : 'same as age' }}
+                  </span>
+                }
               </div>
             }
 
@@ -337,6 +355,7 @@
 
       <app-fitness-chart
         [activities]="activities"
+        [snapshots]="healthSnapshots"
         [startDate]="periodStart"
         [endDate]="periodEnd"
         [canGoBack]="canGoBack"

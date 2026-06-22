@@ -27,6 +27,8 @@ export interface HealthSnapshot {
   training_status: string | null;
   load_focus: LoadFocus | null;
   resting_hr: number | null;
+  fitness_age: number | null;
+  chronological_age: number | null;
   training_readiness: TrainingReadiness | null;
 }
 

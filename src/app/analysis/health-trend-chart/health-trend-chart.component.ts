@@ -170,8 +170,8 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
       {
         label: 'VO₂ Max',
         data: vo2Weekly,
-        borderColor: '#42a5f5',
-        backgroundColor: '#42a5f522',
+        borderColor: '#4dabf7',
+        backgroundColor: '#4dabf722',
         pointRadius: 3,
         pointHoverRadius: 6,
         borderWidth: 2,
@@ -277,7 +277,7 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
         scales: {
           x: {
             ticks: {
-              color: '#6c757d',
+              color: '#adb5bd',
               maxRotation: 0,
               autoSkip: true,
               maxTicksLimit: 14
@@ -289,12 +289,12 @@ export class HealthTrendChartComponent implements OnChanges, OnDestroy {
             position: 'left',
             min: vo2AxisRange.min,
             max: vo2AxisRange.max,
-            ticks: { color: '#42a5f5' },
+            ticks: { color: '#4dabf7' },
             grid: { color: '#2a2d31' },
             title: {
               display: true,
               text: 'VO₂ Max',
-              color: '#42a5f5',
+              color: '#4dabf7',
               font: { size: 11 }
             }
           },

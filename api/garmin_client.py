@@ -177,6 +177,22 @@ class GarminClient:
             except Exception:
                 snapshot["resting_hr"] = None
 
+        # Fitness Age
+        # Response shape: { "chronologicalAge": 45, "fitnessAge": 37.03, ... }
+        try:
+            fa_data = self._client.get_fitnessage_data(date_str)
+            if isinstance(fa_data, dict):
+                fa_val = fa_data.get("fitnessAge")
+                ch_val = fa_data.get("chronologicalAge")
+                snapshot["fitness_age"] = round(float(fa_val)) if fa_val is not None else None
+                snapshot["chronological_age"] = int(ch_val) if ch_val is not None else None
+            else:
+                snapshot["fitness_age"] = None
+                snapshot["chronological_age"] = None
+        except Exception:
+            snapshot["fitness_age"] = None
+            snapshot["chronological_age"] = None
+
         # Training Readiness
         try:
             readiness_data = self._client.get_training_readiness(date_str)

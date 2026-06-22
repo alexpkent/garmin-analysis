@@ -18,7 +18,7 @@ import { UI_COLORS } from '../../constants/colors';
 declare const Chart: any;
 
 const COLOR_A = UI_COLORS.accent;
-const COLOR_B = '#42a5f5';
+const COLOR_B = '#4dabf7';
 
 @Component({
   selector: 'app-compare-chart',
@@ -97,33 +97,52 @@ export class CompareChartComponent implements OnChanges, OnDestroy {
     }
   }
 
-  private xLabels(start: Dayjs): string[] {
+  private xLabels(): string[] {
     switch (this.granularity) {
       case 'week':
         return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       case 'month': {
-        const days = start.daysInMonth();
+        // Use max days across both periods so the shorter one doesn't clip the other
+        const days = Math.max(
+          this.startA.daysInMonth(),
+          this.startB.daysInMonth()
+        );
         return Array.from({ length: days }, (_, i) =>
-          i % 2 === 0 ? start.date(i + 1).format('D MMM') : ''
+          i % 2 === 0 ? String(i + 1) : ''
         );
       }
-      case 'quarter': {
-        // 14 weekly buckets — label each with the Monday of that week
-        return Array.from({ length: 14 }, (_, i) =>
-          start.add(i * 7, 'days').format('D MMM')
-        );
-      }
+      case 'quarter':
+        // 14 relative weekly buckets
+        return Array.from({ length: 14 }, (_, i) => `Wk ${i + 1}`);
       case 'year': {
-        // 53 weekly buckets — label with month name only when a new month begins
+        // 53 weekly buckets — month names anchored to period A (year comparisons
+        // are typically calendar-aligned; tooltip shows both periods' actual dates)
         const labels: string[] = [];
         let lastMonth = -1;
         for (let i = 0; i < 53; i++) {
-          const weekStart = start.add(i * 7, 'days');
+          const weekStart = this.startA.add(i * 7, 'days');
           const m = weekStart.month();
           labels.push(m !== lastMonth ? weekStart.format('MMM') : '');
           lastMonth = m;
         }
         return labels;
+      }
+    }
+  }
+
+  private bucketDateLabel(idx: number, start: Dayjs): string {
+    switch (this.granularity) {
+      case 'week':
+        return start.add(idx, 'days').format('ddd D MMM');
+      case 'month': {
+        if (idx >= start.daysInMonth()) return '—';
+        return start.date(idx + 1).format('D MMM YYYY');
+      }
+      case 'quarter':
+      case 'year': {
+        const weekStart = start.add(idx * 7, 'days');
+        const weekEnd = weekStart.add(6, 'days');
+        return `${weekStart.format('D MMM')} – ${weekEnd.format('D MMM YYYY')}`;
       }
     }
   }
@@ -195,7 +214,7 @@ export class CompareChartComponent implements OnChanges, OnDestroy {
   private buildChart(): void {
     if (!this.metric || !this.startA || !this.startB) return;
 
-    const labels = this.xLabels(this.startA);
+    const labels = this.xLabels();
     const isHealth = this.metric.source === 'health';
     const dataA = isHealth
       ? this.buildHealthDataset(this.snapshotsA, this.startA)
@@ -263,20 +282,10 @@ export class CompareChartComponent implements OnChanges, OnDestroy {
                 title: (items: any[]) => {
                   const idx = items[0]?.dataIndex;
                   if (idx == null) return '';
-                  switch (this.granularity) {
-                    case 'week': {
-                      const dayLabel = this.startA.add(idx, 'days');
-                      return `${items[0].label} ${dayLabel.format('D MMM')}`;
-                    }
-                    case 'month':
-                      return this.startA.date(idx + 1).format('D MMM YYYY');
-                    case 'quarter':
-                    case 'year': {
-                      const weekStart = this.startA.add(idx * 7, 'days');
-                      const weekEnd = weekStart.add(6, 'days');
-                      return `${weekStart.format('D MMM')} – ${weekEnd.format('D MMM')}`;
-                    }
-                  }
+                  const fmtA = this.bucketDateLabel(idx, this.startA);
+                  const fmtB = this.bucketDateLabel(idx, this.startB);
+                  if (fmtA === fmtB) return fmtA;
+                  return [`${this.labelA}: ${fmtA}`, `${this.labelB}: ${fmtB}`];
                 },
                 label: (ctx: any) => {
                   const v = ctx.parsed.y;

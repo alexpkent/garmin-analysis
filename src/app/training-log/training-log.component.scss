@@ -2,31 +2,65 @@
 
 @include loading-overlay;
 
-/* ── Page layout ────────────────────────────────────────── */
+:host {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes content-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Page layout ────────────────────────────────────── */
 .log-layout {
   display: flex;
   align-items: flex-start;
+  animation: content-enter 0.3s cubic-bezier(0.2, 0, 0, 1) both;
+
+  @media (prefers-reduced-motion: reduce) { animation: none; }
 }
 
 .log-main {
   flex: 1;
   min-width: 0;
-  padding: 20px 16px;
+  padding: var(--space-5) var(--space-4) var(--space-6);
+  max-width: 1320px;
 }
 
 /* ── Summary cards ─────────────────────────────────────── */
 .summaries-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
 }
 
 .summary-card {
   background: $card-bg;
   border: 1px solid $card-border;
   border-radius: 7px;
-  padding: 12px 14px;
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
 .summary-label {
@@ -41,8 +75,14 @@
 .summary-primary {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #fff;
+  color: $text-bright;
   line-height: 1.1;
+}
+
+.summary-unit {
+  font-size: 0.82rem;
+  color: $muted;
+  font-weight: 500;
 }
 
 .summary-secondary {
@@ -53,8 +93,8 @@
 
 .summary-badges {
   display: flex;
-  gap: 6px;
-  margin-top: 8px;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
   flex-wrap: wrap;
 }
 
@@ -81,9 +121,9 @@
 .filter-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-2);
   flex-wrap: wrap;
-  padding: 0 0 16px;
+  padding: 0 0 var(--space-4);
 }
 
 /* ── Sticky controls wrapper (mobile only) ─────────────── */
@@ -95,9 +135,9 @@
   position: relative;
   display: flex;
   align-items: center;
-  flex: 1;
-  min-width: 160px;
-  max-width: 300px;
+  flex: 1 1 220px;
+  min-width: 220px;
+  max-width: 360px;
 }
 
 .filter-search-icon {
@@ -113,14 +153,16 @@
   background: $card-bg;
   border: 1px solid $card-border;
   border-radius: 6px;
-  color: #fff;
+  color: $text-bright;
   font-size: 0.82rem;
-  padding: 5px 28px 5px 28px;
+  min-height: 34px;
+  padding: 6px 28px;
   outline: none;
   transition: border-color 0.15s;
 
   &::placeholder { color: $dim; }
-  &:focus { border-color: $accent; }
+  &:focus,
+  &:focus-visible { border-color: $accent; }
 }
 
 .filter-clear-btn {
@@ -134,12 +176,20 @@
   padding: 0;
   line-height: 1;
 
-  &:hover { color: #fff; }
+  &:hover { color: $text-bright; }
+
+  &:focus-visible {
+    outline: 2px solid $link;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
 }
 
 .filter-type-btns {
   display: flex;
-  gap: 6px;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  flex: 1 1 360px;
 }
 
 .filter-type-btn {
@@ -149,11 +199,17 @@
   color: $dim;
   font-size: 0.75rem;
   font-weight: 600;
-  padding: 4px 10px;
+  min-height: 34px;
+  padding: 6px 10px;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
 
   &:hover { color: $muted; border-color: $muted; }
+
+  &:focus-visible {
+    outline: 2px solid $link;
+    outline-offset: 2px;
+  }
 
   &.active-run      { color: $run-color;      border-color: $run-color;      background: rgba($run-color,      0.1); }
   &.active-ride     { color: $ride-color;     border-color: $ride-color;     background: rgba($ride-color,     0.1); }
@@ -167,30 +223,41 @@
   border-radius: 6px;
   color: $dim;
   font-size: 0.75rem;
-  padding: 4px 10px;
+  min-height: 34px;
+  padding: 6px 10px;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
 
   &:hover { color: $muted; border-color: $muted; }
+
+  &:focus-visible {
+    outline: 2px solid $link;
+    outline-offset: 2px;
+  }
 }
 
 /* ── Week grid ─────────────────────────────────────────── */
 .week-grid-scroll {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  background: $card-bg;
+  border: 1px solid $card-border;
+  border-radius: 8px;
+  padding: 0 var(--space-3) var(--space-2);
 }
 
 .week-header-row {
   display: block;
   border-bottom: 1px solid $card-border;
-  padding: 6px 0 8px;
+  padding: var(--space-2) 0 var(--space-3);
 }
 
 .week-block {
   border-bottom: 1px solid $surface-hover;
-  padding: 10px 0;
+  padding: var(--space-3) 0;
   display: flex;
   flex-direction: column;
+  gap: var(--space-2);
 }
 
 .week-block--rest {
@@ -200,23 +267,25 @@
 .week-days-row {
   display: grid;
   grid-template-columns: repeat(7, minmax(72px, 1fr));
+  column-gap: var(--space-2);
+  row-gap: var(--space-2);
 }
 
 .day-header {
   text-align: center;
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   color: $dim;
   text-transform: uppercase;
   letter-spacing: 0.07em;
 }
 
 .week-summary-col {
-  padding-bottom: 8px;
+  padding-bottom: var(--space-1);
   display: flex;
   flex-direction: row;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px 12px;
+  gap: var(--space-2) var(--space-3);
   width: 100%;
 
   .week-range {
@@ -260,7 +329,7 @@
 
 .week-type-pills {
   display: flex;
-  gap: 4px;
+  gap: var(--space-1);
   flex-wrap: nowrap;
   min-width: 90px;
   flex-shrink: 0;
@@ -271,7 +340,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
+  min-height: 72px;
 }
 
 .bubble-wrapper {
@@ -279,6 +349,14 @@
   flex-direction: column;
   align-items: center;
   cursor: pointer;
+  width: 100%;
+  max-width: 72px;
+
+  &:focus-visible {
+    outline: 2px solid $link;
+    outline-offset: 3px;
+    border-radius: 10px;
+  }
 
   &:hover .activity-distance-chip {
     filter: brightness(1.08);
@@ -293,7 +371,7 @@
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: linear-gradient(180deg, #252a31 0%, #1c2026 100%);
-  transition: filter 0.15s ease, transform 0.15s ease;
+  transition: filter 0.15s ease-out, transform 0.15s ease-out;
   flex-shrink: 0;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
 }
@@ -336,9 +414,10 @@
 
 .activity-name {
   font-size: 0.58rem;
-  color: #c9ced4;
+  color: $muted;
   text-align: center;
-  max-width: 74px;
+  width: 100%;
+  max-width: 72px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -355,7 +434,7 @@
   overflow-y: auto;
   background: $card-bg;
   border-left: 1px solid $card-border;
-  padding: 16px 0 24px;
+  padding: var(--space-4) 0 var(--space-6);
   scrollbar-width: none;
 
   &::-webkit-scrollbar { display: none; }
@@ -379,7 +458,12 @@
   letter-spacing: 0.03em;
   transition: color 0.15s;
 
-  &:hover { color: #fff; }
+  &:hover { color: $text-bright; }
+
+  &:focus-visible {
+    outline: 2px solid $link;
+    outline-offset: -2px;
+  }
 }
 
 .nav-month-list {
@@ -401,6 +485,11 @@
   transition: color 0.15s;
 
   &:hover { color: $muted; }
+
+  &:focus-visible {
+    outline: 2px solid $link;
+    outline-offset: -2px;
+  }
 }
 
 .nav-month-active {
@@ -427,7 +516,13 @@
   line-height: 1;
   transition: color 0.15s;
 
-  &:hover { color: #fff; }
+  &:hover { color: $text-bright; }
+
+  &:focus-visible {
+    outline: 2px solid $link;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
 }
 
 .activity-modal {
@@ -471,7 +566,7 @@
 .latest-name {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #fff;
+  color: $text-bright;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -509,6 +604,12 @@
   text-decoration: none;
 
   &:hover { color: $link-hover; }
+
+  &:focus-visible {
+    outline: 2px solid $link;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
 
   i { margin-right: 3px; }
 }
@@ -555,11 +656,12 @@
 
 /* ── Mobile ─────────────────────────────────────────────── */
 @media (max-width: 575px) {
-  .log-main { padding: 12px 10px; }
+  .log-main { padding: var(--space-3) var(--space-3); }
 
   .summaries-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
   }
 
   .summary-card { padding: 9px 10px; }
@@ -583,15 +685,22 @@
   }
 
   .filter-bar {
-    padding-bottom: 8px;
+    padding-bottom: var(--space-2);
+  }
+
+  .filter-search-wrap,
+  .filter-type-btns {
+    flex-basis: 100%;
+    max-width: none;
+    min-width: 0;
   }
 
   .mobile-month-strip {
     display: flex;
     overflow-x: auto;
-    gap: 6px;
-    padding: 6px 0 8px;
-    margin-bottom: 4px;
+    gap: var(--space-2);
+    padding: var(--space-2) 0 var(--space-2);
+    margin-bottom: var(--space-1);
     scrollbar-width: none;
     &::-webkit-scrollbar { display: none; }
   }
@@ -604,7 +713,8 @@
     color: $muted;
     font-size: 0.72rem;
     font-weight: 600;
-    padding: 4px 10px;
+    min-height: 40px;
+    padding: 6px 10px;
     cursor: pointer;
     white-space: nowrap;
     transition: background 0.15s, color 0.15s, border-color 0.15s;
@@ -618,8 +728,70 @@
     }
   }
 
+  .filter-type-btn,
+  .filter-reset-btn {
+    min-height: 40px;
+  }
+
   .mobile-month-year {
     font-weight: 400;
     color: $dim;
     font-size: 0.65rem;
-  }}
+  }
+
+  .week-grid-scroll {
+    padding-left: var(--space-2);
+    padding-right: var(--space-2);
+    border-radius: 6px;
+  }
+
+  .week-days-row {
+    grid-template-columns: repeat(7, minmax(72px, 72px));
+    column-gap: var(--space-1);
+    width: max-content;
+  }
+
+  .day-col {
+    min-height: 64px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .log-nav {
+    flex-basis: 64px;
+    width: 64px;
+  }
+
+  .nav-year-btn {
+    padding-left: var(--space-2);
+    padding-right: var(--space-2);
+  }
+
+  .nav-month-btn {
+    padding-left: var(--space-3);
+    padding-right: var(--space-2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filter-search,
+  .filter-type-btn,
+  .filter-reset-btn,
+  .activity-distance-chip,
+  .mobile-month-chip,
+  .nav-year-btn,
+  .nav-month-btn,
+  .close-btn {
+    transition: none;
+  }
+
+  .bubble-wrapper:hover .activity-distance-chip {
+    filter: none;
+    transform: none;
+  }
+
+  .loading-ring {
+    animation: none;
+    border-top-color: $surface-hover;
+  }
+}

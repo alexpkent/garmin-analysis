@@ -15,7 +15,7 @@
   @if (loading) {
     <div class="loading-overlay">
       <div class="loading-ring"></div>
-      <span class="loading-text">Loading activities…</span>
+      <span class="loading-text" [class.msg-fading]="msgFading">{{ loadingMessage }}</span>
     </div>
   }
 
@@ -28,7 +28,7 @@
           @for (summary of summaries; track summary.label) {
             <div class="summary-card">
               <div class="summary-label">{{ summary.label }}</div>
-              <div class="summary-primary">{{ distanceToMiles(summary.distance) | number:'1.0-1' }} <small style="font-size:0.85rem;color:#adb5bd">mi</small></div>
+              <div class="summary-primary">{{ distanceToMiles(summary.distance) | number:'1.0-1' }} <small class="summary-unit">mi</small></div>
               <div class="summary-secondary">{{ secondsToHours(summary.seconds) | number:'1.0-1' }} hrs</div>
               <div class="summary-badges">
                 <span class="badge-pill badge-run" aria-label="Runs" title="Runs">
@@ -72,21 +72,25 @@
           <div class="filter-type-btns">
             <button class="filter-type-btn"
                     [class.active-run]="filterTypes.has('run')"
+                    [attr.aria-pressed]="filterTypes.has('run')"
                     (click)="toggleTypeFilter('run')">
               <i class="fas fa-running"></i> Run
             </button>
             <button class="filter-type-btn"
                     [class.active-ride]="filterTypes.has('ride')"
+                    [attr.aria-pressed]="filterTypes.has('ride')"
                     (click)="toggleTypeFilter('ride')">
               <i class="fas fa-biking"></i> Ride
             </button>
             <button class="filter-type-btn"
                     [class.active-football]="filterTypes.has('football')"
+                    [attr.aria-pressed]="filterTypes.has('football')"
                     (click)="toggleTypeFilter('football')">
               <i class="fas fa-futbol"></i> Football
             </button>
             <button class="filter-type-btn"
                     [class.active-other]="filterTypes.has('other')"
+                    [attr.aria-pressed]="filterTypes.has('other')"
                     (click)="toggleTypeFilter('other')">
               <i class="fas fa-heartbeat"></i> Other
             </button>
@@ -150,7 +154,13 @@
                 @for (day of week.days; track day.date.valueOf()) {
                   <div class="day-col">
                     @for (activity of day.activities; track activity.id) {
-                      <div class="bubble-wrapper" (click)="onBubbleClick(activity)">
+                        <div class="bubble-wrapper"
+                          role="button"
+                          tabindex="0"
+                          [attr.aria-label]="'Open details for ' + activity.name"
+                          (click)="onBubbleClick(activity)"
+                          (keydown.enter)="onBubbleClick(activity)"
+                          (keydown.space)="onBubbleClick(activity); $event.preventDefault()">
                         <div class="activity-distance-chip"
                              [style.--activity-accent]="activityColor(activity)">
                           <div class="activity-distance-top">
@@ -177,7 +187,8 @@
       <nav class="log-nav" aria-label="Jump to month">
         @for (navYear of yearMonthNav; track navYear.year) {
           <div class="nav-year-group">
-            <button class="nav-year-btn" (click)="toggleNavYear(navYear.year)">
+            <button class="nav-year-btn" (click)="toggleNavYear(navYear.year)" [attr.aria-expanded]="navYear.expanded">
+              <span class="sr-only">Toggle months for </span>
               {{ navYear.year }}
             </button>
             @if (navYear.expanded) {

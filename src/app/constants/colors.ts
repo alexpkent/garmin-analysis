@@ -16,7 +16,7 @@ export const UI_COLORS = {
 
 export const STATUS_COLORS = {
   productive: '#1FA87A',
-  maintaining: '#42a5f5',
+  maintaining: '#4dabf7',
   peaking: '#e8b84b',
   recovery: '#4caf50',
   unproductive: '#ff8c00',

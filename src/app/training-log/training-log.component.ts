@@ -167,6 +167,38 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
 
   readonly DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+  // ── Loading message cycling ────────────────────────────
+  loadingMessage = 'Loading your training history…';
+  msgFading = false;
+  private readonly _loadingMsgs = [
+    'Loading your training history…',
+    'Building the weekly view…',
+    'Organising your sessions…',
+    'Laying out your log…'
+  ];
+  private _msgIdx = 0;
+  private _msgTimer: ReturnType<typeof setInterval> | null = null;
+
+  private _startLoadingCycle(): void {
+    this.loadingMessage = this._loadingMsgs[0];
+    this._msgIdx = 0;
+    this._msgTimer = setInterval(() => {
+      this.msgFading = true;
+      setTimeout(() => {
+        this._msgIdx = (this._msgIdx + 1) % this._loadingMsgs.length;
+        this.loadingMessage = this._loadingMsgs[this._msgIdx];
+        this.msgFading = false;
+      }, 260);
+    }, 2800);
+  }
+
+  private _stopLoadingCycle(): void {
+    if (this._msgTimer !== null) {
+      clearInterval(this._msgTimer);
+      this._msgTimer = null;
+    }
+  }
+
   readonly runColor = ACTIVITY_COLORS.run;
   readonly rideColor = ACTIVITY_COLORS.ride;
   readonly footballColor = ACTIVITY_COLORS.football;
@@ -192,6 +224,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this._stopLoadingCycle();
     this.scrollObserver?.disconnect();
     if (this.programmaticScrollTimer !== null) {
       clearTimeout(this.programmaticScrollTimer);
@@ -200,6 +233,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
 
   private async load() {
     this.loading = true;
+    this._startLoadingCycle();
     const { activities, syncError } =
       await this.activityService.getActivities();
     this.activities = activities;
@@ -207,6 +241,7 @@ export class TrainingLogComponent implements OnInit, OnDestroy {
     this.buildWeekGroups();
     this.buildSummaries();
     this.buildYearMonthNav();
+    this._stopLoadingCycle();
     this.loading = false;
     this.loaded = true;
     // Set up scroll observer after Angular renders the week rows

@@ -5,7 +5,7 @@
   border: 1px solid $card-border;
   border-radius: 8px;
   padding: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 0;
 
   &.fullscreen {
     position: fixed;
@@ -41,16 +41,27 @@
   border: none;
   color: $muted;
   cursor: pointer;
-  padding: 4px 6px;
+  padding: 6px 8px;
   font-size: 0.9rem;
   border-radius: 4px;
   transition: color 0.15s;
 
   &:hover { color: #fff; }
+
+  &:focus-visible {
+    outline: 2px solid $link;
+    outline-offset: 2px;
+  }
 }
 
 .chart-wrap {
   height: 360px;
 
   canvas { width: 100% !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fs-btn {
+    transition: none;
+  }
 }

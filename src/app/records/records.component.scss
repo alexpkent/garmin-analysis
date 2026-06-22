@@ -2,10 +2,18 @@
 
 @include loading-overlay;
 
+@keyframes content-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .records-content {
   max-width: 680px;
   padding: 20px 16px;
   margin: 0 auto;
+  animation: content-enter 0.3s cubic-bezier(0.2, 0, 0, 1) both;
+
+  @media (prefers-reduced-motion: reduce) { animation: none; }
 }
 
 /* ── Empty state ─────────────────────────────────────────── */
@@ -48,6 +56,12 @@
   font-size: 0.95rem;
 }
 
+.pr-header-icon--run { color: $run-color; }
+.pr-header-icon--ride { color: $ride-color; }
+.pr-header-icon--swim { color: $link; }
+.pr-header-icon--other { color: $other-color; }
+.pr-header-icon--country { color: $football-color; }
+
 .pr-card-title {
   font-size: 0.95rem;
   font-weight: 700;
@@ -72,7 +86,9 @@
   align-items: baseline;
   padding: 10px 16px;
   border-bottom: 1px solid $surface-hover;
+  transition: background-color 0.15s ease;
 
+  &:hover { background: rgba($surface-hover, 0.55); }
   &:last-child { border-bottom: none; }
 }
 
@@ -102,6 +118,9 @@
   text-align: right;
 }
 
+.pr-value--record { color: $accent; }
+.pr-value--prediction { color: $link; }
+
 .pr-meta {
   grid-column: 1 / -1;
   grid-row: 2;
@@ -128,6 +147,12 @@
   margin-left: auto;
 
   &:hover { color: $link-hover; }
+
+  &:focus-visible {
+    outline: 2px solid $link;
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
 }
 
 /* ── Footer ──────────────────────────────────────────────── */
@@ -170,13 +195,55 @@
   flex-shrink: 0;
   font-size: 1.05rem;
   font-weight: 700;
-  color: #66bb6a;
+  color: $football-color;
   white-space: nowrap;
 }
 
 /* ── Mobile ──────────────────────────────────────────────── */
 @media (max-width: 480px) {
+  .records-content {
+    padding: 16px 12px 76px;
+  }
+
   .pr-card-subtitle {
     display: none;
+  }
+
+  .pr-row {
+    grid-template-columns: 1fr auto;
+    row-gap: 4px;
+    column-gap: 10px;
+    align-items: center;
+  }
+
+  .pr-label,
+  .country-name {
+    font-size: 0.875rem;
+  }
+
+  .pr-value,
+  .country-count {
+    font-size: 0.94rem;
+  }
+
+  .pr-pace,
+  .pr-date,
+  .pr-ago,
+  .records-footer,
+  .country-rank,
+  .pr-link {
+    font-size: 0.875rem;
+  }
+
+  .pr-meta {
+    gap: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pr-row,
+  .loading-ring {
+    transition: none;
+    animation: none;
   }
 }

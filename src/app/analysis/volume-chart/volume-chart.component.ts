@@ -244,7 +244,7 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
           x: {
             stacked: true,
             ticks: {
-              color: '#6c757d',
+              color: '#adb5bd',
               maxRotation: 0,
               autoSkip: true,
               maxTicksLimit: 14
@@ -254,12 +254,12 @@ export class VolumeChartComponent implements OnChanges, OnDestroy {
           y: {
             stacked: true,
             beginAtZero: true,
-            ticks: { color: '#6c757d' },
+            ticks: { color: '#adb5bd' },
             grid: { color: '#2a2d31' },
             title: {
               display: true,
               text: 'Distance (mi)',
-              color: '#6c757d',
+              color: '#adb5bd',
               font: { size: 11 }
             }
           }

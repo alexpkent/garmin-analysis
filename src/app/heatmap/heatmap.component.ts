@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { ActivityService } from '../activity.service';
 import { environment } from '../../environments/environment';
@@ -26,7 +26,7 @@ declare var L: any;
   styleUrls: ['./heatmap.component.scss'],
   standalone: false
 })
-export class HeatmapComponent implements OnInit {
+export class HeatmapComponent implements OnInit, OnDestroy {
   private mapCenter = environment.mapCenter;
   private mapDefaultZoom = 11;
   activities: Activity[] = [];
@@ -40,6 +40,42 @@ export class HeatmapComponent implements OnInit {
   loading = false;
   loaded = false;
   map: any;
+
+  // ── Loading message cycling ────────────────────────────
+  loadingMessage = 'Plotting your trails…';
+  msgFading = false;
+  private readonly _loadingMsgs = [
+    'Plotting your trails…',
+    'Building the heat map…',
+    'Tracing your routes…',
+    'Mapping your miles…'
+  ];
+  private _msgIdx = 0;
+  private _msgTimer: ReturnType<typeof setInterval> | null = null;
+
+  private _startLoadingCycle(): void {
+    this.loadingMessage = this._loadingMsgs[0];
+    this._msgIdx = 0;
+    this._msgTimer = setInterval(() => {
+      this.msgFading = true;
+      setTimeout(() => {
+        this._msgIdx = (this._msgIdx + 1) % this._loadingMsgs.length;
+        this.loadingMessage = this._loadingMsgs[this._msgIdx];
+        this.msgFading = false;
+      }, 260);
+    }, 2800);
+  }
+
+  private _stopLoadingCycle(): void {
+    if (this._msgTimer !== null) {
+      clearInterval(this._msgTimer);
+      this._msgTimer = null;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this._stopLoadingCycle();
+  }
   markers: any;
   polylines: Polyline[] = [];
   runPolylines: Polyline[] = [];
@@ -68,6 +104,7 @@ export class HeatmapComponent implements OnInit {
 
   private async load() {
     this.loading = true;
+    this._startLoadingCycle();
 
     const { activities, syncError } =
       await this.activityService.getActivities();
@@ -80,6 +117,7 @@ export class HeatmapComponent implements OnInit {
         this.polylines[this.polylines.length - 1].activity;
     }
 
+    this._stopLoadingCycle();
     this.loading = false;
     this.loaded = true;
   }

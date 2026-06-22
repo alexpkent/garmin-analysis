@@ -11,6 +11,7 @@ import {
   HostListener
 } from '@angular/core';
 import { Activity } from '../../types/Activity';
+import { HealthSnapshot } from '../../activity.service';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
@@ -32,6 +33,7 @@ const K_ATL = 1 - Math.exp(-1 / 7); // Acute Training Load  – fatigue (~7 days
 })
 export class FitnessChartComponent implements OnChanges, OnDestroy {
   @Input() activities: Activity[] = [];
+  @Input() snapshots: HealthSnapshot[] = [];
   @Input() startDate: Dayjs | null = null;
   @Input() endDate: Dayjs | null = null;
   @Input() canGoBack = false;
@@ -141,12 +143,34 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
       dayCursor = dayCursor.add(1, 'day');
     }
 
+    // Build fitness age weekly data — use same week-end key as the CTL walk
+    const faData: (number | null)[] = new Array(weekCount).fill(null);
+    const caData: (number | null)[] = new Array(weekCount).fill(null);
+    const faSnapshots = this.snapshots
+      .filter((s) => s.fitness_age != null || s.chronological_age != null)
+      .map((s) => ({
+        d: dayjs(s.date).startOf('day'),
+        age: s.fitness_age as number | null,
+        chrono: s.chronological_age as number | null
+      }));
+    for (const { d, age, chrono } of faSnapshots) {
+      if (d.isBefore(start) || d.isAfter(end)) continue;
+      // Find the Sunday ending the week that contains this date
+      const dow = d.isoWeekday(); // 1=Mon … 7=Sun
+      const weekEndDay = d.add(7 - dow, 'days').format('YYYY-MM-DD');
+      const idx = weekEndToIdx.get(weekEndDay);
+      if (idx !== undefined) {
+        if (age != null) faData[idx] = age;
+        if (chrono != null) caData[idx] = chrono;
+      }
+    }
+
     const datasets = [
       {
         label: 'CTL (Fitness)',
         data: ctlData,
-        borderColor: '#42a5f5',
-        backgroundColor: '#42a5f522',
+        borderColor: '#4dabf7',
+        backgroundColor: '#4dabf722',
         pointRadius: 2,
         pointHoverRadius: 5,
         borderWidth: 2,
@@ -177,20 +201,56 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
         tension: 0.3,
         spanGaps: true,
         yAxisID: 'yTsb'
+      },
+      {
+        label: 'Fitness Age',
+        data: faData,
+        borderColor: '#4caf50',
+        backgroundColor: '#4caf5022',
+        pointRadius: 3,
+        pointHoverRadius: 6,
+        borderWidth: 2,
+        tension: 0.3,
+        spanGaps: true,
+        yAxisID: 'yFa'
+      },
+      {
+        label: 'Real Age',
+        data: caData,
+        borderColor: '#6c757d',
+        backgroundColor: 'transparent',
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        borderWidth: 1.5,
+        borderDash: [4, 4],
+        tension: 0,
+        spanGaps: true,
+        yAxisID: 'yFa'
       }
     ];
 
+    const hasFaData = faData.some((v) => v !== null);
+
     if (this.chart) {
-      const hiddenStates = datasets.map(
-        (_: any, i: number) => this.chart.getDatasetMeta(i)?.hidden ?? false
-      );
-      this.chart.data.labels = weekLabels;
-      this.chart.data.datasets = datasets;
-      hiddenStates.forEach((hidden: boolean, i: number) => {
-        this.chart.getDatasetMeta(i).hidden = hidden;
-      });
-      this.chart.update();
-      return;
+      // If fitness age data just arrived and wasn't in the original build,
+      // destroy and recreate so the yFa axis and legend item register cleanly.
+      const chartHasFa = this.chart.data.datasets.length >= 5;
+      if (hasFaData && !chartHasFa) {
+        this.chart.destroy();
+        this.chart = null;
+      } else {
+        const hiddenStates = datasets.map(
+          (_: any, i: number) => this.chart.getDatasetMeta(i)?.hidden ?? false
+        );
+        this.chart.data.labels = weekLabels;
+        this.chart.data.datasets = datasets;
+        hiddenStates.forEach((hidden: boolean, i: number) => {
+          const meta = this.chart.getDatasetMeta(i);
+          if (meta) meta.hidden = hidden;
+        });
+        this.chart.update();
+        return;
+      }
     }
 
     this.chart = new Chart(this.canvasRef.nativeElement, {
@@ -222,7 +282,7 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
         scales: {
           x: {
             ticks: {
-              color: '#6c757d',
+              color: '#adb5bd',
               maxRotation: 0,
               autoSkip: true,
               maxTicksLimit: 14
@@ -233,12 +293,12 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
             type: 'linear',
             position: 'left',
             beginAtZero: true,
-            ticks: { color: '#42a5f5' },
+            ticks: { color: '#4dabf7' },
             grid: { color: '#2a2d31' },
             title: {
               display: true,
               text: 'Load',
-              color: '#42a5f5',
+              color: '#4dabf7',
               font: { size: 11 }
             }
           },
@@ -253,6 +313,19 @@ export class FitnessChartComponent implements OnChanges, OnDestroy {
               color: '#ab47bc',
               font: { size: 11 }
             }
+          },
+          yFa: {
+            type: 'linear',
+            position: 'right',
+            ticks: { color: '#4caf50' },
+            grid: { drawOnChartArea: false },
+            title: {
+              display: true,
+              text: 'Fitness Age (yrs)',
+              color: '#4caf50',
+              font: { size: 11 }
+            },
+            offset: true
           }
         }
       }

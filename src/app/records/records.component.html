@@ -6,7 +6,7 @@
   @if (loading) {
     <div class="loading-overlay">
       <div class="loading-ring"></div>
-      <span class="loading-text">Loading records…</span>
+      <span class="loading-text" [class.msg-fading]="msgFading">{{ loadingMessage }}</span>
     </div>
   }
 
@@ -24,14 +24,14 @@
       @if (runningRecords.length > 0) {
         <div class="pr-card">
           <div class="pr-card-header">
-            <i class="fas fa-running pr-header-icon" style="color:#ff6040"></i>
+            <i class="fas fa-running pr-header-icon pr-header-icon--run"></i>
             <span class="pr-card-title">Running</span>
           </div>
           <div class="pr-table">
             @for (rec of runningRecords; track rec.type_id) {
               <div class="pr-row">
                 <span class="pr-label">{{ rec.label }}</span>
-                <span class="pr-value" style="color:#e8b84b">{{ formatValue(rec) }}</span>
+                <span class="pr-value pr-value--record">{{ formatValue(rec) }}</span>
                 @if (pace(rec)) {
                   <span class="pr-pace">{{ pace(rec) }}</span>
                 }
@@ -41,7 +41,7 @@
                     <span class="pr-ago">· {{ timeSince(rec.date) }}</span>
                   }
                   @if (garminUrl(rec.activity_id)) {
-                    <a [href]="garminUrl(rec.activity_id)" target="_blank" rel="noopener noreferrer" class="pr-link">
+                    <a [href]="garminUrl(rec.activity_id)" target="_blank" rel="noopener noreferrer" class="pr-link" [attr.aria-label]="'Open ' + rec.label + ' in Garmin Connect'">
                       <i class="fas fa-external-link-alt"></i>
                     </a>
                   }
@@ -56,21 +56,21 @@
       @if (cyclingRecords.length > 0) {
         <div class="pr-card">
           <div class="pr-card-header">
-            <i class="fas fa-biking pr-header-icon" style="color:#40c8ff"></i>
+            <i class="fas fa-biking pr-header-icon pr-header-icon--ride"></i>
             <span class="pr-card-title">Cycling</span>
           </div>
           <div class="pr-table">
             @for (rec of cyclingRecords; track rec.type_id) {
               <div class="pr-row">
                 <span class="pr-label">{{ rec.label }}</span>
-                <span class="pr-value" style="color:#e8b84b">{{ formatValue(rec) }}</span>
+                <span class="pr-value pr-value--record">{{ formatValue(rec) }}</span>
                 <div class="pr-meta">
                   @if (rec.date) {
                     <span class="pr-date">{{ formatDate(rec.date) }}</span>
                     <span class="pr-ago">· {{ timeSince(rec.date) }}</span>
                   }
                   @if (garminUrl(rec.activity_id)) {
-                    <a [href]="garminUrl(rec.activity_id)" target="_blank" rel="noopener noreferrer" class="pr-link">
+                    <a [href]="garminUrl(rec.activity_id)" target="_blank" rel="noopener noreferrer" class="pr-link" [attr.aria-label]="'Open ' + rec.label + ' in Garmin Connect'">
                       <i class="fas fa-external-link-alt"></i>
                     </a>
                   }
@@ -85,21 +85,21 @@
       @if (swimmingRecords.length > 0) {
         <div class="pr-card">
           <div class="pr-card-header">
-            <i class="fas fa-swimmer pr-header-icon" style="color:#06c"></i>
+            <i class="fas fa-swimmer pr-header-icon pr-header-icon--swim"></i>
             <span class="pr-card-title">Swimming</span>
           </div>
           <div class="pr-table">
             @for (rec of swimmingRecords; track rec.type_id) {
               <div class="pr-row">
                 <span class="pr-label">{{ rec.label }}</span>
-                <span class="pr-value" style="color:#e8b84b">{{ formatValue(rec) }}</span>
+                <span class="pr-value pr-value--record">{{ formatValue(rec) }}</span>
                 <div class="pr-meta">
                   @if (rec.date) {
                     <span class="pr-date">{{ formatDate(rec.date) }}</span>
                     <span class="pr-ago">· {{ timeSince(rec.date) }}</span>
                   }
                   @if (garminUrl(rec.activity_id)) {
-                    <a [href]="garminUrl(rec.activity_id)" target="_blank" rel="noopener noreferrer" class="pr-link">
+                    <a [href]="garminUrl(rec.activity_id)" target="_blank" rel="noopener noreferrer" class="pr-link" [attr.aria-label]="'Open ' + rec.label + ' in Garmin Connect'">
                       <i class="fas fa-external-link-alt"></i>
                     </a>
                   }
@@ -111,31 +111,29 @@
       }
 
       <!-- Other PRs (non-running, non-cycling, non-swimming) -->
-      @if (otherRecords.length > swimmingRecords.length) {
+      @if (otherRecordsDisplay.length > 0) {
         <div class="pr-card">
           <div class="pr-card-header">
-            <i class="fas fa-heartbeat pr-header-icon" style="color:#ffc940"></i>
+            <i class="fas fa-heartbeat pr-header-icon pr-header-icon--other"></i>
             <span class="pr-card-title">Other</span>
           </div>
           <div class="pr-table">
-            @for (rec of otherRecords; track rec.type_id) {
-              @if (rec.activity_type !== 'lap_swimming') {
-                <div class="pr-row">
-                  <span class="pr-label">{{ rec.label }}</span>
-                  <span class="pr-value" style="color:#e8b84b">{{ formatValue(rec) }}</span>
-                  <div class="pr-meta">
-                    @if (rec.date) {
-                      <span class="pr-date">{{ formatDate(rec.date) }}</span>
-                      <span class="pr-ago">· {{ timeSince(rec.date) }}</span>
-                    }
-                    @if (garminUrl(rec.activity_id)) {
-                      <a [href]="garminUrl(rec.activity_id)" target="_blank" rel="noopener noreferrer" class="pr-link">
-                        <i class="fas fa-external-link-alt"></i>
-                      </a>
-                    }
-                  </div>
+            @for (rec of otherRecordsDisplay; track rec.type_id) {
+              <div class="pr-row">
+                <span class="pr-label">{{ rec.label }}</span>
+                <span class="pr-value pr-value--record">{{ formatValue(rec) }}</span>
+                <div class="pr-meta">
+                  @if (rec.date) {
+                    <span class="pr-date">{{ formatDate(rec.date) }}</span>
+                    <span class="pr-ago">· {{ timeSince(rec.date) }}</span>
+                  }
+                  @if (garminUrl(rec.activity_id)) {
+                    <a [href]="garminUrl(rec.activity_id)" target="_blank" rel="noopener noreferrer" class="pr-link" [attr.aria-label]="'Open ' + rec.label + ' in Garmin Connect'">
+                      <i class="fas fa-external-link-alt"></i>
+                    </a>
+                  }
                 </div>
-              }
+              </div>
             }
           </div>
         </div>
@@ -149,7 +147,7 @@
       @if (countryRankings.length > 0) {
         <div class="pr-card">
           <div class="pr-card-header">
-            <i class="fas fa-globe pr-header-icon" style="color:#66bb6a"></i>
+            <i class="fas fa-globe pr-header-icon pr-header-icon--country"></i>
             <span class="pr-card-title">Countries</span>
           </div>
           <div class="pr-table">
@@ -177,28 +175,28 @@
             @if (predictions.time_5k_seconds) {
               <div class="pr-row">
                 <span class="pr-label">5K</span>
-                <span class="pr-value" style="color:#42a5f5">{{ formatTime(predictions.time_5k_seconds) }}</span>
+                <span class="pr-value pr-value--prediction">{{ formatTime(predictions.time_5k_seconds) }}</span>
                 <span class="pr-pace">{{ formatTime(predictions.time_5k_seconds / 5 * 1.609344) }}/mi</span>
               </div>
             }
             @if (predictions.time_10k_seconds) {
               <div class="pr-row">
                 <span class="pr-label">10K</span>
-                <span class="pr-value" style="color:#42a5f5">{{ formatTime(predictions.time_10k_seconds) }}</span>
+                <span class="pr-value pr-value--prediction">{{ formatTime(predictions.time_10k_seconds) }}</span>
                 <span class="pr-pace">{{ formatTime(predictions.time_10k_seconds / 10 * 1.609344) }}/mi</span>
               </div>
             }
             @if (predictions.time_half_marathon_seconds) {
               <div class="pr-row">
                 <span class="pr-label">Half Marathon</span>
-                <span class="pr-value" style="color:#42a5f5">{{ formatTime(predictions.time_half_marathon_seconds) }}</span>
+                <span class="pr-value pr-value--prediction">{{ formatTime(predictions.time_half_marathon_seconds) }}</span>
                 <span class="pr-pace">{{ formatTime(predictions.time_half_marathon_seconds / 21.0975 * 1.609344) }}/mi</span>
               </div>
             }
             @if (predictions.time_marathon_seconds) {
               <div class="pr-row">
                 <span class="pr-label">Marathon</span>
-                <span class="pr-value" style="color:#42a5f5">{{ formatTime(predictions.time_marathon_seconds) }}</span>
+                <span class="pr-value pr-value--prediction">{{ formatTime(predictions.time_marathon_seconds) }}</span>
                 <span class="pr-pace">{{ formatTime(predictions.time_marathon_seconds / 42.195 * 1.609344) }}/mi</span>
               </div>
             }

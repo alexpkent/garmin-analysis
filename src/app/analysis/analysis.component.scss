@@ -16,11 +16,21 @@
   cursor: pointer;
   color: $link;
   font-size: 1.1rem;
-  padding: 4px 8px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px;
   border-radius: 4px;
-  transition: color 0.15s;
+  transition: color 0.15s ease-out, background-color 0.15s ease-out;
 
-  &:hover { color: $link-hover; }
+  &:hover {
+    color: $link-hover;
+    background: rgba($link, 0.12);
+  }
+
+  &:focus-visible {
+    outline: 2px solid $link;
+    outline-offset: 2px;
+  }
 }
 
 /* ── Period size toggle ───────────────────────────────── */
@@ -31,14 +41,24 @@
 }
 
 .period-size-btn {
-  font-size: 0.72rem;
-  padding: 2px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
   color: $muted;
   background: transparent;
   border: 1px solid $border-mid;
   border-radius: 4px;
+  transition: border-color 0.2s ease-out, color 0.2s ease-out, background-color 0.2s ease-out;
 
-  &:hover { color: #fff; border-color: $dim; }
+  &:hover {
+    color: $text-bright;
+    border-color: $dim;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $link;
+    outline-offset: 2px;
+  }
 
   &.active {
     color: $card-bg;
@@ -47,10 +67,18 @@
   }
 }
 
+@keyframes content-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .analysis-content {
   padding: 20px 16px;
   max-width: 1200px;
   margin: 0 auto;
+  animation: content-enter 0.3s cubic-bezier(0.2, 0, 0, 1) both;
+
+  @media (prefers-reduced-motion: reduce) { animation: none; }
 }
 
 /* ── Latest activity card ──────────────────────────────── */
@@ -85,7 +113,7 @@
 .latest-name {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #fff;
+  color: $text-bright;
 }
 
 .latest-card-meta {
@@ -95,12 +123,12 @@
 }
 
 .latest-ago {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   color: $muted;
 }
 
 .sync-timestamp {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   color: $muted;
   text-align: left;
   padding: 4px 14px 0;
@@ -124,68 +152,132 @@
   flex-direction: column;
   padding: 10px 16px;
   border-right: 1px solid $surface-hover;
-  min-width: 120px;
+  min-width: 136px;
 
   &:last-child { border-right: none; }
 }
 
 .latest-stat-label {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: $dim;
+  color: $muted;
   margin-bottom: 3px;
 }
 
 .latest-stat-value {
   font-size: 1rem;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.3;
 }
 
 .latest-stat-band {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 600;
   margin-top: 2px;
 }
 
 .latest-stat-sublabel {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: $muted;
   margin-top: 1px;
 }
 
-/* ── Load zone gauge bars ──────────────────────────────── */
+.stat-range-in { color: $football-color; }
+.stat-range-warn { color: $other-color; }
+.stat-range-alert { color: $run-color; }
+.stat-range-neutral { color: $muted; }
+
+.stat-value-muted { color: $muted; }
+.stat-value-low-aerobic { color: $football-color; }
+.stat-value-high-aerobic { color: $accent; }
+.stat-value-anaerobic { color: $run-color; }
+.stat-value-resting { color: $other-color; }
+
+/* ── Load zone bullet charts ───────────────────────────── */
+// Classic bullet graph: full-scale track · zone-tinted target band · thin actual marker
+
 .load-gauge-track {
   position: relative;
   width: 100%;
-  height: 6px;
-  background: $surface-hover;
-  border-radius: 3px;
-  margin-top: 5px;
+  height: 10px;
+  background: $border-mid;  // visible full-scale range background
+  border-radius: 2px;
+  margin-top: 6px;
   overflow: hidden;
 }
 
+@keyframes band-enter {
+  from { opacity: 0; transform: scaleX(0.4); }
+  to   { opacity: 1; transform: scaleX(1); }
+}
+
+// Target-range band — base positioning; color set per zone below
 .load-gauge-target {
   position: absolute;
   top: 0;
   height: 100%;
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 3px;
+  border-radius: 2px;
+  transform-origin: left center;
+  animation: band-enter 0.5s cubic-bezier(0.2, 0, 0, 1) 0.1s both;
+
+  @media (prefers-reduced-motion: reduce) { animation: none; }
 }
 
-.load-gauge-fill {
+.load-gauge-target-low-aerobic  { background: rgba(76, 175, 80, 0.30); }    // green
+.load-gauge-target-high-aerobic { background: rgba(232, 184, 75, 0.30); }   // amber
+.load-gauge-target-anaerobic    { background: rgba(255, 96, 64, 0.24); }    // coral
+
+@keyframes marker-enter {
+  from { opacity: 0; transform: translateX(-50%) scaleY(0.2); }
+  to   { opacity: 1; transform: translateX(-50%) scaleY(1); }
+}
+
+// Actual-value marker — thin vertical bar at full track height
+.load-gauge-marker {
   position: absolute;
   top: 0;
-  left: 0;
+  width: 3px;
   height: 100%;
-  border-radius: 3px;
-  opacity: 0.85;
-  transition: width 0.3s ease;
+  transform: translateX(-50%);
+  border-radius: 1px;
+  box-shadow: 1px 0 3px rgba(0, 0, 0, 0.55), -1px 0 0 rgba(0, 0, 0, 0.25);
+  animation: marker-enter 0.45s cubic-bezier(0.2, 0, 0, 1) 0.4s both;
+  transition: left 0.3s ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    transition: none;
+  }
 }
 
+.load-gauge-marker-low-aerobic  { background: $football-color; }
+.load-gauge-marker-high-aerobic { background: $accent; }
+.load-gauge-marker-anaerobic    { background: $run-color; }
+
 /* ── Training Assessment card ──────────────────────────── */
+@keyframes row-slide-in {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes icon-pulse-alert {
+  0%, 100% { transform: scale(1); }
+  40%       { transform: scale(1.25); opacity: 0.65; }
+  70%       { transform: scale(0.9); }
+}
+@keyframes icon-bloom-good {
+  0%   { transform: scale(0.4); opacity: 0.2; }
+  65%  { transform: scale(1.12); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+@keyframes icon-wobble-warn {
+  0%, 100% { transform: rotate(0); }
+  20%      { transform: rotate(-10deg); }
+  55%      { transform: rotate(7deg); }
+  80%      { transform: rotate(-3deg); }
+}
+
 .assess-list {
   padding: 4px 0;
 }
@@ -196,8 +288,15 @@
   gap: 12px;
   padding: 10px 16px;
   border-bottom: 1px solid $surface-hover;
+  animation: row-slide-in 0.3s cubic-bezier(0.2, 0, 0, 1) both;
 
   &:last-child { border-bottom: none; }
+
+  @for $i from 1 through 12 {
+    &:nth-child(#{$i}) { animation-delay: #{($i - 1) * 40}ms; }
+  }
+
+  @media (prefers-reduced-motion: reduce) { animation: none; }
 }
 
 .assess-icon {
@@ -208,6 +307,23 @@
   text-align: center;
 }
 
+.assess-icon--alert {
+  animation: icon-pulse-alert 0.65s cubic-bezier(0.2, 0, 0, 1) 0.2s both;
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+}
+.assess-icon--good {
+  animation: icon-bloom-good 0.5s cubic-bezier(0.2, 0, 0, 1) 0.15s both;
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+}
+.assess-icon--info {
+  animation: icon-bloom-good 0.45s cubic-bezier(0.2, 0, 0, 1) 0.1s both;
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+}
+.assess-icon--warn {
+  animation: icon-wobble-warn 0.7s cubic-bezier(0.2, 0, 0, 1) 0.2s both;
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+}
+
 .assess-body {
   display: flex;
   flex-direction: column;
@@ -215,7 +331,7 @@
 }
 
 .assess-label {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -274,7 +390,12 @@
   cursor: pointer;
   padding: 0 2px;
 
-  &:hover { color: #fff; }
+  &:hover { color: $text-bright; }
+
+  &:focus-visible {
+    outline: 2px solid $link;
+    outline-offset: 2px;
+  }
 }
 
 .day-popup-body {
@@ -306,7 +427,7 @@
 .day-activity-name {
   font-size: 0.88rem;
   font-weight: 500;
-  color: #fff;
+  color: $text-bright;
 }
 
 .day-activity-meta {
@@ -332,6 +453,61 @@
 
   &:hover { color: $link-hover; }
 
+  &:focus-visible {
+    outline: 2px solid $link;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
   i { margin-right: 3px; }
+}
+
+@media (max-width: 992px) {
+  .latest-card-body {
+    border-top: 1px solid $surface-hover;
+  }
+
+  .latest-stat {
+    min-width: 50%;
+    border-right: none;
+    border-bottom: 1px solid $surface-hover;
+  }
+
+  .latest-stat:last-child {
+    border-bottom: none;
+  }
+}
+
+@media (max-width: 576px) {
+  .analysis-content {
+    padding: 16px 12px 76px;
+  }
+
+  .latest-stat {
+    min-width: 100%;
+    padding: 10px 12px;
+  }
+
+  .period-size-toggle {
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .period-size-btn {
+    min-height: 36px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .export-icon-btn,
+  .period-size-btn,
+  .load-gauge-marker {
+    transition: none;
+  }
+
+  .loading-ring {
+    animation: none;
+    border-top-color: $surface-hover;
+  }
 }
 
