@@ -209,11 +209,36 @@
     display: none;
   }
 
+  /* Restructure to 2-column: row 1 = label | value, row 2 = meta | pace */
   .pr-row {
     grid-template-columns: 1fr auto;
-    row-gap: 4px;
+    row-gap: 2px;
     column-gap: 10px;
-    align-items: center;
+    align-items: start;
+  }
+
+  /* Row 1 */
+  .pr-label { grid-column: 1; grid-row: 1; }
+  .pr-value { grid-column: 2; grid-row: 1; }
+
+  /* Row 2: pace sits under value, meta (date + ago + link) occupies col 1 */
+  .pr-pace {
+    grid-column: 2;
+    grid-row: 2;
+    text-align: right;
+    align-self: start;
+    padding-top: 1px;
+  }
+
+  .pr-meta {
+    grid-column: 1;
+    grid-row: 2;
+    gap: 4px;
+  }
+
+  /* Link stays adjacent to ago text, not floating far right */
+  .pr-link {
+    margin-left: 4px;
   }
 
   .pr-label,
@@ -232,11 +257,7 @@
   .records-footer,
   .country-rank,
   .pr-link {
-    font-size: 0.875rem;
-  }
-
-  .pr-meta {
-    gap: 4px;
+    font-size: 0.72rem;
   }
 }
 
